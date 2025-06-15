@@ -1,0 +1,43 @@
+{
+  "name": "g-club",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "@tiptap/extension-image": "^2.14.0",
+    "@tiptap/extension-link": "^2.14.0",
+    "@tiptap/extension-youtube": "^2.14.0",
+    "@tiptap/pm": "^2.14.0",
+    "@tiptap/react": "^2.14.0",
+    "@tiptap/starter-kit": "^2.14.0",
+    "date-fns": "^4.1.0",
+    "material-icons": "^1.13.14",
+    "next": "15.3.3",
+    "next-auth": "^4.24.11",
+    "prisma": "^6.9.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-easy-crop": "^5.4.2",
+    "sharp": "^0.34.2",
+    "tailwindcss": "^4.1.10"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4.1.10",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.3",
+    "postcss": "^8.5.5",
+    "typescript": "^5"
+  }
+}
