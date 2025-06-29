@@ -224,8 +224,10 @@ export async function DELETE(
       return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
     }
     
-    // 삭제 권한 확인 (작성자 또는 관리자만 삭제 가능)
-    if (post.authorId !== session.user.id && session.user.role !== 'ADMIN') {
+    // 삭제 권한 확인 (작성자 또는 관리자/슈퍼어드민만 삭제 가능)
+    if (post.authorId !== session.user.id && 
+        session.user.role !== 'ADMIN' && 
+        session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
     }
     

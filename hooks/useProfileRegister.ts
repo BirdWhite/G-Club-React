@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { getCroppedImg, resizeImage, CropArea, getImageDimensions } from '@/lib/cropImage';
-import { useProfileForm } from './useProfileForm';
+import { useProfileForm, ProfileFormErrors } from './useProfileForm';
+import { useRouter } from 'next/navigation';
 
 export const useProfileRegister = () => {
   const profileForm = useProfileForm();
@@ -14,13 +16,14 @@ export const useProfileRegister = () => {
     croppedAreaPixels,
     croppedImage,
     setCroppedImage,
-    isLoading,
-    setIsLoading,
     router,
     handleImageUpload,
     onCropComplete,
     handleCropImage,
   } = profileForm;
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<ProfileFormErrors>({});
 
   const blobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -33,17 +36,32 @@ export const useProfileRegister = () => {
     });
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === 'name') {
+      profileForm.setName(value);
+    } else if (name === 'birthDate') {
+      profileForm.setBirthDate(value);
+    }
+  };
+
+  const handleCropComplete = (croppedArea: any, croppedAreaPixels: CropArea) => {
+    profileForm.onCropComplete(croppedArea, croppedAreaPixels);
+  };
+
   const showCroppedImage = async () => {
     if (!image || !croppedAreaPixels) return;
     
     try {
       // 1. 이미지 크롭
       const croppedImageBlob = await getCroppedImg(image, croppedAreaPixels);
-      // 2. 이미지 리사이즈 (500x500 이하로 축소)
-      const resizedImageBlob = await resizeImage(croppedImageBlob, 500, 500);
       
-      // Blob을 직접 상태에 저장
+      // 2. 이미지를 정확히 512x512로 리사이즈
+      const resizedImageBlob = await resizeImage(croppedImageBlob, 512, 512);
+      
+      // 3. 리사이즈된 이미지 저장
       setCroppedImage(resizedImageBlob);
+ // 크롭된 이미지가 변경되었을 때 변경사항 있음으로 표시
     } catch (error) {
       console.error('이미지 크롭 중 오류 발생:', error);
     }
@@ -85,8 +103,13 @@ export const useProfileRegister = () => {
           };
         }
         
+        // 1. 이미지 크롭
         const croppedImageBlob = await getCroppedImg(image, cropArea);
-        const resizedImageBlob = await resizeImage(croppedImageBlob, 500, 500);
+        
+        // 2. 이미지를 정확히 512x512로 리사이즈
+        const resizedImageBlob = await resizeImage(croppedImageBlob, 512, 512);
+        
+        // 3. 리사이즈된 이미지 사용
         imageToSend = resizedImageBlob;
         setCroppedImage(resizedImageBlob);
       }

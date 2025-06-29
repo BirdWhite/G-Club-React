@@ -81,9 +81,9 @@ export const useProfileForm = () => {
     }
 
     // 파일 크기 검증 (10MB 제한)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 2 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      alert('파일 크기는 10MB를 초과할 수 없습니다.');
+      alert('파일 크기는 2MB를 초과할 수 없습니다.');
       return;
     }
 

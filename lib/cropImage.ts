@@ -21,8 +21,8 @@ export interface ImageDimensions {
 }
 
 // 상수 정의
-const DEFAULT_IMAGE_QUALITY = 0.9;
-const DEFAULT_IMAGE_FORMAT = 'image/jpeg';
+const DEFAULT_IMAGE_QUALITY = 0.85;  // WebP 기본 품질 85%
+const DEFAULT_IMAGE_FORMAT = 'image/webp';  // 기본 형식을 WebP로 변경
 
 /**
  * URL에서 HTMLImageElement를 생성하는 함수
@@ -70,6 +70,8 @@ function canvasToBlob(
   format: string = DEFAULT_IMAGE_FORMAT,
   quality: number = DEFAULT_IMAGE_QUALITY
 ): Promise<Blob> {
+  // 항상 WebP 형식으로 강제 설정
+  format = 'image/webp';
   return new Promise((resolve, reject) => {
     try {
       canvas.toBlob((blob) => {
@@ -103,10 +105,10 @@ export async function getImageDimensions(imageSrc: string): Promise<ImageDimensi
 }
 
 /**
- * 이미지를 지정된 영역으로 크롭하는 함수
+ * 이미지를 지정된 영역으로 크롭하고 WebP 형식으로 변환하는 함수
  * @param imageSrc 원본 이미지 URL
  * @param pixelCrop 크롭할 영역 정보
- * @returns Promise<Blob> 크롭된 이미지 Blob
+ * @returns Promise<Blob> WebP 형식으로 변환된 크롭된 이미지 Blob
  */
 export async function getCroppedImg(
   imageSrc: string,
@@ -117,11 +119,23 @@ export async function getCroppedImg(
     const canvas = document.createElement('canvas');
     const ctx = getCanvasContext(canvas);
 
+    // 원본 이미지가 512x512보다 작으면 원본 크기 유지, 크면 512x512로 리사이즈
+    const maxSize = 512;
+    let targetWidth = pixelCrop.width;
+    let targetHeight = pixelCrop.height;
+    
+    // 가로 또는 세로 중 더 긴 쪽이 maxSize를 초과하면 비율에 맞게 조정
+    if (pixelCrop.width > maxSize || pixelCrop.height > maxSize) {
+      const ratio = Math.min(maxSize / pixelCrop.width, maxSize / pixelCrop.height);
+      targetWidth = Math.round(pixelCrop.width * ratio);
+      targetHeight = Math.round(pixelCrop.height * ratio);
+    }
+    
     // 캔버스 크기 설정
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
 
-    // 이미지 크롭하여 그리기
+    // 이미지 크롭 및 필요시 리사이즈하여 그리기
     ctx.drawImage(
       image,
       pixelCrop.x,
@@ -130,8 +144,8 @@ export async function getCroppedImg(
       pixelCrop.height,
       0,
       0,
-      pixelCrop.width,
-      pixelCrop.height
+      targetWidth,
+      targetHeight
     );
 
     return await canvasToBlob(canvas);
@@ -141,16 +155,16 @@ export async function getCroppedImg(
 }
 
 /**
- * 이미지 크기를 최대 크기 내에서 비율을 유지하며 조정하는 함수
+ * 이미지를 정확히 지정된 크기(512x512)로 리사이즈하는 함수
  * @param imageBlob 원본 이미지 Blob
- * @param maxWidth 최대 너비
- * @param maxHeight 최대 높이
- * @returns Promise<Blob> 리사이즈된 이미지 Blob
+ * @param width 원하는 너비 (기본값: 512)
+ * @param height 원하는 높이 (기본값: 512)
+ * @returns Promise<Blob> WebP 형식으로 변환된 지정된 크기의 이미지 Blob
  */
 export async function resizeImage(
   imageBlob: Blob,
-  maxWidth: number,
-  maxHeight: number
+  width: number = 512,  // 기본값 512로 설정
+  height: number = 512  // 기본값 512로 설정
 ): Promise<Blob> {
   try {
     const imageUrl = URL.createObjectURL(imageBlob);
@@ -162,18 +176,12 @@ export async function resizeImage(
     const canvas = document.createElement('canvas');
     const ctx = getCanvasContext(canvas);
 
-    // 비율 유지하며 크기 계산
-    const dimensions = calculateResizeDimensions(
-      { width: image.width, height: image.height },
-      { width: maxWidth, height: maxHeight }
-    );
+    // 캔버스 크기를 정확히 지정된 크기로 설정
+    canvas.width = width;
+    canvas.height = height;
 
-    // 캔버스 크기 설정
-    canvas.width = dimensions.width;
-    canvas.height = dimensions.height;
-
-    // 이미지 리사이즈하여 그리기
-    ctx.drawImage(image, 0, 0, dimensions.width, dimensions.height);
+    // 이미지를 정확히 지정된 크기로 그리기 (비율 무시)
+    ctx.drawImage(image, 0, 0, width, height);
 
     return await canvasToBlob(canvas);
   } catch (error) {

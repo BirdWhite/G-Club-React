@@ -3,10 +3,18 @@ import { useSession } from 'next-auth/react';
 import { getCroppedImg, resizeImage, CropArea, getImageDimensions } from '@/lib/cropImage';
 import { useProfileForm } from './useProfileForm';
 
+// 이전 프로필 이미지 URL을 저장할 인터페이스
+interface ProfileData {
+  imageUrl?: string;
+  fullName: string;
+  birthDate: string;
+}
+
 export const useProfileEdit = () => {
   const { data: session } = useSession();
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
   
   const profileForm = useProfileForm();
   const {
@@ -15,13 +23,19 @@ export const useProfileEdit = () => {
     birthDate,
     setBirthDate,
     image,
+    setImage,
     croppedAreaPixels,
+    setCroppedAreaPixels,
     croppedImage,
     setCroppedImage,
     isLoading,
     setIsLoading,
-    router
+    router,
+    handleImageUpload: profileHandleImageUpload,
+    onCropComplete: profileOnCropComplete
   } = profileForm;
+
+
 
   // 프로필 정보 불러오기
   useEffect(() => {
@@ -43,6 +57,7 @@ export const useProfileEdit = () => {
           const date = new Date(data.profile.birthDate);
           const formattedDate = date.toISOString().split('T')[0];
           setBirthDate(formattedDate);
+          
           setCurrentImage(data.profile.profileImage);
         }
       }
@@ -58,11 +73,17 @@ export const useProfileEdit = () => {
     
     try {
       // 1. 이미지 크롭
-      const croppedImageBlob = await getCroppedImg(image, croppedAreaPixels);
-      // 2. 이미지 리사이즈 (500x500 이하로 축소)
-      const resizedImageBlob = await resizeImage(croppedImageBlob, 500, 500);
+      const onCropComplete = (croppedArea: any, croppedAreaPixels: CropArea) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+      };
       
-      // Blob을 직접 상태에 저장
+      // 2. 이미지 크롭
+      const croppedImageBlob = await getCroppedImg(image, croppedAreaPixels);
+      
+      // 3. 이미지를 정확히 512x512로 리사이즈
+      const resizedImageBlob = await resizeImage(croppedImageBlob, 512, 512);
+      
+      // 4. 리사이즈된 이미지 저장
       setCroppedImage(resizedImageBlob);
     } catch (error) {
       console.error('이미지 크롭 중 오류 발생:', error);
@@ -80,6 +101,33 @@ export const useProfileEdit = () => {
     });
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImage(reader.result as string);
+      setCroppedImage(null);
+      setCroppedAreaPixels(null);
+
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === 'name') {
+      setName(value);
+
+    } else if (name === 'birthDate') {
+      setBirthDate(value);
+
+    }
+  };
+
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -90,6 +138,7 @@ export const useProfileEdit = () => {
     
     try {
       setIsLoading(true);
+      // 저장 시 변경사항 없음으로 표시
       
       let imageToSend = croppedImage;
       
@@ -111,46 +160,44 @@ export const useProfileEdit = () => {
           };
         }
         
+        // 1. 이미지 크롭
         const croppedImageBlob = await getCroppedImg(image, cropArea);
-        const resizedImageBlob = await resizeImage(croppedImageBlob, 500, 500);
+        
+        // 2. 이미지를 정확히 512x512로 리사이즈
+        const resizedImageBlob = await resizeImage(croppedImageBlob, 512, 512);
+        
+        // 3. 리사이즈된 이미지 사용
         imageToSend = resizedImageBlob;
         setCroppedImage(resizedImageBlob);
       }
       
-      // 서버에 데이터 전송
-      const requestBody = {
-        name,
-        birthDate,
-        profileImage: null as string | null
-      };
+      // 4. 프로필 업데이트 API 호출 - FormData 사용
+      const formData = new FormData();
+      formData.append('fullName', name);
+      formData.append('birthDate', birthDate);
       
-      // 크롭된 이미지를 base64로 변환
+      // 이미지가 있는 경우에만 추가
       if (imageToSend) {
-        console.log('크롭된 이미지를 base64로 변환 중...');
-        const base64Image = await blobToBase64(imageToSend);
-        requestBody.profileImage = base64Image;
-        console.log('base64 변환 완료');
+        // Blob을 WebP File 객체로 변환
+        const file = new File([imageToSend], 'profile.webp', { type: 'image/webp' });
+        formData.append('image', file);
       }
       
-      const res = await fetch('/api/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
+      const updateResponse = await fetch('/api/profile', {
+        method: 'PUT',
+        body: formData,
       });
-      
-      if (res.ok) {
-        alert('프로필이 성공적으로 수정되었습니다.');
-        
-        // 프로필 업데이트 이벤트 발생 - Header 컴포넌트에서 감지하여 프로필 데이터 새로고침
-        window.dispatchEvent(new CustomEvent('profileUpdated'));
-        
-        router.push('/');
-      } else {
-        const errorData = await res.json();
-        alert(`오류 발생: ${errorData.error || '알 수 없는 오류'}`);
+
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
+        throw new Error(errorData.error || '프로필 업데이트에 실패했습니다.');
       }
+      
+      // 프로필 업데이트 이벤트 발생 - Header 컴포넌트에서 감지하여 프로필 데이터 새로고침
+      window.dispatchEvent(new CustomEvent('profileUpdated'));
+      
+      // 프로필 페이지로 리다이렉트
+      router.push('/profile');
     } catch (error) {
       console.error('프로필 저장 중 오류 발생:', error);
       alert('프로필 저장 중 오류가 발생했습니다.');

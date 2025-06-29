@@ -10,10 +10,12 @@ declare module "next-auth" {
       email?: string | null;
       image?: string | null;
       role: UserRole;
+      createdAt?: Date | string | null;
     };
   }
   interface User extends DefaultUser {
     role: UserRole;
+    createdAt?: Date | string | null;
   }
 }
 

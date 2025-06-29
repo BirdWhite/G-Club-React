@@ -47,10 +47,9 @@ export const NoticeSection = () => {
   return (
     <section className="py-10 bg-white">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">공지사항</h2>
-          <Link href="/boards/notice" className="text-blue-600 hover:text-blue-800 font-medium">
-            더보기 &rarr;
+        <div className="mb-6">
+          <Link href="/boards/notice" className="text-2xl font-bold text-gray-900 hover:text-blue-600">
+            공지사항
           </Link>
         </div>
 
@@ -66,25 +65,20 @@ export const NoticeSection = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <ul className="divide-y divide-gray-200">
               {notices.map((notice) => (
-                <li key={notice.id} className="p-4 hover:bg-gray-50 transition-colors">
-                  <Link href={`/posts/${notice.id}`} className="block">
-                    <div className="flex justify-between">
-                      <h3 className="font-medium text-gray-900">{notice.title}</h3>
-                      <span className="text-sm text-gray-500">
-                        {formatDistanceToNow(new Date(notice.createdAt), { 
-                          addSuffix: true,
-                          locale: ko 
-                        })}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-gray-600 line-clamp-2">
-                      {notice.content.replace(/<[^>]*>?/gm, '')}
-                    </p>
-                    <div className="mt-2 flex items-center">
-                      <span className="text-xs text-gray-500">
-                        작성자: {notice.author.name || '알 수 없음'}
-                      </span>
-                    </div>
+                <li key={notice.id} className="border-b border-gray-100 last:border-0">
+                  <Link 
+                    href={`/posts/${notice.id}`} 
+                    className="flex justify-between items-center p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <span className="font-medium text-gray-900 truncate pr-4">
+                      {notice.title}
+                    </span>
+                    <span className="text-sm text-gray-500 whitespace-nowrap">
+                      {formatDistanceToNow(new Date(notice.createdAt), { 
+                        addSuffix: true,
+                        locale: ko 
+                      })}
+                    </span>
                   </Link>
                 </li>
               ))}

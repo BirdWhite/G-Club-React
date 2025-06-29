@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        email: true,
         role: true,
         profile: {
           select: {
@@ -114,7 +113,6 @@ export async function PATCH(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        email: true,
         role: true,
       }
     });
