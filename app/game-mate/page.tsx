@@ -252,27 +252,29 @@ export default function GameMatePage() {
                   <div className="mt-4 flex items-center">
                     <div className="flex-shrink-0">
                       {post.author?.image ? (
-                        <img
-                          className="h-8 w-8 rounded-full object-cover"
-                          src={post.author.image}
-                          alt={post.author.name || '프로필 이미지'}
-                          onError={(e) => {
-                            // 이미지 로드 실패 시 닉네임 첫 글자 표시
-                            const target = e.target as HTMLImageElement;
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
-                                <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                  <span class="text-gray-500 text-xs">
-                                    ${post.author?.name?.[0] || '?'}
-                                  </span>
-                                </div>
-                              `;
-                            }
-                          }}
-                        />
+                        <div className="relative h-8 w-8 rounded-full border-2 border-gray-200 overflow-hidden">
+                          <img
+                            className="absolute inset-0 m-auto object-cover w-full h-full"
+                            src={post.author.image}
+                            alt={post.author.name || '프로필 이미지'}
+                            onError={(e) => {
+                              // 이미지 로드 실패 시 닉네임 첫 글자 표시
+                              const target = e.target as HTMLImageElement;
+                              const parent = target.parentElement?.parentElement;
+                              if (parent) {
+                                parent.outerHTML = `
+                                  <div class="h-8 w-8 rounded-full border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
+                                    <span class="text-gray-500 text-xs">
+                                      ${post.author?.name?.[0] || '?'}
+                                    </span>
+                                  </div>
+                                `;
+                              }
+                            }}
+                          />
+                        </div>
                       ) : (
-                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                        <div className="h-8 w-8 rounded-full border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
                           <span className="text-gray-500 text-xs">
                             {post.author?.name?.[0] || '?'}
                           </span>

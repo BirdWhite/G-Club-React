@@ -193,9 +193,9 @@ export default function Header() {
                 >
                   <span className="sr-only">프로필 페이지로 이동</span>
                   {profileData?.profileImage ? (
-                    <div className="relative h-8 w-8 overflow-hidden rounded-full transition-all duration-200 group-hover:ring-2 group-hover:ring-indigo-500 group-hover:ring-offset-2">
+                    <div className="relative h-8 w-8 rounded-full border-2 border-gray-200 overflow-hidden transition-all duration-200 group-hover:ring-2 group-hover:ring-indigo-500 group-hover:ring-offset-2">
                       <Image
-                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110"
+                        className="absolute inset-0 m-auto object-cover w-full h-full transition-transform duration-200 group-hover:scale-110"
                         src={profileData.profileImage}
                         alt={profileData.fullName || '프로필 이미지'}
                         width={32}
@@ -203,7 +203,7 @@ export default function Header() {
                       />
                     </div>
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-gray-500 transition-all duration-200 group-hover:bg-indigo-100 group-hover:text-indigo-600">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-100 text-gray-500 transition-all duration-200 group-hover:bg-indigo-100 group-hover:text-indigo-600">
                       <span className="text-sm font-medium">
                         {profileData?.fullName?.[0] || '?'}
                       </span>

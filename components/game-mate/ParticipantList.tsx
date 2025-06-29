@@ -52,7 +52,7 @@ export default function ParticipantList({
           <div key={participant.id} className="flex items-center p-3 bg-white border border-gray-200 rounded-lg">
             <div className="flex-shrink-0">
               {participant.user?.image ? (
-                <div className="h-10 w-10 relative rounded-full overflow-hidden">
+                <div className="relative h-10 w-10 rounded-full border-2 border-gray-200 overflow-hidden">
                   <Image
                     src={participant.user.image}
                     alt={participant.user.name || '프로필 이미지'}
@@ -61,7 +61,7 @@ export default function ParticipantList({
                   />
                 </div>
               ) : (
-                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-full border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
                   <span className="text-gray-500">
                     {participant.user?.name?.[0] || '?'}
                   </span>

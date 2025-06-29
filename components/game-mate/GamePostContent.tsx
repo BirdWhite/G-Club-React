@@ -14,18 +14,18 @@ export default function GamePostContent({ post }: GamePostContentProps) {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             {post.author?.image ? (
-              <div className="h-10 w-10 relative rounded-full overflow-hidden">
+              <div className="relative h-10 w-10 rounded-full border-2 border-gray-200 overflow-hidden">
                 <img
                   src={post.author.image}
                   alt={post.author.name || '프로필 이미지'}
-                  className="h-10 w-10 rounded-full object-cover"
+                  className="absolute inset-0 m-auto object-cover w-full h-full"
                   onError={(e) => {
                     // 이미지 로드 실패 시 닉네임 첫 글자 표시
                     const target = e.target as HTMLImageElement;
                     const parent = target.parentElement;
                     if (parent) {
                       parent.outerHTML = `
-                        <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                        <div class="h-10 w-10 rounded-full border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
                           <span class="text-gray-500">
                             ${post.author?.name?.[0] || '?'}
                           </span>
