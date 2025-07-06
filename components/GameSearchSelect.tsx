@@ -35,16 +35,26 @@ export default function GameSearchSelect({ value, onChange, className = '' }: Ga
 
   // 검색어가 변경될 때마다 게임 목록 업데이트
   const fetchGames = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
+    const trimmedQuery = searchQuery.trim();
+    console.log('검색어:', trimmedQuery);
+    
+    if (!trimmedQuery) {
+      console.log('검색어가 비어있어 게임 목록을 초기화합니다.');
       setGames([]);
       return;
     }
 
     try {
-      const res = await fetch(`/api/games?search=${encodeURIComponent(searchQuery)}`);
+      console.log('API 요청 전송 중...');
+      const res = await fetch(`/api/games?search=${encodeURIComponent(trimmedQuery)}`);
+      console.log('API 응답 상태:', res.status);
+      
       if (res.ok) {
         const data = await res.json();
+        console.log('받은 게임 데이터:', data);
         setGames(data);
+      } else {
+        console.error('API 요청 실패:', await res.text());
       }
     } catch (error) {
       console.error('게임 검색 중 오류 발생:', error);

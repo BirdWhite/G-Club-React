@@ -65,7 +65,7 @@ export default function UserRoleManager() {
       <table className="min-w-full bg-white rounded shadow">
         <thead>
           <tr>
-            <th className="p-2">이메일</th>
+            <th className="p-2">사용자 ID</th>
             <th className="p-2">이름</th>
             <th className="p-2">현재 역할</th>
             <th className="p-2">역할 변경</th>
@@ -81,7 +81,7 @@ export default function UserRoleManager() {
             const saveDisabled = selectDisabled || selectedRole === user.role || saving;
             return (
               <tr key={user.id}>
-                <td className="p-2">{user.email}</td>
+                <td className="p-2">{user.id}</td>
                 <td className="p-2 text-center">{user.name || "-"}</td>
                 <td className="p-2 text-center">{ROLE_NAMES[user.role]}</td>
                 <td className="p-2 text-center">

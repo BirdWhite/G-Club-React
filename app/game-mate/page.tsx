@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import GamePostCard from './components/GamePostCard';
+import GameFilter from './components/GameFilter';
 
 type Game = {
   id: string;
@@ -17,10 +18,12 @@ type GamePost = {
   title: string;
   content: string;
   maxPlayers: number;
+  currentPlayers: number;
   startTime: string;
-  isClosed: boolean;
+  status: 'OPEN' | 'FULL' | 'COMPLETED';
   game: {
     name: string;
+    iconUrl: string | null;
   };
   author: {
     id: string;
@@ -32,6 +35,8 @@ type GamePost = {
   };
 };
 
+type StatusFilterType = 'all' | 'recruiting' | 'open' | 'full' | 'completed';
+
 export default function GameMatePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -39,7 +44,12 @@ export default function GameMatePage() {
   const [posts, setPosts] = useState<GamePost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedGame, setSelectedGame] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('open');
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>('recruiting');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isGameDropdownOpen, setIsGameDropdownOpen] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [filteredGames, setFilteredGames] = useState<Game[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // 게임 목록 불러오기
   useEffect(() => {
@@ -58,53 +68,92 @@ export default function GameMatePage() {
     fetchGames();
   }, []);
 
-  // 모집글 목록 불러오기
+  // 게시글 가져오기
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (selectedGame && selectedGame !== 'all') {
+        queryParams.append('gameId', selectedGame);
+      }
+      
+      // 상태 필터에 따라 다른 파라미터 전송
+      if (statusFilter === 'recruiting') {
+        // 모집 중 (OPEN + FULL)
+        queryParams.append('status', 'recruiting');
+      } else if (statusFilter === 'open') {
+        // 자리 있음 (OPEN)
+        queryParams.append('status', 'OPEN');
+      } else if (statusFilter === 'full') {
+        // 가득 참 (FULL)
+        queryParams.append('status', 'FULL');
+      } else if (statusFilter === 'completed') {
+        // 완료됨 (COMPLETED)
+        queryParams.append('status', 'COMPLETED');
+      } else if (statusFilter === 'all') {
+        // 모든 상태 (파라미터 추가 안 함)
+      }
+      
+      const apiUrl = `/api/game-posts?${queryParams.toString()}`;
+      console.log('API 요청 URL:', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API 응답 오류:', response.status, errorText);
+        throw new Error(`게시글을 불러오는데 실패했습니다: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('API 응답 데이터:', data);
+      
+      // API 응답이 배열 형태로 오므로 그대로 설정
+      // TODO: 실제 API 응답에 따라 데이터 매핑 필요할 수 있음
+      setPosts(data);
+      
+    } catch (error) {
+      console.error('게시글을 불러오는 중 오류 발생:', error);
+      // 여기서 에러 상태를 설정하거나 사용자에게 알림을 표시할 수 있습니다.
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedGame, statusFilter]);
+
+  // 게임이나 상태 필터가 변경되면 게시글 다시 불러오기
   useEffect(() => {
-    const fetchPosts = async () => {
-      setLoading(true);
-      try {
-        let url = '/api/game-posts';
-        const params = new URLSearchParams();
-        
-        if (selectedGame !== 'all') {
-          params.append('gameId', selectedGame);
-        }
-        
-        if (statusFilter) {
-          params.append('status', statusFilter);
-        }
+    fetchPosts();
+  }, [selectedGame, statusFilter, fetchPosts]);
 
-        if (params.toString()) {
-          url += `?${params.toString()}`;
-        }
 
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          console.log('게시물 데이터:', data);
-          setPosts(data.data);
-        }
-      } catch (error) {
-        console.error('모집글을 불러오는 중 오류 발생:', error);
-      } finally {
-        setLoading(false);
+
+  // 검색어 필터링 (게임 검색용 - 필요시 사용)
+  const handleSearch = useCallback((term: string) => {
+    setSearchTerm(term);
+  }, []);
+
+  // 상태 필터 변경 핸들러
+  const handleStatusChange = useCallback((status: StatusFilterType) => {
+    console.log('Status changed to:', status);
+    setStatusFilter(status);
+    // 상태가 변경되면 게시글을 다시 불러옵니다.
+    fetchPosts();
+  }, [fetchPosts]);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsGameDropdownOpen(false);
       }
     };
 
-    fetchPosts();
-  }, [selectedGame, statusFilter]);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    }).format(date);
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   if (status === 'loading') {
     return (
@@ -113,6 +162,86 @@ export default function GameMatePage() {
       </div>
     );
   }
+
+  // 참여하기 버튼 클릭 핸들러
+  const handleJoinClick = (postId: string) => {
+    console.log('참여 신청:', postId);
+    // TODO: 참여 신청 API 호출
+  };
+
+  // 참여 취소 버튼 클릭 핸들러
+  const handleCancelClick = (postId: string) => {
+    console.log('참여 취소:', postId);
+    // TODO: 참여 취소 API 호출
+  };
+
+  const renderPosts = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        </div>
+      );
+    }
+
+    if (posts.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <svg
+            className="mx-auto h-12 w-12 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1}
+              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">모집글이 없습니다</h3>
+          <p className="mt-1 text-sm text-gray-500">첫 번째 모집글을 작성해보세요!</p>
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => router.push('/game-mate/new')}
+              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <svg
+                className="-ml-1 mr-2 h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              새 모집글 작성하기
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {posts.map((post) => (
+          <GamePostCard 
+            key={post.id}
+            post={post}
+            onJoin={handleJoinClick}
+            onCancel={handleCancelClick}
+          />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,41 +256,19 @@ export default function GameMatePage() {
       {/* 필터 섹션 */}
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="bg-white p-6 rounded-lg shadow">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="game" className="block text-sm font-medium text-gray-700 mb-1">
-                게임 선택
-              </label>
-              <select
-                id="game"
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={selectedGame}
-                onChange={(e) => setSelectedGame(e.target.value)}
-              >
-                <option value="all">모든 게임</option>
-                {games.map((game) => (
-                  <option key={game.id} value={game.id}>
-                    {game.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                모집 상태
-              </label>
-              <select
-                id="status"
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="recruiting">모집 중</option>
-                <option value="completed">완료됨</option>
-                <option value="all">모두 보기</option>
-              </select>
-            </div>
-          </div>
+          <GameFilter
+            games={games}
+            selectedGame={selectedGame}
+            statusFilter={statusFilter}
+            searchTerm={searchTerm}
+            onGameChange={setSelectedGame}
+            onStatusChange={(status) => {
+              console.log('[부모] setStatusFilter 호출:', status);
+              setStatusFilter(status);
+              fetchPosts(); // 상태가 변경되면 즉시 게시글 재요청
+            }}
+            onSearch={handleSearch}
+          />
           <div className="mt-6">
             <button
               type="button"
@@ -176,133 +283,7 @@ export default function GameMatePage() {
 
       {/* 모집글 목록 */}
       <div className="max-w-7xl mx-auto pb-12 px-4 sm:px-6 lg:px-8">
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-          </div>
-        ) : posts.length === 0 ? (
-          <div className="text-center py-12">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1}
-                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">모집글이 없습니다</h3>
-            <p className="mt-1 text-sm text-gray-500">첫 번째 모집글을 작성해보세요!</p>
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={() => router.push('/game-mate/new')}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <svg
-                  className="-ml-1 mr-2 h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                새 모집글 작성하기
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-200"
-              >
-                <div className="p-6">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                      {post.game.name}
-                    </span>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        post.isClosed
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}
-                    >
-                      {post.isClosed ? '모집 완료' : '모집 중'}
-                    </span>
-                  </div>
-                  <Link href={`/game-mate/${post.id}`}>
-                    <h3 className="mt-2 text-lg font-medium text-gray-900 line-clamp-1 hover:text-indigo-600 cursor-pointer">
-                      {post.title}
-                    </h3>
-                  </Link>
-                  <p className="mt-1 text-sm text-gray-500 line-clamp-2">{post.content}</p>
-                  <div className="mt-4 flex items-center">
-                    <div className="flex-shrink-0">
-                      {post.author?.image ? (
-                        <div className="relative h-8 w-8 rounded-full border-2 border-gray-200 overflow-hidden">
-                          <img
-                            className="absolute inset-0 m-auto object-cover w-full h-full"
-                            src={post.author.image}
-                            alt={post.author.name || '프로필 이미지'}
-                            onError={(e) => {
-                              // 이미지 로드 실패 시 닉네임 첫 글자 표시
-                              const target = e.target as HTMLImageElement;
-                              const parent = target.parentElement?.parentElement;
-                              if (parent) {
-                                parent.outerHTML = `
-                                  <div class="h-8 w-8 rounded-full border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
-                                    <span class="text-gray-500 text-xs">
-                                      ${post.author?.name?.[0] || '?'}
-                                    </span>
-                                  </div>
-                                `;
-                              }
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className="h-8 w-8 rounded-full border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
-                          <span className="text-gray-500 text-xs">
-                            {post.author?.name?.[0] || '?'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-gray-900 group-hover:text-gray-600">
-                        {post.author.name || '익명'}
-                      </p>
-                      <div className="flex space-x-1 text-sm text-gray-500">
-                        <time dateTime={post.startTime}>
-                          {formatDate(post.startTime)}
-                        </time>
-                      </div>
-                    </div>
-                    <div className="ml-auto flex items-center">
-                      <span className="text-sm text-gray-500">
-                        <span className="font-medium text-gray-900">{post._count.participants}</span>/
-                        {post.maxPlayers}명
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {renderPosts()}
       </div>
     </div>
   );

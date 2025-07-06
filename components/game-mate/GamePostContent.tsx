@@ -2,6 +2,8 @@ import { GamePost } from '@/types/game';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { DateTimeDisplay } from '../common/DateTimeDisplay';
+import { formatRelativeTime } from '@/lib/dateUtils';
 
 interface GamePostContentProps {
   post: GamePost;
@@ -63,15 +65,31 @@ export default function GamePostContent({ post }: GamePostContentProps) {
           </div>
           <div className="flex items-center space-x-2">
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              post.status !== 'OPEN' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+              post.status === 'OPEN' 
+                ? 'bg-green-100 text-green-800' 
+                : post.status === 'FULL' 
+                  ? 'bg-blue-100 text-blue-800' 
+                  : 'bg-gray-100 text-gray-800'
             }`}>
-              {post.status === 'OPEN' ? '모집 중' : post.status === 'FULL' ? '정원 마감' : '모집 완료'}
+              {post.status === 'OPEN' ? '모집 중' : post.status === 'FULL' ? '가득 참' : '완료'}
             </span>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {post._count?.participants || 0}/{post.maxPlayers}명
+              {post.participants?.filter(p => !p.isReserve).length || 0}/{post.maxPlayers}명
             </span>
           </div>
         </div>
+        
+        {/* 게임 시작 시간 */}
+        {post.startTime && (
+          <div className="mt-3 mb-4">
+            <div className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>시작 시간: <span className="font-semibold">{formatRelativeTime(new Date(post.startTime))}</span></span>
+            </div>
+          </div>
+        )}
         
         <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
       </div>

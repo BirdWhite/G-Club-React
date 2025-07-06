@@ -23,6 +23,8 @@ export interface Participant {
 export interface Game {
   id: string;
   title: string;
+  name: string;
+  iconUrl?: string | null;
   image?: string;
   platform?: string;
 }

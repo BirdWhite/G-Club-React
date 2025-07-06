@@ -51,6 +51,13 @@ export async function GET(
           },
           orderBy: { createdAt: 'asc' },
         },
+        _count: {
+          select: {
+            participants: {
+              where: { isReserve: false } // 대기자 제외한 참가자 수
+            }
+          }
+        }
       },
     });
 

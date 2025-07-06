@@ -7,87 +7,78 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get('gameId');
-    const status = searchParams.get('status'); // 'open' or 'closed'
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const page = parseInt(searchParams.get('page') || '1');
-    const skip = (page - 1) * limit;
+    const status = searchParams.get('status');
 
-    // 필터 조건 설정
+    // 게시글 조회 조건 설정
     const where: any = {};
-    
-    if (gameId) {
+
+    // 게임 ID 필터링
+    if (gameId && gameId !== 'all') {
       where.gameId = gameId;
     }
-    
-    if (status === 'recruiting') {
-      // 모집 중 (정원 미달 또는 마감)
-      where.OR = [
-        { status: 'OPEN' },
-        { status: 'FULL' }
-      ];
-    } else if (status === 'completed') {
-      // 완료됨
-      where.status = 'COMPLETED';
+
+    // 상태 필터링
+    if (status) {
+      if (status === 'recruiting') {
+        // 모집 중 (OPEN 또는 FULL)
+        where.OR = [
+          { status: 'OPEN' },
+          { status: 'FULL' },
+        ];
+      } else if (['OPEN', 'FULL', 'COMPLETED'].includes(status)) {
+        // 특정 상태로 필터링
+        where.status = status as 'OPEN' | 'FULL' | 'COMPLETED';
+      }
     }
 
-    // 모집글 목록 조회 (최신순)
-    const [posts, total] = await Promise.all([
-      prisma.gamePost.findMany({
-        where,
-        include: {
-          game: true,
-          author: {
-            include: {
-              profile: {
-                select: {
-                  profileImage: true
-                }
-              }
-            }
-          },
-          _count: {
-            select: {
-              participants: {
-                where: { isReserve: false }
-              },
-            },
+    // 게시글 조회 (최신순으로 정렬)
+    const posts = await prisma.gamePost.findMany({
+      where,
+      include: {
+        game: {
+          select: {
+            name: true,
+            iconUrl: true,
           },
         },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip,
-      }),
-      prisma.gamePost.count({ where }),
-    ]);
-
-    // 작성자 프로필 이미지 처리
-    const postsWithFullImageUrl = posts.map(post => {
-      // 이미지 URL 생성 (도메인 추가)
-      const imageUrl = post.author?.image 
-        ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${post.author.image}`
-        : null;
-
-      return {
-        ...post,
-        author: post.author ? {
-          ...post.author,
-          image: imageUrl
-        } : null
-      };
-    });
-
-    return NextResponse.json({
-      data: postsWithFullImageUrl,
-      pagination: {
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
+        author: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+        participants: {
+          select: {
+            id: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
+
+    // 응답 데이터 형식 변환
+    const responseData = posts.map((post) => ({
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      maxPlayers: post.maxPlayers,
+      currentPlayers: post.participants.length, // 참여자 수 (작성자 포함)
+      startTime: post.startTime.toISOString(),
+      status: post.status,
+      game: post.game,
+      author: post.author,
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
+    }));
+
+    return NextResponse.json(responseData);
   } catch (error) {
-    console.error('모집글 목록 조회 오류:', error);
+    console.error('게시글 목록 조회 중 오류 발생:', error);
     return NextResponse.json(
-      { error: '모집글 목록을 불러오는 중 오류가 발생했습니다.' },
+      { error: '게시글 목록을 불러오는 중 오류가 발생했습니다.' },
       { status: 500 }
     );
   }

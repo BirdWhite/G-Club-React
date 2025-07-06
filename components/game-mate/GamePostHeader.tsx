@@ -1,6 +1,5 @@
 import { GamePost } from '@/types/game';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { DateTimeDisplay } from '../common/DateTimeDisplay';
 
 interface GamePostHeaderProps {
   post: GamePost;
@@ -24,25 +23,26 @@ export default function GamePostHeader({
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{post?.title || '제목 없음'}</h1>
-            <div className="mt-1 flex items-center text-sm text-gray-500">
-              <span>{post?.game?.title || '게임 정보 없음'}</span>
-              {post?.startTime && (
-                <>
-                  <span className="mx-2">•</span>
-                  <span>
-                    {new Date(post.startTime).toLocaleString('ko-KR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false
-                    })}
-                  </span>
-                </>
+            {/* 게임 정보 */}
+            <div className="flex items-center mb-1">
+              {post?.game ? (
+                <div className="flex items-center">
+                  {post.game.iconUrl && (
+                    <img 
+                      src={post.game.iconUrl} 
+                      alt={post.game.name || '게임 아이콘'}
+                      className="h-6 w-6 rounded mr-2"
+                    />
+                  )}
+                  <span className="font-medium text-base text-gray-800">{post.game.name}</span>
+                </div>
+              ) : (
+                <span className="text-gray-400">게임 정보 없음</span>
               )}
             </div>
+            
+            {/* 제목 */}
+            <h1 className="text-2xl font-bold text-gray-900">{post?.title || '제목 없음'}</h1>
           </div>
           <div className="flex space-x-2">
             <button

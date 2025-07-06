@@ -9,24 +9,41 @@ export async function GET(request: Request) {
     const searchQuery = searchParams.get('search') || '';
     
     if (searchQuery) {
-      // 검색 쿼리가 있는 경우 raw SQL을 사용하여 검색
-      const searchTerm = `%${searchQuery.toLowerCase()}%`;
       
-      // 이름 또는 별칭으로 검색하는 raw SQL 쿼리
-      const games = await prisma.$queryRaw`
-        SELECT DISTINCT g.* 
-        FROM "Game" g
-        WHERE 
-          LOWER(g.name) LIKE LOWER(${searchTerm}) 
-          OR EXISTS (
-            SELECT 1 
-            FROM jsonb_array_elements_text(g.aliases) AS alias
-            WHERE LOWER(alias) LIKE LOWER(${searchTerm})
-          )
-        ORDER BY g.name ASC
-      `;
-      
-      return NextResponse.json(games);
+      try {
+        
+        // 1. 이름으로 검색
+        const nameSearchPromise = prisma.game.findMany({
+          where: {
+            name: { contains: searchQuery, mode: 'insensitive' }
+          },
+          orderBy: { name: 'asc' },
+        });
+        
+        // 2. 별칭으로 검색
+        const aliasSearchPromise = prisma.game.findMany({
+          where: {
+            aliases: { has: searchQuery }
+          },
+          orderBy: { name: 'asc' },
+        });
+        
+        const [nameResults, aliasResults] = await Promise.all([nameSearchPromise, aliasSearchPromise]);
+        
+        // 중복 제거를 위해 Set 사용
+        const gamesMap = new Map();
+        [...nameResults, ...aliasResults].forEach(game => {
+          gamesMap.set(game.id, game);
+        });
+        
+        const games = Array.from(gamesMap.values());
+        
+        return NextResponse.json(games);
+        
+      } catch (error) {
+        console.error('게임 검색 중 오류 발생 (Prisma 쿼리):', error);
+        throw error;
+      }
     } else {
       // 검색 쿼리가 없는 경우 일반 조회
       const games = await prisma.game.findMany({
@@ -37,7 +54,10 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('게임 목록 조회 오류:', error);
     return NextResponse.json(
-      { error: '게임 목록을 불러오는 중 오류가 발생했습니다.' },
+      { 
+        error: '게임 목록을 불러오는 중 오류가 발생했습니다.',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }
