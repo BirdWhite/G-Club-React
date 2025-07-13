@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { MegaphoneIcon } from '@heroicons/react/24/outline';
 
 interface Notice {
   id: string;
@@ -44,48 +45,76 @@ export const NoticeSection = () => {
     fetchNotices();
   }, []);
 
-  return (
-    <section className="py-10 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="mb-6">
-          <Link href="/boards/notice" className="text-2xl font-bold text-gray-900 hover:text-blue-600">
-            공지사항
-          </Link>
+  if (error) {
+    return (
+      <div className="card p-6 mb-6">
+        <h2 className="text-xl font-bold text-cyber-gray mb-4 flex items-center gap-2">
+          <MegaphoneIcon className="h-5 w-5 text-cyber-blue" />
+          <span className="w-2 h-6 bg-cyber-orange rounded-full mr-2"></span>
+          공지사항
+        </h2>
+        <div className="text-cyber-gray-400">
+          <p>공지사항을 불러오는 중 오류가 발생했습니다.</p>
+          <p className="text-sm mt-2 text-cyber-orange/80">{error}</p>
         </div>
-
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-          </div>
-        ) : error ? (
-          <div className="text-center py-10 text-red-500">{error}</div>
-        ) : notices.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">등록된 공지사항이 없습니다.</div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <ul className="divide-y divide-gray-200">
-              {notices.map((notice) => (
-                <li key={notice.id} className="border-b border-gray-100 last:border-0">
-                  <Link 
-                    href={`/posts/${notice.id}`} 
-                    className="flex justify-between items-center p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <span className="font-medium text-gray-900 truncate pr-4">
-                      {notice.title}
-                    </span>
-                    <span className="text-sm text-gray-500 whitespace-nowrap">
-                      {formatDistanceToNow(new Date(notice.createdAt), { 
-                        addSuffix: true,
-                        locale: ko 
-                      })}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
-    </section>
+    );
+  }
+
+  return (
+    <div className="card p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-cyber-gray flex items-center gap-2">
+          <MegaphoneIcon className="h-5 w-5 text-cyber-blue" />
+          공지사항
+        </h2>
+        <Link 
+          href="/boards/notice" 
+          className="text-sm text-cyber-blue hover:text-cyber-blue/80 hover:underline flex items-center transition-colors"
+        >
+          더보기
+          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      </div>
+      
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="animate-pulse">
+              <div className="h-4 bg-[#1e1e24] rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-[#1a1a1f] rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      ) : notices.length === 0 ? (
+        <div className="p-4 rounded-lg bg-[#0f0f12] text-center">
+          <p className="text-sm text-cyber-gray-500">등록된 공지사항이 없습니다.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {notices.map((notice) => (
+            <Link 
+              key={notice.id} 
+              href={`/posts/${notice.id}`}
+              className="block py-2 px-3 -mx-2 rounded-lg hover:bg-[#16161a] transition-colors group"
+            >
+              <div className="flex justify-between items-start">
+                <h3 className="text-cyber-gray-100 group-hover:text-cyber-blue transition-colors font-medium line-clamp-1">
+                  {notice.title}
+                </h3>
+                <span className="text-xs text-cyber-gray-500 ml-2 whitespace-nowrap">
+                  {formatDistanceToNow(new Date(notice.createdAt), { addSuffix: true, locale: ko })}
+                </span>
+              </div>
+              <p className="text-sm text-cyber-gray-400 mt-1 line-clamp-1">
+                {notice.content.replace(/<[^>]*>?/gm, '')}
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };

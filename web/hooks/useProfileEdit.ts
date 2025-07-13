@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { getCroppedImg, resizeImage, CropArea, getImageDimensions } from '@/lib/cropImage';
 import { useProfileForm } from './useProfileForm';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 // 이전 프로필 이미지 URL을 저장할 인터페이스
 interface ProfileData {
@@ -11,10 +12,28 @@ interface ProfileData {
 }
 
 export const useProfileEdit = () => {
-  const { data: session } = useSession();
+  const supabase = createClient();
+  const router = useRouter();
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-
+  const [session, setSession] = useState<any>(null);
+  
+  // 사용자 정보 가져오기
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        setSession({ user });
+      } catch (error) {
+        console.error('사용자 정보를 가져오는 중 오류 발생:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+    
+    getUser();
+  }, []);
   
   const profileForm = useProfileForm();
   const {
@@ -30,7 +49,6 @@ export const useProfileEdit = () => {
     setCroppedImage,
     isLoading,
     setIsLoading,
-    router,
     handleImageUpload: profileHandleImageUpload,
     onCropComplete: profileOnCropComplete
   } = profileForm;
@@ -210,7 +228,9 @@ export const useProfileEdit = () => {
     ...profileForm,
     currentImage,
     isLoadingProfile,
-    showCroppedImage,
     handleSubmit,
+    session,
   };
 };
+
+export default useProfileEdit;

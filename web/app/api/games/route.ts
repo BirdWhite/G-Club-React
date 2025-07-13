@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/auth-options';
 import prisma from '@/lib/prisma';
+import { getCurrentUser } from '@/lib/supabase/auth';
 
 export async function GET(request: Request) {
   try {
@@ -64,10 +63,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
+  const user = await getCurrentUser();
   
   // 관리자 또는 슈퍼 어드민만 게임 추가 가능
-  if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN')) {
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
     return NextResponse.json(
       { error: '관리자 권한이 필요합니다.' },
       { status: 403 }
@@ -147,10 +146,10 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
+  const user = await getCurrentUser();
   
   // 관리자 또는 슈퍼 어드민만 게임 수정 가능
-  if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN')) {
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
     return NextResponse.json(
       { error: '관리자 권한이 필요합니다.' },
       { status: 403 }
@@ -234,12 +233,12 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
+  const user = await getCurrentUser();
   
-  // 관리자 또는 슈퍼 어드민만 게임 삭제 가능
-  if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN')) {
+  // 슈퍼 어드민만 게임 삭제 가능
+  if (!user || user.role !== 'SUPER_ADMIN') {
     return NextResponse.json(
-      { error: '관리자 권한이 필요합니다.' },
+      { error: '슈퍼 관리자만 게임을 삭제할 수 있습니다.' },
       { status: 403 }
     );
   }
@@ -258,25 +257,12 @@ export async function DELETE(
     // 게임 존재 여부 확인
     const existingGame = await prisma.game.findUnique({
       where: { id },
-      include: {
-        posts: true,
-      },
     });
 
     if (!existingGame) {
       return NextResponse.json(
         { error: '게임을 찾을 수 없습니다.' },
         { status: 404 }
-      );
-    }
-
-    // 연관된 게시물이 있는지 확인
-    if (existingGame.posts && existingGame.posts.length > 0) {
-      return NextResponse.json(
-        { 
-          error: '이 게임과 연관된 게시물이 있어 삭제할 수 없습니다. 먼저 연관된 게시물을 삭제해주세요.' 
-        },
-        { status: 400 }
       );
     }
 

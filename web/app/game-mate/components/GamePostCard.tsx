@@ -1,22 +1,43 @@
 import Link from 'next/link';
 import { format, isToday, isYesterday, isTomorrow, isThisYear } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { useSession } from 'next-auth/react';
+import { createClient } from '@/lib/supabase/client';
+import { useEffect, useState, useMemo } from 'react';
 import { GamePost } from '@/types/models';
 
 interface GamePostCardProps {
   post: GamePost;
-  onJoin?: (postId: string) => void;
-  onCancel?: (postId: string) => void;
+  onJoin?: (post: GamePost) => void;
+  onCancel?: (post: GamePost) => void;
 }
 
 const GamePostCard = ({ post, onJoin, onCancel }: GamePostCardProps) => {
-  const { data: session } = useSession();
-  const isCurrentUserPost = session?.user?.id === post.author?.id;
+  const [isCurrentUserPost, setIsCurrentUserPost] = useState(false);
+  const supabase = useMemo(() => createClient(), []);
+  
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error('사용자 정보를 가져오는 중 오류 발생:', error);
+          return;
+        }
+        
+        setIsCurrentUserPost(user?.id === post.author?.userId);
+      } catch (error) {
+        console.error('인증 오류:', error);
+      }
+    };
+    
+    checkUser();
+  }, [post.author?.userId, supabase]);
   
   // 게임 시간 포맷팅 함수
-  const formatGameTime = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatGameTime = (dateInput: string | Date) => {
+    // dateInput이 문자열이면 Date 객체로 변환, 이미 Date 객체면 그대로 사용
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
     let dateStr = '';
     
     if (isToday(date)) {
@@ -39,13 +60,13 @@ const GamePostCard = ({ post, onJoin, onCancel }: GamePostCardProps) => {
   const handleJoinClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onJoin?.(post.id);
+    onJoin?.(post);
   };
 
   const handleCancelClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onCancel?.(post.id);
+    onCancel?.(post);
   };
 
   return (
@@ -89,7 +110,7 @@ const GamePostCard = ({ post, onJoin, onCancel }: GamePostCardProps) => {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <time dateTime={post.startTime} className="font-semibold">
+          <time dateTime={post.startTime instanceof Date ? post.startTime.toISOString() : post.startTime} className="font-semibold">
             {formatGameTime(post.startTime).dateStr} {formatGameTime(post.startTime).timeStr}
           </time>
         </div>
@@ -109,7 +130,7 @@ const GamePostCard = ({ post, onJoin, onCancel }: GamePostCardProps) => {
               <div>
                 {post.status === 'COMPLETED' ? (
                   <span className="text-sm text-gray-500">모집 완료</span>
-                ) : post.isParticipating ? (
+                ) : post.isParticipating === true ? (
                   <button 
                     className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors font-medium"
                     onClick={handleCancelClick}
@@ -137,7 +158,7 @@ const GamePostCard = ({ post, onJoin, onCancel }: GamePostCardProps) => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
-            <span className="font-medium text-gray-900">{post.currentPlayers}</span>/{post.maxPlayers}명
+            <span className="font-medium text-gray-900">{post._count?.participants || 0}</span>/{post.maxPlayers}명
           </div>
         </div>
       </Link>

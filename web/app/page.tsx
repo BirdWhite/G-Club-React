@@ -1,7 +1,7 @@
 'use client';
 
 import { useProfileCheck } from '@/hooks';
-import { LoadingSpinner, HeroSection, NoticeSection } from '@/components';
+import { LoadingSpinner, HeroSection } from '@/components';
 
 export default function Home() {
   // 프로필 체크 로직 - 세션 확인 및 프로필 존재 여부에 따른 리다이렉션
@@ -26,8 +26,7 @@ export default function Home() {
 
   // 메인 페이지 렌더링
   return (
-    <div className="min-h-screen bg-background">
-      <NoticeSection />
+    <div className="min-h-screen bg-cyber-black">
       <HeroSection onStartClick={handleStartClick} onLearnMoreClick={handleLearnMoreClick} />
     </div>
   );

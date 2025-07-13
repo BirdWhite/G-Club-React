@@ -1,10 +1,10 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 interface ProfileData {
   fullName: string;
@@ -13,87 +13,114 @@ interface ProfileData {
   [key: string]: any;
 }
 
-import type { User } from '@/types/models';
-
 export default function ProfilePage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
     setIsClient(true);
     
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-
-    if (status === 'authenticated' && session?.user) {
-      fetchProfile();
-    }
-  }, [status, session, router]);
-
-  const fetchProfile = async () => {
+    // 사용자 정보 가져오기
+    const getUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error || !user) {
+          router.push('/login');
+          return;
+        }
+        
+        setUser(user);
+        fetchProfile(user.id);
+      } catch (error) {
+        console.error('사용자 정보를 가져오는 중 오류 발생:', error);
+        router.push('/login');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // 초기 사용자 정보 로드
+    getUser();
+    
+    // 페이지 가시성 변경 시 사용자 정보 갱신
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        getUser();
+      }
+    };
+    
+    // 페이지 가시성 변경 이벤트 리스너 등록
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // 클린업 함수
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [router]);
+  
+  const fetchProfile = async (userId: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/profile');
+      
+      // API를 통해 프로필 조회
+      const response = await fetch('/api/profile/check', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
       if (!response.ok) {
-        throw new Error('프로필을 불러오는데 실패했습니다.');
+        throw new Error('프로필 조회에 실패했습니다.');
       }
-      const data = await response.json();
-      setProfile(data.profile);
-    } catch (err) {
-      console.error('프로필 로딩 오류:', err);
-      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      
+      const result = await response.json();
+      
+      // 프로필이 없는 경우 등록 페이지로 리다이렉트
+      if (!result.hasProfile) {
+        router.push('/profile/register');
+        return;
+      }
+      
+      // 프로필 데이터 설정
+      setProfile(result.profile);
+    } catch (error) {
+      console.error('프로필 로딩 중 오류 발생:', error);
+      setError('프로필을 불러오는 중 오류가 발생했습니다.');
+      // 에러 발생 시에도 등록 페이지로 이동
+      router.push('/profile/register');
     } finally {
       setIsLoading(false);
     }
   };
 
   // 클라이언트 사이드에서만 렌더링
-  if (!isClient) {
-    return null;
-  }
-
-  if (status === 'loading' || isLoading) {
+  if (!isClient || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-          <p className="text-gray-600">프로필을 불러오는 중...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">로그인이 필요합니다.</p>
-          <Link 
-            href="/login" 
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-          >
-            로그인 페이지로 이동
-          </Link>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
   
+  if (!user) {
+    return null; // 로그인 페이지로 리다이렉트 처리로 인해 여기까지 오지 않음
+  }
+
   // 사용자 ID 표시
   const formatUserId = (userId?: string) => {
     if (!userId) return 'ID: 알 수 없음';
     return `ID: ${userId}`;
   };
 
-  const user = session.user as User;
-  const displayName = profile?.fullName || user.name || '사용자';
-  const createdAt = user?.createdAt ? new Date(user.createdAt) : new Date();
+  const displayName = user.user_metadata?.full_name || '사용자';
+  const createdAt = user?.created_at ? new Date(user.created_at) : new Date();
   const formattedDate = createdAt.toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -111,12 +138,12 @@ export default function ProfilePage() {
     : '미등록';
 
   const getRoleLabel = (role?: string) => {
-    if (!role) return '게스트';
+    if (!role) return '일반 사용자';
+    
     const roles: Record<string, string> = {
-      'USER': '일반 사용자',
-      'ADMIN': '관리자',
-      'SUPER_ADMIN': '최고 관리자',
-      'NONE': '게스트'
+      user: '일반 사용자',
+      admin: '관리자',
+      premium: '프리미엄 사용자'
     };
     return roles[role] || role;
   };
@@ -135,14 +162,6 @@ export default function ProfilePage() {
                 className="object-cover"
                 priority
               />
-            ) : user?.image ? (
-              <Image
-                src={user.image}
-                alt={displayName}
-                fill
-                className="object-cover"
-                priority
-              />
             ) : (
               <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
                 <span className="text-4xl font-bold">
@@ -155,10 +174,8 @@ export default function ProfilePage() {
           {/* 프로필 정보 */}
           <div className="flex-1">
             <div className="flex flex-col">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-                {displayName}
-              </h1>
-              <p className="text-gray-500 text-sm mb-4">{formatUserId(user?.id)}</p>
+              <h1 className="text-2xl font-bold">{user.user_metadata?.full_name || '사용자'}</h1>
+              <p className="text-gray-500 text-sm mb-4">{formatUserId(user.id)}</p>
               <Link 
                 href="/profile/edit"
                 className="inline-block px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm md:text-base w-fit"
@@ -185,7 +202,7 @@ export default function ProfilePage() {
               <div>
                 <h3 className="text-sm font-medium text-gray-500">권한</h3>
                 <p className="mt-1 text-gray-800">
-                  {getRoleLabel(user?.role as string)}
+                  {getRoleLabel(user.role)}
                 </p>
               </div>
             </div>

@@ -7,66 +7,162 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id                 String            @id @default(cuid())
-  name               String?
+// ========== Enums ==========
+// 권한 타입
+enum PermissionType {
+  // 게시물 관련
+  POST_CREATE
+  POST_READ
+  POST_UPDATE
+  POST_DELETE
+  POST_MANAGE_ALL
+  
+  // 사용자 관련
+  USER_VIEW
+  USER_MANAGE
+  USER_ROLE_MANAGE
+  
+  // 채팅 관련
+  CHAT_CREATE
+  CHAT_DELETE
+  CHAT_MANAGE
+  
+  // 게임 관련
+  GAME_CREATE
+  GAME_UPDATE
+  GAME_DELETE
+  GAME_MANAGE
+  
+  // 관리자
+  ADMIN_PANEL_ACCESS
+  SYSTEM_SETTINGS
+}
+
+enum ChatRoomType {
+  CHANNEL    // 채널 채팅방
+  GAME       // 게임 채팅방
+}
+
+enum GamePostStatus {
+  OPEN
+  FULL
+  COMPLETED
+}
+
+// ========== Models ==========
+
+// 권한 모델
+model Permission {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  roles       Role[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// 역할 모델
+model Role {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  description   String?
+  isDefault     Boolean        @default(false)
+  permissions   Permission[]
+  userProfiles  UserProfile[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+// 사용자 프로필 모델 (Supabase Auth와 연동)
+model UserProfile {
+  id                 String               @id @default(cuid())
+  userId             String               @unique
+  name               String
+  birthDate          DateTime
   image              String?
-  role               UserRole          @default(NONE)
-  createdAt          DateTime          @default(now())
-  comments           Comment[]
-  gameComments       GameComment[]
-  gameParticipations GameParticipant[]
-  gamePosts          GamePost[]
-  posts              Post[]
-  profile            Profile?
+  roleId             String?
+  role               Role?                @relation(fields: [roleId], references: [id])
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  // 게시글 및 댓글 관련
+  comments           Comment[]             @relation("UserProfileComments")
+  posts              Post[]                @relation("UserProfilePosts")
+  
+  // 게임 관련
+  gameParticipations GameParticipant[]     @relation("UserProfileGameParticipations")
+  gamePosts          GamePost[]            @relation("UserProfileGamePosts")
+  
+  // 채팅 및 구독 관련
+  subscriptions      ChannelSubscription[] @relation("UserProfileSubscriptions")
+  chatMessages       ChatMessage[]         @relation("UserProfileChatMessages")
+  chatRooms          ChatParticipant[]     @relation("UserProfileChatRooms")
 }
 
-model Profile {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  fullName     String
-  birthDate    DateTime
-  profileImage String   @default("/images/default-profile.png")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model GlobalPermissionConfig {
-  id        Int      @id @default(1)
-  json      Json
-  updatedAt DateTime @updatedAt
+// 채널 관련 모델
+model Channel {
+  id           String                @id @default(cuid())
+  name         String
+  slug         String                @unique
+  description  String?
+  isActive     Boolean               @default(true)
+  isPrivate    Boolean               @default(false)
+  order        Int                   @default(0)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  board        Board?                // 채널에 속한 게시판 (없을 수 있음)
+  chatRoom     ChatRoom?             // 채널에 속한 채팅방 (없을 수 있음)
+  subscribers  ChannelSubscription[]
+  
+  @@index([isActive, order])
 }
 
 model Board {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  posts       Post[]
+  id           String     @id @default(cuid())
+  channel      Channel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channelId    String     @unique
+  name         String
+  description  String?
+  isActive     Boolean    @default(true)
+  order        Int        @default(0)
+  posts        Post[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
-model BoardPermissionConfig {
-  id        Int      @id @default(1)
-  json      Json
-  updatedAt DateTime @updatedAt
+model ChannelSubscription {
+  id           String    @id @default(cuid())
+  channel      Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channelId    String
+  user         UserProfile @relation("UserProfileSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  subscribedAt DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([channelId, userId])
+  @@index([userId, subscribedAt])
 }
 
+// 게시판 관련 모델
 model Post {
-  id        String    @id @default(cuid())
-  title     String
-  content   String
-  published Boolean   @default(false)
-  boardId   String
-  authorId  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  comments  Comment[]
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  board     Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  title       String
+  content     String
+  published   Boolean   @default(false)
+  boardId     String
+  authorId    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  comments    Comment[] @relation("PostComments")
+  author      UserProfile @relation("UserProfilePosts", fields: [authorId], references: [id], onDelete: Cascade)
+  board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  viewCount   Int       @default(0)
+  likeCount   Int       @default(0)
+  isNotice    Boolean   @default(false)  // 공지사항 여부
+  isSecret    Boolean   @default(false)  // 비밀글 여부
+  
+  @@index([boardId])
+  @@index([authorId])
 }
 
 model Comment {
@@ -76,71 +172,110 @@ model Comment {
   authorId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  author    UserProfile @relation("UserProfileComments", fields: [authorId], references: [id], onDelete: Cascade)
+  post      Post        @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
 }
 
+// 채팅 관련 모델
+model ChatRoom {
+  id           String        @id @default(cuid())
+  type         ChatRoomType  @default(CHANNEL)
+  name         String
+  description  String?
+  isActive     Boolean       @default(true)
+  maxMembers   Int?          // 최대 참여자 수 (null이면 제한 없음)
+  
+  // 채팅방 소유자 (채널 또는 게임 포스트)
+  channelId    String?       @unique  // 채널에 속한 경우
+  channel      Channel?      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  gamePostId   String?       @unique  // 게임 포스트에 속한 경우
+  gamePost     GamePost?     @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
+  
+  // 메시지 및 참여자
+  messages     ChatMessage[]
+  participants ChatParticipant[]
+  
+  // 메타데이터
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  // 제약 조건: 채널 또는 게임 포스트 중 하나에만 연결
+  @@unique([channelId, gamePostId])
+  @@index([type])
+}
+
+model ChatParticipant {
+  id          String   @id @default(cuid())
+  chatRoom    ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  chatRoomId  String
+  user        UserProfile     @relation("UserProfileChatRooms", fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  joinedAt    DateTime @default(now())
+  lastReadAt  DateTime @default(now())  // 마지막으로 읽은 시간
+  isMuted     Boolean  @default(false)  // 음소거 여부
+  
+  @@unique([chatRoomId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id           String    @id @default(cuid())
+  content      String
+  chatRoom     ChatRoom  @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  chatRoomId   String
+  user         UserProfile      @relation("UserProfileChatMessages", fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  @@index([chatRoomId])
+  @@index([userId])
+}
+
+// 게임 메이트 관련 모델
 model Game {
-  id          String     @id @default(cuid())
-  name        String     @unique
+  id          String        @id @default(cuid())
+  name        String        @unique
   description String?
   iconUrl     String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   aliases     String[]
-  posts       GamePost[]
+  gamePosts   GamePost[]    @relation("GameToGamePosts")
 }
 
 model GamePost {
-  id           String            @id @default(cuid())
-  title        String
-  content      String
-  gameId       String
-  authorId     String
-  maxPlayers   Int
-  startTime    DateTime
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  status       GamePostStatus    @default(OPEN)
-  comments     GameComment[]
-  participants GameParticipant[]
-  author       User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  game         Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  id              String            @id @default(cuid())
+  title           String
+  content         String
+  authorId        String
+  gameId          String
+  game            Game              @relation("GameToGamePosts", fields: [gameId], references: [id])
+  author          UserProfile       @relation("UserProfileGamePosts", fields: [authorId], references: [id], onDelete: Cascade)
+  participants    GameParticipant[]
+  chatRoom        ChatRoom?         // 게임 포스트에 연결된 채팅방
+  status          GamePostStatus    @default(OPEN)
+  maxParticipants Int
+  gameDateTime    DateTime
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@index([authorId])
+  @@index([status])
+  @@index([gameDateTime])
 }
 
 model GameParticipant {
   id         String   @id @default(cuid())
   gamePostId String
-  userId     String
+  userId     String  // UserProfile의 id를 참조
   isLeader   Boolean  @default(false)
   joinedAt   DateTime @default(now())
   isReserve  Boolean  @default(false)
   gamePost   GamePost @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       UserProfile     @relation("UserProfileGameParticipations", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([gamePostId, userId])
-}
-
-model GameComment {
-  id         String   @id @default(cuid())
-  content    String
-  gamePostId String
-  authorId   String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  gamePost   GamePost @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
-}
-
-enum UserRole {
-  NONE
-  USER
-  ADMIN
-  SUPER_ADMIN
-}
-
-enum GamePostStatus {
-  OPEN
-  FULL
-  COMPLETED
 }

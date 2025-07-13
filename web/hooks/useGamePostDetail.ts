@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
-import { GamePost, Comment, Participant } from '@/types/game';
+import { GamePost, Comment, GameParticipant } from '@/types/models';
+import { getCurrentUser } from '@/lib/supabase/auth';
 
 interface UseGamePostDetailProps {
   postId: string;
@@ -17,8 +17,17 @@ export function useGamePostDetail({ postId }: UseGamePostDetailProps) {
   const [commentContent, setCommentContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
   
-  const { data: session } = useSession();
+  const [user, setUser] = useState<any>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+    };
+    
+    getUser();
+  }, []);
 
   // 게시글 조회
   const fetchPost = useCallback(async () => {
@@ -69,33 +78,37 @@ export function useGamePostDetail({ postId }: UseGamePostDetailProps) {
   }, [post, router]);
 
   // 댓글 작성
-  const handleCommentSubmit = useCallback(async (content: string) => {
-    if (!content.trim() || !post) return;
+  const handleCommentSubmit = useCallback(async () => {
+    if (!commentContent.trim() || !user?.id) return;
     
     try {
       setSubmitting(true);
-      const response = await fetch(`/api/game-posts/${post.id}/comments`, {
+      
+      const response = await fetch(`/api/game-posts/${postId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({
+          content: commentContent,
+        }),
       });
       
       if (!response.ok) {
         throw new Error('댓글 작성에 실패했습니다.');
       }
       
-      setCommentContent('');
+      // 댓글 목록 새로고침
       await fetchPost();
+      setCommentContent('');
       toast.success('댓글이 작성되었습니다.');
     } catch (err) {
       console.error('댓글 작성 중 오류 발생:', err);
-      toast.error('댓글 작성에 실패했습니다.');
+      toast.error('댓글 작성 중 오류가 발생했습니다.');
     } finally {
       setSubmitting(false);
     }
-  }, [post, fetchPost]);
+  }, [commentContent, postId, user?.id, fetchPost]);
 
   // 댓글 삭제
   const handleDeleteComment = useCallback(async (commentId: string): Promise<boolean> => {
@@ -123,13 +136,15 @@ export function useGamePostDetail({ postId }: UseGamePostDetailProps) {
     }
   }, [post, fetchPost]);
 
-  // 참여/취소
-  const handleParticipation = useCallback(async () => {
-    if (!post || !session?.user) return;
-    
+  // 참여 신청/취소
+  const toggleParticipation = useCallback(async () => {
+    if (!user?.id) {
+      router.push('/login');
+      return;
+    } 
     try {
       setSubmitting(true);
-      const response = await fetch(`/api/game-posts/${post.id}/participate`, {
+      const response = await fetch(`/api/game-posts/${post?.id}/participate`, {
         method: 'POST',
       });
       
@@ -145,7 +160,7 @@ export function useGamePostDetail({ postId }: UseGamePostDetailProps) {
     } finally {
       setSubmitting(false);
     }
-  }, [post, session, fetchPost]);
+  }, [post, user, fetchPost, router]);
 
   // 모집 상태 토글
   const toggleRecruitment = useCallback(async () => {
@@ -205,11 +220,11 @@ export function useGamePostDetail({ postId }: UseGamePostDetailProps) {
   }, [fetchPost]);
 
   // 파생 상태
-  const isAuthor = post?.author.id === session?.user?.id;
-  const isParticipating = post?.participants.some(p => p.user.id === session?.user?.id) || false;
+  const isAuthor = post?.author.id === user?.id;
+  const isParticipating = post?.participants.some(p => p.user.id === user?.id) || false;
   const isFull = post ? post.participants.length >= post.maxPlayers : false;
   const isReserved = post?.participants?.some(
-    p => p.user.id === session?.user?.id && p.isReserve
+    p => p.user.id === user?.id && p.isReserve
   ) || false;
 
   return {
@@ -231,7 +246,7 @@ export function useGamePostDetail({ postId }: UseGamePostDetailProps) {
     handleDelete,
     handleCommentSubmit,
     handleDeleteComment,
-    handleParticipation,
+    toggleParticipation,
     toggleRecruitment,
     handleTransferLeadership,
     refetch: fetchPost,

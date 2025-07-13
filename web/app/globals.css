@@ -1,16 +1,106 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #EAEFEF;
-  --color-background-hover: #B8CFCE;
-  --color-text: #7F8CAA;
-  --color-text-hover: #7F8CAA;
-  --color-primary: #333446;
-  --color-primary-hover: #3D3E55;
-  --color-border: #B8CFCE;
-  --color-input-focus: #EAEFEF;
+  --color-cyber-blue: #38BDF8;   /* 일렉트릭 블루: 포인트, 버튼 */
+  --color-cyber-purple: #A78BFA; /* 매지컬 퍼플: 액센트, 강조 */
+  --color-cyber-orange: #FB7185; /* 네온 오렌지: 알림, 강조 */
+  --color-cyber-gray: #E5E7EB;   /* 실버 그레이: 카드, 서브 배경 */
+
+  --color-cyber-black-50:  #232b3b;
+  --color-cyber-black-100: #1d2330;
+  --color-cyber-black-200: #181c25;
+  --color-cyber-black-300: #14161d;
+  --color-cyber-black-400: #111217;
+  --color-cyber-black-500: #0F172A;  /* 기준색 */
+  --color-cyber-black-600: #0c1220;
+  --color-cyber-black-700: #090d16;
+  --color-cyber-black-800: #06080d;
+  --color-cyber-black-900: #030306;
+
+  
 }
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
+@font-face {
+  font-family: 'Paperlogy-8ExtraBold';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-cyber-black-100);
+    color: var(--color-cyber-gray);
+    min-height: 100vh;
+    font-family: 'Paperlogy-8ExtraBold', Arial, Helvetica, sans-serif;
+  }
+
+  /* 헤더 스타일 */
+  .header-container {
+    background-color: rgba(17, 17, 19, 0.95); /* 진한 제트블랙에 약간의 투명도 */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  
+  /* 로고 스타일 */
+  .header-logo {
+    color: var(--color-cyber-blue);
+    transition: color 0.2s ease;
+  }
+  
+  .header-logo:hover {
+    color: var(--color-cyber-blue-light);
+  }
+  
+  /* 네비게이션 링크 기본 스타일 */
+  .nav-link {
+    border-color: transparent;
+    color: var(--color-cyber-gray-400);
+    transition: all 0.2s ease;
+  }
+  
+  /* 활성화된 네비게이션 링크 */
+  .nav-link-active {
+    border-color: var(--color-cyber-blue) !important;
+    color: var(--color-cyber-gray) !important;
+  }
+  
+  /* 네비게이션 링크 호버 효과 */
+  .nav-link:not(.nav-link-active):hover {
+    border-color: var(--color-cyber-gray-500);
+    color: var(--color-cyber-gray-200);
+  }
+
+  /* 카드 스타일 */
+  .card {
+    background-color: #111113; /* 카드 배경색 */
+    border: 1px solid #1e1e24; /* 카드 테두리 */
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+    border-color: #2d2d35;
+  }
+
+  /* 버튼 스타일 */
+  .btn-primary {
+    background-color: var(--color-cyber-blue);
+    color: var(--color-cyber-black-900);
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover {
+    background-color: #0ea5e9;
+    transform: translateY(-1px);
+  }
 }

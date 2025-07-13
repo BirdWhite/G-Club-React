@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { getCurrentUser } from '@/lib/supabase/auth';
 
 interface PostData {
   id: string;
@@ -31,13 +31,22 @@ interface PostData {
 export default function PostDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const postId = params.id as string;
-  
-  const [post, setPost] = useState<PostData | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [post, setPost] = useState<PostData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const postId = params.id as string;
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      setIsLoading(false);
+    };
+    
+    fetchUser();
+  }, []);
   
   // 게시글 정보 로드
   useEffect(() => {
@@ -68,8 +77,8 @@ export default function PostDetailPage() {
   }, [postId]);
   
   // 권한 확인
-  const isAuthor = post && session?.user?.id === post.authorId;
-  const isAdmin = session?.user && (session.user as any).role === 'ADMIN';
+  const isAuthor = post && user?.id === post.authorId;
+  const isAdmin = user?.role === 'ADMIN';
   const canEdit = isAuthor;
   const canDelete = isAuthor || isAdmin;
   

@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/auth-options';
+import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/supabase/auth';
 import prisma from '@/lib/prisma';
 
 export async function GET(request: Request) {
   try {
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: '인증되지 않은 사용자입니다.' },
+        { status: 401 }
+      );
+    }
+    
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get('gameId');
     const status = searchParams.get('status');
@@ -64,9 +73,9 @@ export async function GET(request: Request) {
       id: post.id,
       title: post.title,
       content: post.content,
-      maxPlayers: post.maxPlayers,
+      maxPlayers: post.maxParticipants,
       currentPlayers: post.participants.length, // 참여자 수 (작성자 포함)
-      startTime: post.startTime.toISOString(),
+      startTime: post.gameDateTime.toISOString(),
       status: post.status,
       game: post.game,
       author: post.author,
@@ -85,9 +94,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
+  const user = await getCurrentUser();
   
-  if (!session?.user) {
+  if (!user) {
     return NextResponse.json(
       { error: '로그인이 필요합니다.' },
       { status: 401 }
@@ -95,10 +104,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { title, content, gameId, maxPlayers, startTime } = await request.json();
+    const { title, content, gameId, maxParticipants, gameDateTime } = await request.json();
 
-    // 필수 필드 검증
-    if (!title || !content || !gameId || !maxPlayers || !startTime) {
+    if (!title || !content || !gameId || !gameDateTime || !maxParticipants) {
       return NextResponse.json(
         { error: '모든 필수 항목을 입력해주세요.' },
         { status: 400 }
@@ -106,7 +114,7 @@ export async function POST(request: Request) {
     }
 
     // 최대 인원수 검증 (2~100명)
-    if (maxPlayers < 2 || maxPlayers > 100) {
+    if (maxParticipants < 2 || maxParticipants > 100) {
       return NextResponse.json(
         { error: '인원수는 2명 이상 100명 이하로 설정해주세요.' },
         { status: 400 }
@@ -121,9 +129,9 @@ export async function POST(request: Request) {
           title,
           content,
           gameId,
-          maxPlayers,
-          startTime: new Date(startTime),
-          authorId: session.user.id,
+          maxParticipants,
+          gameDateTime: new Date(gameDateTime),
+          authorId: user.id,
         },
       });
 
@@ -131,7 +139,7 @@ export async function POST(request: Request) {
       await prisma.gameParticipant.create({
         data: {
           gamePostId: post.id,
-          userId: session.user.id,
+          userId: user.id,
           isLeader: true,
           isReserve: false,
         },

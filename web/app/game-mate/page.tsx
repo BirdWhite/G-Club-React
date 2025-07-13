@@ -2,43 +2,49 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { createClient } from '@/lib/supabase/client';
 import GamePostCard from './components/GamePostCard';
 import GameFilter from './components/GameFilter';
-
-type Game = {
-  id: string;
-  name: string;
-  description: string | null;
-  iconUrl: string | null;
-};
-
-type GamePost = {
-  id: string;
-  title: string;
-  content: string;
-  maxPlayers: number;
-  currentPlayers: number;
-  startTime: string;
-  status: 'OPEN' | 'FULL' | 'COMPLETED';
-  game: {
-    name: string;
-    iconUrl: string | null;
-  };
-  author: {
-    id: string;
-    name: string | null;
-    image: string | null;
-  };
-  _count: {
-    participants: number;
-  };
-};
+import { Game, GamePost } from '@/types/models';
 
 type StatusFilterType = 'all' | 'recruiting' | 'open' | 'full' | 'completed';
 
 export default function GameMatePage() {
-  const { data: session, status } = useSession();
+  const [user, setUser] = useState<any>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    // 사용자 정보 가져오기
+    const getUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        setUser(user);
+      } catch (error) {
+        console.error('사용자 정보를 가져오는 중 오류 발생:', error);
+        setUser(null);
+      }
+    };
+    
+    // 초기 사용자 정보 로드
+    getUser();
+    
+    // 페이지 가시성 변경 시 사용자 정보 갱신
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        getUser();
+      }
+    };
+    
+    // 페이지 가시성 변경 이벤트 리스너 등록
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // 클린업 함수
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const router = useRouter();
   const [games, setGames] = useState<Game[]>([]);
   const [posts, setPosts] = useState<GamePost[]>([]);
@@ -155,7 +161,7 @@ export default function GameMatePage() {
     };
   }, []);
 
-  if (status === 'loading') {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
@@ -164,14 +170,14 @@ export default function GameMatePage() {
   }
 
   // 참여하기 버튼 클릭 핸들러
-  const handleJoinClick = (postId: string) => {
-    console.log('참여 신청:', postId);
+  const handleJoinClick = (post: GamePost) => {
+    console.log('참여 신청:', post.id);
     // TODO: 참여 신청 API 호출
   };
 
   // 참여 취소 버튼 클릭 핸들러
-  const handleCancelClick = (postId: string) => {
-    console.log('참여 취소:', postId);
+  const handleCancelClick = (post: GamePost) => {
+    console.log('참여 취소:', post.id);
     // TODO: 참여 취소 API 호출
   };
 

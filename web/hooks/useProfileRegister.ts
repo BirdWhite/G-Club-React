@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { getCroppedImg, resizeImage, CropArea, getImageDimensions } from '@/lib/cropImage';
 import { useProfileForm, ProfileFormErrors } from './useProfileForm';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useProfileRegister = () => {
   const profileForm = useProfileForm();
@@ -67,6 +69,52 @@ export const useProfileRegister = () => {
     }
   };
 
+  const uploadImageToServer = async (file: Blob): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      // 파일명을 지정하지 않고 전송 (서버에서 사용자 ID 기반으로 생성)
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload/profile-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('이미지 업로드 오류:', errorData);
+        return null;
+      }
+
+      const { publicUrl } = await response.json();
+      return publicUrl;
+    } catch (error) {
+      console.error('이미지 업로드 중 오류 발생:', error);
+      return null;
+    }
+  };
+
+  const deletePreviousImage = async (imageUrl: string): Promise<boolean> => {
+    if (!imageUrl) return true;
+    
+    try {
+      const response = await fetch(`/api/upload/profile-image?url=${encodeURIComponent(imageUrl)}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('이미지 삭제 오류:', errorData.error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('이미지 삭제 중 오류 발생:', error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -114,36 +162,43 @@ export const useProfileRegister = () => {
         setCroppedImage(resizedImageBlob);
       }
       
-      // 서버에 데이터 전송
-      const requestBody = {
-        name,
-        birthDate,
-        profileImage: null as string | null
-      };
-      
-      // 크롭된 이미지를 base64로 변환
+      // 이미지를 서버에 업로드하고 URL 가져오기
+      let imageUrl = null;
       if (imageToSend) {
-        console.log('크롭된 이미지를 base64로 변환 중...');
-        const base64Image = await blobToBase64(imageToSend);
-        requestBody.profileImage = base64Image;
-        console.log('base64 변환 완료');
+        // 이전 이미지가 있으면 삭제
+        if (profileForm.image) {
+          await deletePreviousImage(profileForm.image);
+        }
+        
+        // 새 이미지 업로드
+        imageUrl = await uploadImageToServer(imageToSend);
+        
+        if (!imageUrl) {
+          alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+          setIsLoading(false);
+          return;
+        }
       }
       
-      const res = await fetch('/api/profile', {
+      const response = await fetch('/api/profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          name,
+          birthDate,
+          image: imageUrl, // Supabase URL 전송
+        }),
       });
       
-      if (res.ok) {
+      if (response.ok) {
         // 프로필 업데이트 이벤트 발생 - Header 컴포넌트에서 감지하여 프로필 데이터 새로고침
         window.dispatchEvent(new CustomEvent('profileUpdated'));
         
         router.push('/');
       } else {
-        const errorData = await res.json();
+        const errorData = await response.json();
         alert(`오류 발생: ${errorData.error || '알 수 없는 오류'}`);
       }
     } catch (error) {
