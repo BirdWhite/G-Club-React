@@ -1,9 +1,9 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Menu, Transition } from '@headlessui/react';
 
@@ -11,44 +11,80 @@ import { Menu, Transition } from '@headlessui/react';
 interface ProfileData {
   fullName: string;
   birthDate: string;
-  profileImage: string | null;
+  image?: string | null;
 }
 
 export default function Header() {
+  const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
   const [session, setSession] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 사용자 정보 가져오기
+  const fetchUser = useCallback(async () => {
+    try {
+      // 1. 먼저 세션 확인
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession) {
+        setSession(null);
+        return null;
+      }
+
+      // 2. 세션이 있는 경우에만 사용자 정보 가져오기
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      
+      setSession(user ? { user } : null);
+      return user;
+    } catch (error) {
+      console.error('사용자 정보를 가져오는 중 오류 발생:', error);
+      setSession(null);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [supabase.auth]);
 
   useEffect(() => {
-    // 현재 사용자 정보 가져오기
-    const getUser = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) throw error;
-        setSession({ user });
-      } catch (error) {
-        console.error('사용자 정보를 가져오는 중 오류 발생:', error);
-      }
-    };
-
     // 초기 사용자 정보 로드
-    getUser();
+    fetchUser();
 
-    // 페이지 포커스 시 사용자 정보 갱신
+    // 인증 상태 변경 감지
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('인증 상태 변경 감지:', event);
+        
+        // 세션 상태 업데이트
+        setSession(session);
+        
+        // 로그아웃 시 메인 페이지로 리다이렉트
+        if (event === 'SIGNED_OUT') {
+          router.push('/');
+        }
+        // 로그인 성공 시 프로필 페이지로 리다이렉트 (로그인 페이지에서만)
+        else if (event === 'SIGNED_IN' && pathname === '/auth/login') {
+          router.push('/profile');
+        }
+      }
+    );
+
+    // 페이지 가시성 변경 시 사용자 정보 갱신
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        getUser();
+        fetchUser();
       }
     };
 
-    // 페이지 가시성 변경 이벤트 리스너 등록
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // 클린업 함수
     return () => {
+      // 구독 해제
+      subscription?.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [fetchUser, router, supabase.auth, pathname]);
   
   // 프로필 데이터 상태
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -78,9 +114,20 @@ export default function Header() {
   
   // 로그인 세션이 변경될 때 프로필 데이터를 불러옵니다.
   useEffect(() => {
-    if (session?.user) {
-      fetchProfileData();
-    }
+    const loadProfile = async () => {
+      if (session?.user) {
+        try {
+          await fetchProfileData();
+        } catch (error) {
+          console.error('프로필 로드 중 오류:', error);
+        }
+      } else {
+        // 세션이 없을 때 프로필 데이터 초기화
+        setProfileData(null);
+      }
+    };
+    
+    loadProfile();
   }, [session]);
   
   // 페이지 포커스 시와 프로필 업데이트 이벤트 시 프로필 데이터 새로고침
@@ -111,20 +158,43 @@ export default function Header() {
   // 프로필 데이터를 서버에서 불러오는 함수
   const fetchProfileData = async () => {
     try {
+      // 먼저 세션 확인
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      
+      if (!authSession) {
+        setProfileData(null);
+        return;
+      }
+      
+      // 세션이 있으면 사용자 정보 가져오기
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('사용자 정보를 가져올 수 없습니다:', userError);
+        setProfileData(null);
+        return;
+      }
+      
+      // 프로필 정보 가져오기
       const res = await fetch('/api/profile');
       
-      if (res.ok) {
-        const data = await res.json();
-        if (data.profile) {
-          setProfileData({
-            fullName: data.profile.fullName,
-            birthDate: data.profile.birthDate,
-            profileImage: data.profile.profileImage
-          });
-        }
+      if (!res.ok) {
+        throw new Error('프로필을 불러오는데 실패했습니다.');
+      }
+      
+      const data = await res.json();
+      if (data.profile) {
+        setProfileData({
+          fullName: data.profile.fullName,
+          birthDate: data.profile.birthDate,
+          image: data.profile.image
+        });
+      } else {
+        setProfileData(null);
       }
     } catch (error) {
       console.error('프로필 정보 불러오기 실패:', error);
+      setProfileData(null);
     }
   };
 
@@ -143,8 +213,32 @@ export default function Header() {
   
   // 로그아웃 처리
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/';
+    try {
+      // 먼저 세션 확인
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // 이미 로그아웃된 상태
+        window.location.href = '/';
+        return;
+      }
+      
+      // 로그아웃 시도
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // 상태 초기화
+      setSession(null);
+      setProfileData(null);
+      
+      // 홈페이지로 리다이렉트 (새로고침하여 모든 상태 초기화)
+      window.location.href = '/';
+    } catch (error) {
+      console.error('로그아웃 중 오류 발생:', error);
+      // 오류가 발생해도 강제로 로그아웃 처리
+      setSession(null);
+      setProfileData(null);
+      window.location.href = '/';
+    }
   };
   
   return (
@@ -224,14 +318,15 @@ export default function Header() {
                 {/* 프로필 사진 */}
                 <Link href="/profile" className="group relative flex rounded-full focus:outline-none">
                   <span className="sr-only">프로필 페이지로 이동</span>
-                  {profileData?.profileImage ? (
-                    <div className="relative h-8 w-8 rounded-full border-2 border-opacity-30 overflow-hidden transition-all duration-200">
+                  {profileData?.image ? (
+                    <div className="relative h-8 w-8 rounded-full border-2 border-opacity-30 overflow-hidden transition-all duration-200 bg-white">
                       <Image
                         className="absolute inset-0 m-auto object-cover w-full h-full transition-transform duration-200 group-hover:scale-110"
-                        src={profileData.profileImage}
+                        src={profileData.image}
                         alt={profileData.fullName || '프로필 이미지'}
                         width={32}
                         height={32}
+                        unoptimized={profileData.image.includes('127.0.0.1')}
                       />
                     </div>
                   ) : (
@@ -349,14 +444,17 @@ export default function Header() {
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="flex items-center px-4">
               <div className="flex-shrink-0">
-                {profileData?.profileImage ? (
+                {profileData?.image ? (
+                  <div className="p-0.5 bg-white rounded-full">
                   <Image
-                    className="h-10 w-10 rounded-full"
-                    src={profileData.profileImage}
+                    src={profileData.image}
                     alt={profileData.fullName || '프로필 이미지'}
                     width={40}
                     height={40}
+                    className="rounded-full object-cover"
+                    unoptimized={profileData.image.includes('127.0.0.1')} // 로컬 이미지 최적화 비활성화
                   />
+                  </div>
                 ) : (
                   <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                     <span className="text-gray-500">

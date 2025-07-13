@@ -26,7 +26,6 @@ export default function ProfileEditPage() {
     isLoadingProfile,
     handleImageUpload,
     onCropComplete,
-    showCroppedImage,
     handleCropImage,
     handleSubmit,
     router,

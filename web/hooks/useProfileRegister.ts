@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { getCroppedImg, resizeImage, CropArea, getImageDimensions } from '@/lib/cropImage';
 import { useProfileForm, ProfileFormErrors } from './useProfileForm';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { v4 as uuidv4 } from 'uuid';
 
 export const useProfileRegister = () => {
   const profileForm = useProfileForm();
@@ -72,9 +69,11 @@ export const useProfileRegister = () => {
   const uploadImageToServer = async (file: Blob): Promise<string | null> => {
     try {
       const formData = new FormData();
-      // 파일명을 지정하지 않고 전송 (서버에서 사용자 ID 기반으로 생성)
-      formData.append('file', file);
+      // WebP 형식으로 변환된 이미지 파일을 FormData에 추가
+      const webpFile = new File([file], 'profile.webp', { type: 'image/webp' });
+      formData.append('file', webpFile);
       
+      // API 엔드포인트 호출
       const response = await fetch('/api/upload/profile-image', {
         method: 'POST',
         body: formData,
@@ -86,8 +85,8 @@ export const useProfileRegister = () => {
         return null;
       }
 
-      const { publicUrl } = await response.json();
-      return publicUrl;
+      const { imageUrl } = await response.json();
+      return imageUrl;
     } catch (error) {
       console.error('이미지 업로드 중 오류 발생:', error);
       return null;

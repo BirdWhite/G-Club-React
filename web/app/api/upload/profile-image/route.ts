@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
@@ -104,16 +105,45 @@ export async function POST(request: Request) {
       .from('profile-images')
       .getPublicUrl(fileName);
 
-    console.log('이미지 업로드 성공:', {
+    console.log('이미지 업로드 성공, 프로필 업데이트 시작:', {
       fileName,
       publicUrl,
-      fileSize: webpBuffer.length,
-      contentType: 'image/webp'
+      userId: user.id
     });
 
+    // Prisma를 사용하여 UserProfile 업데이트 또는 생성
+    try {
+      await prisma.userProfile.upsert({
+        where: { userId: user.id },
+        update: {
+          image: publicUrl,
+          updatedAt: new Date()
+        },
+        create: {
+          userId: user.id,
+          image: publicUrl,
+          name: user.user_metadata?.full_name || '',
+          birthDate: new Date() // 기본값으로 현재 날짜 사용 (필수 필드인 경우)
+        }
+      });
+    } catch (error) {
+      console.error('프로필 업데이트 실패:', error);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: '이미지는 업로드되었지만 프로필 업데이트에 실패했습니다.',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('프로필 이미지 업데이트 완료:', publicUrl);
+    
     return NextResponse.json({ 
       success: true, 
-      publicUrl 
+      imageUrl: publicUrl,
+      message: '프로필 이미지가 성공적으로 업데이트되었습니다.'
     });
 
   } catch (error) {

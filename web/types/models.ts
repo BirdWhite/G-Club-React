@@ -86,18 +86,6 @@ export interface UserProfile {
   chatRooms: ChatParticipant[];
 }
 
-// 사용자 타입 (기존 User와의 호환성을 위해 유지)
-export interface User {
-  id: string;
-  name: string | null;
-  email: string | null;
-  image: string | null;
-  role: Role;
-  createdAt: Date;
-  updatedAt: Date;
-  profile?: UserProfile; // UserProfile과의 연결을 위한 옵셔널 필드
-}
-
 // 채널 관련 모델
 export interface Channel {
   id: string;
@@ -305,7 +293,7 @@ export interface Notification {
   read: boolean;
   createdAt: Date;
   link?: string;
-  sender?: User;
+  sender?: UserProfile;
 }
 
 // API 응답 공통 타입

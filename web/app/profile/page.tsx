@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 
 interface ProfileData {
   fullName: string;
-  profileImage: string | null;
+  image?: string | null;
   birthDate: string;
   [key: string]: any;
 }
@@ -154,13 +154,14 @@ export default function ProfilePage() {
         <div className="flex flex-col md:flex-row gap-6">
           {/* 프로필 이미지 */}
           <div className="w-32 h-32 md:w-40 md:h-40 relative rounded-full overflow-hidden border-4 border-blue-100">
-            {profile?.profileImage ? (
+            {profile?.image ? (
               <Image
-                src={profile.profileImage}
+                src={profile.image}
                 alt={displayName}
                 fill
                 className="object-cover"
                 priority
+                unoptimized={profile.image.includes('127.0.0.1')} // 로컬 이미지 최적화 비활성화
               />
             ) : (
               <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
