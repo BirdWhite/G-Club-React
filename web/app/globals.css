@@ -6,11 +6,12 @@
   --color-cyber-orange: #FB7185; /* 네온 오렌지: 알림, 강조 */
   --color-cyber-gray: #E5E7EB;   /* 실버 그레이: 카드, 서브 배경 */
 
-  --color-cyber-black-50:  #232b3b;
-  --color-cyber-black-100: #1d2330;
-  --color-cyber-black-200: #181c25;
-  --color-cyber-black-300: #14161d;
-  --color-cyber-black-400: #111217;
+  /* Lightest to Darkest 순서로 재정렬, 500을 기준으로! */
+  --color-cyber-black-50:  #283245;  /* 밝게 조정 */
+  --color-cyber-black-100: #232b3b;
+  --color-cyber-black-200: #1d2330;
+  --color-cyber-black-300: #181c25;
+  --color-cyber-black-400: #14161d;
   --color-cyber-black-500: #0F172A;  /* 기준색 */
   --color-cyber-black-600: #0c1220;
   --color-cyber-black-700: #090d16;

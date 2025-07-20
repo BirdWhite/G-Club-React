@@ -101,18 +101,22 @@ model UserProfile {
 
 // 채널 관련 모델
 model Channel {
-  id           String                @id @default(cuid())
-  name         String
-  slug         String                @unique
-  description  String?
-  isActive     Boolean               @default(true)
-  isPrivate    Boolean               @default(false)
-  order        Int                   @default(0)
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  boardActive Boolean  @default(true)
+  chatActive  Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   board        Board?                // 채널에 속한 게시판 (없을 수 있음)
   chatRoom     ChatRoom?             // 채널에 속한 채팅방 (없을 수 있음)
   subscribers  ChannelSubscription[]
+  
+  gameId      String?  @unique
+  game        Game?    @relation(fields: [gameId], references: [id])
   
   @@index([isActive, order])
 }
@@ -147,14 +151,14 @@ model ChannelSubscription {
 model Post {
   id          String    @id @default(cuid())
   title       String
-  content     String
+  content     Json      // TipTap 같은 리치 텍스트 에디터의 JSON 출력을 저장
   published   Boolean   @default(false)
   boardId     String
   authorId    String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   comments    Comment[] @relation("PostComments")
-  author      UserProfile @relation("UserProfilePosts", fields: [authorId], references: [id], onDelete: Cascade)
+  author      UserProfile @relation("UserProfilePosts", fields: [authorId], references: [userId], onDelete: Cascade)
   board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
   viewCount   Int       @default(0)
   likeCount   Int       @default(0)
@@ -243,13 +247,14 @@ model Game {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   aliases     String[]
+  channel     Channel?      
   gamePosts   GamePost[]    @relation("GameToGamePosts")
 }
 
 model GamePost {
   id              String            @id @default(cuid())
   title           String
-  content         String
+  content         Json              // TipTap 같은 리치 텍스트 에디터의 JSON 출력을 저장
   authorId        String
   gameId          String
   game            Game              @relation("GameToGamePosts", fields: [gameId], references: [id])
@@ -258,13 +263,13 @@ model GamePost {
   chatRoom        ChatRoom?         // 게임 포스트에 연결된 채팅방
   status          GamePostStatus    @default(OPEN)
   maxParticipants Int
-  gameDateTime    DateTime
+  startTime       DateTime
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   
   @@index([authorId])
   @@index([status])
-  @@index([gameDateTime])
+  @@index([startTime])
 }
 
 model GameParticipant {

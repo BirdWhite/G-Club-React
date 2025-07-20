@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/auth-options';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
+import { UserRole } from '@/lib/auth/roles';
 
 // 모집글 상세 조회
 export async function GET(
@@ -9,9 +9,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
 
-    // 모집글 조회
     const post = await prisma.gamePost.findUnique({
       where: { id },
       include: {
@@ -34,46 +33,20 @@ export async function GET(
             },
           },
           orderBy: [
-            { isLeader: 'desc' }, // 방장 먼저
-            { isReserve: 'asc' }, // 대기자 후
-            { joinedAt: 'asc' }, // 먼저 참여한 순
+            { isLeader: 'desc' },
+            { isReserve: 'asc' },
+            { joinedAt: 'asc' },
           ],
-        },
-        comments: {
-          include: {
-            author: {
-              select: {
-                id: true,
-                name: true,
-                image: true,
-              },
-            },
-          },
-          orderBy: { createdAt: 'asc' },
         },
         _count: {
           select: {
             participants: {
-              where: { isReserve: false } // 대기자 제외한 참가자 수
+              where: { isReserve: false }
             }
           }
         }
       },
     });
-
-    // 댓글의 author를 user로 매핑
-    if (post) {
-      const mappedComments = post.comments.map(comment => {
-        const { author, ...rest } = comment;
-        return {
-          ...rest,
-          user: author
-        };
-      });
-      
-      // @ts-ignore - 타입 무시 (Prisma 타입과의 호환성을 위해)
-      post.comments = mappedComments;
-    }
 
     if (!post) {
       return NextResponse.json(
@@ -97,82 +70,44 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!session?.user) {
-    return NextResponse.json(
-      { error: '로그인이 필요합니다.' },
-      { status: 401 }
-    );
+  if (!user) {
+    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
   try {
     const { id } = params;
-    const { title, content, maxPlayers, startTime, participants = [] } = await request.json();
+    const { title, content, maxParticipants, gameDateTime, participants = [] } = await request.json();
 
-    // 필수 필드 검증
-    if (!title || !content || maxPlayers === undefined || !startTime) {
-      return NextResponse.json(
-        { error: '모든 필수 항목을 입력해주세요.' },
-        { status: 400 }
-      );
+    if (!title || !content || maxParticipants === undefined || !gameDateTime) {
+      return NextResponse.json({ error: '모든 필수 항목을 입력해주세요.' }, { status: 400 });
+    }
+    if (maxParticipants < 2 || maxParticipants > 100) {
+      return NextResponse.json({ error: '인원수는 2명 이상 100명 이하로 설정해주세요.' }, { status: 400 });
     }
 
-    // 최대 인원수 검증 (2~100명)
-    if (maxPlayers < 2 || maxPlayers > 100) {
-      return NextResponse.json(
-        { error: '인원수는 2명 이상 100명 이하로 설정해주세요.' },
-        { status: 400 }
-      );
-    }
-
-    // 모집글 존재 여부 및 작성자 확인
-    const existingPost = await prisma.gamePost.findUnique({
-      where: { id },
-      include: { participants: true }
-    });
+    const existingPost = await prisma.gamePost.findUnique({ where: { id } });
 
     if (!existingPost) {
-      return NextResponse.json(
-        { error: '모집글을 찾을 수 없습니다.' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: '모집글을 찾을 수 없습니다.' }, { status: 404 });
+    }
+    if (existingPost.authorId !== user.id) {
+      return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 });
     }
 
-    if (existingPost.authorId !== session.user.id) {
-      return NextResponse.json(
-        { error: '수정 권한이 없습니다.' },
-        { status: 403 }
-      );
-    }
-
-    // 트랜잭션으로 모집글 수정과 참여자 업데이트를 함께 처리
     const result = await prisma.$transaction(async (prisma) => {
-      try {
-        // 1. 모집글 기본 정보 업데이트
         const updatedPost = await prisma.gamePost.update({
           where: { id },
           data: {
             title,
             content,
-            maxPlayers,
-            startTime: new Date(startTime),
+            maxParticipants,
+            gameDateTime: new Date(gameDateTime),
           },
-          include: {
-            participants: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    image: true,
-                  }
-                }
-              }
-            }
-          }
         });
-
+        
         // 2. 기존 참여자 삭제 (방장 제외)
         await prisma.gameParticipant.deleteMany({
           where: {
@@ -220,10 +155,6 @@ export async function PATCH(
         }
 
         return finalPost;
-      } catch (error) {
-        console.error('트랜잭션 내부 오류:', error);
-        throw error; // 트랜잭션 롤백을 위해 오류 다시 던지기
-      }
     });
 
     return NextResponse.json({ data: result, message: '게시글이 성공적으로 수정되었습니다.' });
@@ -241,53 +172,44 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!session?.user) {
-    return NextResponse.json(
-      { error: '로그인이 필요합니다.' },
-      { status: 401 }
-    );
+  if (!user) {
+    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
-
+  
   try {
-    const { id } = await params;
+    const { id } = params;
 
-    // 모집글 조회
-    const existingPost = await prisma.gamePost.findUnique({
+    const post = await prisma.gamePost.findUnique({
       where: { id },
-      include: {
-        participants: {
-          where: { userId: session.user.id, isLeader: true },
-        },
-      },
+      include: { author: { include: { role: true } } },
     });
 
-    // 존재하지 않는 모집글 또는 권한 확인
-    if (!existingPost) {
-      return NextResponse.json(
-        { error: '모집글을 찾을 수 없습니다.' },
-        { status: 404 }
-      );
+    if (!post) {
+      return NextResponse.json({ error: '모집글을 찾을 수 없습니다.' }, { status: 404 });
     }
 
-    // 방장 또는 관리자만 삭제 가능
-    const isLeader = existingPost.participants.length > 0;
-    const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN';
-    
-    if (!isLeader && !isAdmin) {
-      return NextResponse.json(
-        { error: '삭제 권한이 없습니다.' },
-        { status: 403 }
-      );
-    }
-
-    // 모집글 삭제 (관계된 댓글과 참여자도 자동 삭제됨)
-    await prisma.gamePost.delete({
-      where: { id },
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      include: { role: true },
     });
 
-    return NextResponse.json({ success: true });
+    if (!userProfile || !userProfile.role) {
+      return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    const userRole = userProfile.role.name as UserRole;
+    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+
+    if (post.authorId !== user.id && !isAdmin) {
+      return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
+    }
+
+    await prisma.gamePost.delete({ where: { id } });
+
+    return NextResponse.json({ message: '게시글이 삭제되었습니다.' });
   } catch (error) {
     console.error('모집글 삭제 오류:', error);
     return NextResponse.json(

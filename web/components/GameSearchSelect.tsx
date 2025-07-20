@@ -7,10 +7,11 @@ interface GameSearchSelectProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  initialGameName?: string;
 }
 
-export default function GameSearchSelect({ value, onChange, className = '' }: GameSearchSelectProps) {
-  const [query, setQuery] = useState('');
+export default function GameSearchSelect({ value, onChange, className = '', initialGameName = '' }: GameSearchSelectProps) {
+  const [query, setQuery] = useState(initialGameName);
   const [games, setGames] = useState<Game[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,45 +32,47 @@ export default function GameSearchSelect({ value, onChange, className = '' }: Ga
   // 검색어가 변경될 때마다 게임 목록 업데이트
   const fetchGames = useCallback(async (searchQuery: string) => {
     const trimmedQuery = searchQuery.trim();
-    console.log('검색어:', trimmedQuery);
     
-    if (!trimmedQuery) {
-      console.log('검색어가 비어있어 게임 목록을 초기화합니다.');
-      setGames([]);
-      return;
-    }
-
     try {
-      console.log('API 요청 전송 중...');
-      const res = await fetch(`/api/games?search=${encodeURIComponent(trimmedQuery)}`);
-      console.log('API 응답 상태:', res.status);
+      const url = trimmedQuery ? `/api/games?search=${encodeURIComponent(trimmedQuery)}` : '/api/games';
+      const res = await fetch(url);
       
       if (res.ok) {
         const data = await res.json();
-        console.log('받은 게임 데이터:', data);
-        setGames(data);
+        const gamesArray = Array.isArray(data) ? data : data.games || [];
+        setGames(gamesArray);
       } else {
         console.error('API 요청 실패:', await res.text());
+        setGames([]);
       }
     } catch (error) {
       console.error('게임 검색 중 오류 발생:', error);
+      setGames([]);
     }
   }, []);
 
   // 디바운싱을 통한 검색 최적화
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchGames(query);
+      // 드롭다운이 열려있을 때만 검색 실행
+      if (isOpen) {
+        fetchGames(query);
+      }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query, fetchGames]);
+  }, [query, fetchGames, isOpen]);
 
-  // 초기 선택된 게임 로드
+  // 부모 컴포넌트에서 value prop이 변경될 때 query를 동기화합니다.
   useEffect(() => {
-    if (value && query === '') {
-      // 초기 값이 있으면 해당 게임 정보를 불러와서 표시
-      const fetchInitialGame = async () => {
+    if (value) {
+      // 이미 올바른 이름이 query에 있으면 추가 API 호출 방지
+      const selectedGame = games.find(g => g.id === value);
+      if (selectedGame && selectedGame.name === query) {
+        return;
+      }
+      
+      const fetchGameName = async () => {
         try {
           const res = await fetch(`/api/games/${value}`);
           if (res.ok) {
@@ -77,18 +80,25 @@ export default function GameSearchSelect({ value, onChange, className = '' }: Ga
             setQuery(game.name);
           }
         } catch (error) {
-          console.error('게임 정보 로드 중 오류 발생:', error);
+          console.error('선택된 게임 정보 로드 중 오류 발생:', error);
         }
       };
-
-      fetchInitialGame();
+      fetchGameName();
+    } else {
+      // value가 없으면(선택 해제) query도 비웁니다.
+      setQuery('');
     }
   }, [value]);
 
   // 게임 선택 핸들러
-  const handleSelect = (game: Game) => {
-    setQuery(game.name);
-    onChange(game.id);
+  const handleSelect = (game: Game | null) => {
+    if (game) {
+      setQuery(game.name);
+      onChange(game.id);
+    } else {
+      setQuery('');
+      onChange('');
+    }
     setIsOpen(false);
   };
 
@@ -96,11 +106,6 @@ export default function GameSearchSelect({ value, onChange, className = '' }: Ga
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setQuery(newValue);
-    
-    // 입력 필드가 비어있으면 선택 해제
-    if (!newValue.trim()) {
-      onChange('');
-    }
     
     // 드롭다운 열기
     if (!isOpen) {
@@ -110,8 +115,10 @@ export default function GameSearchSelect({ value, onChange, className = '' }: Ga
 
   // 입력 필드 포커스 핸들러
   const handleFocus = () => {
-    if (query) {
-      setIsOpen(true);
+    setIsOpen(true);
+    // 검색어가 없을 때 포커스하면 전체 목록을 불러옴
+    if (!query) {
+      fetchGames('');
     }
   };
 
@@ -152,11 +159,19 @@ export default function GameSearchSelect({ value, onChange, className = '' }: Ga
         </button>
       </div>
 
-      {isOpen && query && (
+      {isOpen && (
         <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg">
-          {games.length > 0 ? (
-            <ul className="max-h-60 overflow-auto py-1 text-base focus:outline-none sm:text-sm">
-              {games.map((game) => (
+          <ul className="max-h-60 overflow-auto py-1 text-base focus:outline-none sm:text-sm">
+            <li
+              className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:bg-indigo-600 hover:text-white"
+              onClick={() => handleSelect(null)}
+            >
+              <span className="ml-3 truncate font-semibold">
+                -- 선택 없음 --
+              </span>
+            </li>
+            {games.length > 0 ? (
+              games.map((game) => (
                 <li
                   key={game.id}
                   className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:bg-indigo-600 hover:text-white"
@@ -192,13 +207,15 @@ export default function GameSearchSelect({ value, onChange, className = '' }: Ga
                     )}
                   </div>
                 </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-              검색 결과가 없습니다.
-            </div>
-          )}
+              ))
+            ) : (
+              query && (
+                <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                  검색 결과가 없습니다.
+                </div>
+              )
+            )}
+          </ul>
         </div>
       )}
     </div>

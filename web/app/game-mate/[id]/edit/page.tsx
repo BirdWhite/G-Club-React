@@ -1,22 +1,30 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'react-hot-toast';
 import { GamePost, GameParticipant } from '@/types/models';
 import ParticipantManager from '@/components/game/ParticipantManager';
 
+interface EditFormData {
+  title?: string;
+  content?: string;
+  maxPlayers?: number;
+  startTime?: string;
+}
+
 export default function EditGamePostPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [post, setPost] = useState<GamePost | null>(null);
-  const [formData, setFormData] = useState<Partial<GamePost>>({
+  const [formData, setFormData] = useState<EditFormData>({
     title: '',
     content: '',
     maxPlayers: 2,
+    startTime: '',
   });
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [gameSearchQuery, setGameSearchQuery] = useState('');
@@ -24,14 +32,18 @@ export default function EditGamePostPage() {
 
   // 게시글 데이터 불러오기
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-      return;
-    }
+    const fetchUserAndPost = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
 
-    if (!id) return;
+      if (!user) {
+        router.push('/auth/login');
+        return;
+      }
+      setUser(user);
 
-    const fetchPost = async () => {
+      if (!id) return;
+
       try {
         const postRes = await fetch(`/api/game-posts/${id}?includeParticipants=true`);
         
@@ -40,7 +52,7 @@ export default function EditGamePostPage() {
         const postData = await postRes.json();
         
         // 작성자 확인
-        if (postData.authorId !== session?.user?.id) {
+        if (postData.authorId !== user.id) {
           router.push(`/game-mate/${id}`);
           toast.error('권한이 없습니다.');
           return;
@@ -54,7 +66,9 @@ export default function EditGamePostPage() {
         }
         // startTime을 datetime-local 입력 형식에 맞게 변환하여 설정
         setFormData({
-          ...postData,
+          title: postData.title,
+          content: postData.content,
+          maxPlayers: postData.maxPlayers,
           startTime: postData.startTime ? new Date(postData.startTime).toISOString().slice(0, 16) : '',
         });
       } catch (error) {
@@ -66,10 +80,8 @@ export default function EditGamePostPage() {
       }
     };
 
-    if (status === 'authenticated') {
-      fetchPost();
-    }
-  }, [id, status, router, session?.user?.id]);
+    fetchUserAndPost();
+  }, [id, router]);
 
   // 날짜 형식을 datetime-local 입력에 맞게 변환하는 함수
   const formatDateForInput = (dateString: string) => {
@@ -88,7 +100,7 @@ export default function EditGamePostPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session?.user?.id || !post) {
+    if (!user || !post) {
       toast.error('로그인이 필요합니다.');
       return;
     }
@@ -215,12 +227,12 @@ export default function EditGamePostPage() {
           </div>
 
           {/* 참여자 관리 */}
-          {session?.user?.id && (
+          {user?.id && (
             <div className="pt-4 border-t border-gray-200">
               <ParticipantManager
                 initialParticipants={participants}
                 onParticipantsChange={(newParticipants) => setParticipants(newParticipants as GameParticipant[])}
-                currentUserId={session.user.id}
+                currentUserId={user.id}
               />
             </div>
           )}

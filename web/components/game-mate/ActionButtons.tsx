@@ -1,11 +1,11 @@
-type PostStatus = 'OPEN' | 'CLOSED' | 'COMPLETED';
+import { GamePostStatus } from '@/types/models';
 
 interface ActionButtonsProps {
   isAuthor: boolean;
   isParticipating: boolean;
   isFull: boolean;
   loading: boolean;
-  status: PostStatus;
+  status: GamePostStatus;
   onSubmit: () => void;
   onToggleStatus: () => void;
 }

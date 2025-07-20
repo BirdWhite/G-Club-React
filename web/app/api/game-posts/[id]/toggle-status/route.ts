@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/auth-options';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!session?.user) {
+  if (!user) {
     return NextResponse.json(
       { error: '로그인이 필요합니다.' },
       { status: 401 }
@@ -19,7 +19,6 @@ export async function PATCH(
   try {
     const { id } = params;
     
-    // 게시글 조회
     const post = await prisma.gamePost.findUnique({
       where: { id },
       select: {
@@ -36,8 +35,7 @@ export async function PATCH(
       );
     }
 
-    // 작성자 확인
-    if (post.authorId !== session.user.id) {
+    if (post.authorId !== user.id) {
       return NextResponse.json(
         { error: '권한이 없습니다.' },
         { status: 403 }
@@ -47,7 +45,6 @@ export async function PATCH(
     // 상태 토글 (OPEN <-> COMPLETED)
     const newStatus = post.status === 'OPEN' ? 'COMPLETED' : 'OPEN';
     
-    // 게시글 상태 업데이트
     const updatedPost = await prisma.gamePost.update({
       where: { id },
       data: {

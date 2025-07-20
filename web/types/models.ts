@@ -272,7 +272,7 @@ export interface GamePostFormData {
   content: string;
   gameId: string;
   maxPlayers: number;
-  startTime: string | Date;
+  startTime: string;
 }
 
 // 게임 필터링 옵션

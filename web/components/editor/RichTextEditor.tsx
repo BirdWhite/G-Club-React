@@ -18,9 +18,10 @@ interface RichTextEditorProps {
   onChange: (content: string) => void;
   postId?: string;
   onImageUpload?: (tempImages: string[]) => void;
+  disabled?: boolean;
 }
 
-export const RichTextEditor = ({ content, onChange, postId, onImageUpload }: RichTextEditorProps) => {
+export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disabled = false }: RichTextEditorProps) => {
   // 에디터 상태 관리
   const [editorReady, setEditorReady] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -37,6 +38,7 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload }: Ric
   const editor = useEditor({
     // Next.js SSR 하이드레이션 불일치 방지를 위해 추가
     immediatelyRender: false,
+    editable: !disabled,
     extensions: [
       StarterKit,
       Image.configure({
@@ -84,8 +86,9 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload }: Ric
   useEffect(() => {
     if (editor) {
       setEditorReady(true);
+      editor.setEditable(!disabled);
     }
-  }, [editor]);
+  }, [editor, disabled]);
 
   // 이미지 업로드 처리 함수
   const uploadImage = useCallback(async (file: File) => {
@@ -191,30 +194,31 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload }: Ric
   // 로딩 처리
   if (!editorReady) {
     return (
-      <div className="border border-gray-300 rounded-md overflow-hidden p-4 min-h-[300px] flex items-center justify-center">
-        <p>에디터 로딩중...</p>
+      <div className="border border-cyber-black-300 bg-cyber-black-100 rounded-md overflow-hidden p-4 min-h-[300px] flex items-center justify-center">
+        <p className="text-cyber-gray">에디터 로딩중...</p>
       </div>
     );
   }
 
   return (
-    <div className="border border-gray-300 rounded-md overflow-hidden">
+    <div className="border border-cyber-black-300 rounded-md overflow-hidden bg-cyber-black-100">
       {editor && (
         <BubbleMenu
           editor={editor}
           tippyOptions={{ duration: 100 }}
+          className="bg-cyber-black-400 border border-cyber-black-300 rounded-md shadow-lg"
         >
-          <div className="flex bg-white border border-gray-200 rounded shadow p-1">
+          <div className="flex p-1">
             <button
               onClick={() => editor.chain().focus().toggleBold().run()}
-              className={`p-1 ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
+              className={`p-1 rounded-sm ${editor.isActive('bold') ? 'bg-cyber-blue text-white' : 'text-cyber-gray hover:bg-cyber-black-300'}`}
               title="굵게"
             >
               <span className="material-icons" style={{fontSize: '18px'}}>format_bold</span>
             </button>
             <button
               onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={`p-1 ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
+              className={`p-1 rounded-sm ${editor.isActive('italic') ? 'bg-cyber-blue text-white' : 'text-cyber-gray hover:bg-cyber-black-300'}`}
               title="기울임"
             >
               <span className="material-icons" style={{fontSize: '18px'}}>format_italic</span>
@@ -226,7 +230,7 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload }: Ric
                   editor.chain().focus().setLink({ href: url }).run();
                 }
               }}
-              className={`p-1 ${editor.isActive('link') ? 'bg-gray-200' : ''}`}
+              className={`p-1 rounded-sm ${editor.isActive('link') ? 'bg-cyber-blue text-white' : 'text-cyber-gray hover:bg-cyber-black-300'}`}
               title="링크"
             >
               <span className="material-icons" style={{fontSize: '18px'}}>link</span>
@@ -243,6 +247,7 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload }: Ric
         setShowYoutubeMenu={setShowYoutubeMenu}
         setYoutubeUrl={setYoutubeUrl}
         setLinkUrl={setLinkUrl}
+        disabled={disabled}
       />
       
       {showLinkMenu && (
@@ -306,7 +311,15 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload }: Ric
         }
       `}</style>
       
-      <EditorContent editor={editor} className="prose max-w-none p-4 min-h-[300px]" />
+      <div
+        className="flex-grow cursor-text"
+        onClick={() => editor?.chain().focus().run()}
+      >
+        <EditorContent
+          editor={editor}
+          className="prose prose-invert max-w-none p-4 min-h-[300px] focus:outline-none"
+        />
+      </div>
     </div>
   );
 };

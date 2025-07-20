@@ -44,6 +44,20 @@ async function handleProfileUpdate(req: NextRequest) {
       // 이미지 URL에 타임스탬프 추가하여 캐시 무효화
       imageUrl = `${imageUrl}?t=${Date.now()}`;
     }
+
+    // 'NONE' 역할 조회
+    const noneRole = await prisma.role.findUnique({
+      where: { name: 'NONE' },
+      select: { id: true },
+    });
+
+    if (!noneRole) {
+      console.error("Default 'NONE' role not found in the database. Seeding might be required.");
+      return NextResponse.json(
+        { error: "기본 역할 설정을 찾을 수 없습니다. 관리자에게 문의하세요." },
+        { status: 500 }
+      );
+    }
     
     // 프로필 업데이트 또는 생성
     const profileData = {
@@ -58,6 +72,7 @@ async function handleProfileUpdate(req: NextRequest) {
       update: profileData,
       create: {
         userId,
+        roleId: noneRole.id, // 신규 생성 시 'NONE' 역할 할당
         ...profileData
       }
     });
@@ -102,7 +117,10 @@ export async function GET() {
     
     // 사용자 프로필 조회
     let userProfile = await prisma.userProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: {
+        role: true, // 역할 정보를 함께 불러옵니다.
+      }
     });
     
     // 프로필이 없는 경우 기본 프로필 생성
@@ -120,6 +138,9 @@ export async function GET() {
           birthDate: new Date('2000-01-01'), // 기본 생년월일
           image: user.user_metadata?.avatar_url || '',
           roleId: defaultRole?.id
+        },
+        include: {
+          role: true, // 생성된 프로필에도 역할 정보를 포함합니다.
         }
       });
     }

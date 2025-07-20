@@ -1,11 +1,12 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import { useGamePostDetail } from '@/hooks/useGamePostDetail';
-import type { GamePost, User, GameParticipant } from '@/types/models';
+import type { GamePost, UserProfile, GameParticipant, Comment } from '@/types/models';
 
 // 동적 임포트를 사용한 컴포넌트 로딩
 const GamePostHeader = dynamic(() => import('@/components/game-mate/GamePostHeader'), { ssr: true });
@@ -37,7 +38,30 @@ const NotFound = () => (
 export default function GamePostDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { data: session } = useSession();
+  const [user, setUser] = useState<any>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+
+  useEffect(() => {
+    const fetchUserAndComments = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+
+      // 댓글 데이터 불러오기
+      try {
+        const response = await fetch(`/api/game-posts/${id}/comments`);
+        if(response.ok) {
+          const commentsData = await response.json();
+          setComments(commentsData);
+        }
+      } catch (error) {
+        console.error("댓글 로딩 실패:", error);
+      }
+    };
+    if (id) {
+        fetchUserAndComments();
+    }
+  }, [id]);
 
   const {
     post,
@@ -50,7 +74,7 @@ export default function GamePostDetailPage() {
     handleDelete,
     handleCommentSubmit,
     handleDeleteComment,
-    handleParticipation,
+    toggleParticipation,
     toggleRecruitment,
   } = useGamePostDetail({ postId: id as string });
 
@@ -100,8 +124,8 @@ export default function GamePostDetailPage() {
 
       <div className="mt-8">
         <CommentsSection
-          comments={post.comments}
-          currentUserId={session?.user?.id || null}
+          comments={comments}
+          currentUserId={user?.id || null}
           onSubmit={handleCommentSubmit}
           onDelete={handleDeleteComment}
           isSubmitting={false}
@@ -111,21 +135,21 @@ export default function GamePostDetailPage() {
 
       {!isAuthor && (
         <div className="mt-8">
-          {session?.user?.id ? (
+          {user ? (
             <ActionButtons
               isAuthor={false}
               loading={submitting}
-              onSubmit={handleParticipation}
+              onSubmit={toggleParticipation}
               onToggleStatus={toggleRecruitment}
-              isParticipating={post.participants.some((p: GameParticipant) => p.user.id === session?.user?.id)}
-              isFull={post.participants.length >= post.maxPlayers}
-              status={post.status as 'OPEN' | 'CLOSED' | 'COMPLETED'}
+              isParticipating={isParticipating}
+              isFull={isFull}
+              status={post.status as 'OPEN' | 'FULL' | 'COMPLETED'}
             />
           ) : (
             <div className="text-center py-4">
               <p className="text-gray-600">참여를 원하시면 로그인이 필요합니다.</p>
               <button
-                onClick={() => router.push('/auth/signin')}
+                onClick={() => router.push('/auth/login')}
                 className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
               >
                 로그인하기

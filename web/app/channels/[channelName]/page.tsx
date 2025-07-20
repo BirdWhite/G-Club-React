@@ -1,267 +1,158 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import Image from 'next/image';
 
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  author: {
-    id: string;
-    name: string | null;
-    image: string | null;
-  };
-}
-
-interface BoardInfo {
+interface ChannelDetails {
   id: string;
   name: string;
   slug: string;
   description: string | null;
+  game?: {
+    name: string;
+    iconUrl: string | null;
+  };
+  board: {
+    id: string;
+    name: string;
+  } | null;
+  chatRoom: {
+    id: string;
+    name: string;
+  } | null;
 }
 
-interface Pagination {
-  page: number;
-  limit: number;
-  totalPosts: number;
-  totalPages: number;
-}
-
-export default function BoardPage() {
+export default function ChannelHubPage() {
   const params = useParams();
-  const slug = params.slug as string;
-  
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [boardInfo, setBoardInfo] = useState<BoardInfo | null>(null);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const router = useRouter();
+  const channelName = params.channelName as string;
+
+  const [channel, setChannel] = useState<ChannelDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const fetchBoardPosts = async () => {
+    if (!channelName) return;
+
+    const fetchChannelDetails = async () => {
       try {
         setIsLoading(true);
-        setError(null);
-        
-        const response = await fetch(`/api/boards/${slug}/posts?page=${currentPage}&limit=10`);
-        const data = await response.json();
-        
+        // API 라우트를 `/api/channels/[channelName]` 으로 변경해야 할 수도 있습니다.
+        const response = await fetch(`/api/channels/${channelName}`);
         if (!response.ok) {
-          throw new Error(data.error || '게시판 정보를 불러오는데 실패했습니다.');
+          if (response.status === 404) {
+            throw new Error('채널을 찾을 수 없습니다.');
+          }
+          throw new Error('채널 정보를 불러오는데 실패했습니다.');
         }
-        
-        setPosts(data.posts || []);
-        setBoardInfo(data.board || null);
-        setPagination(data.pagination || null);
+        const data = await response.json();
+        setChannel(data.channel);
       } catch (err) {
         setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
-        console.error('게시판 데이터 로딩 오류:', err);
       } finally {
         setIsLoading(false);
       }
     };
+    fetchChannelDetails();
+  }, [channelName]);
 
-    if (slug) {
-      fetchBoardPosts();
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        </div>
+      );
     }
-  }, [slug, currentPage]);
 
-  // 페이지 변경 핸들러
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo(0, 0);
-  };
-
-  // 페이지네이션 컴포넌트
-  const Pagination = () => {
-    if (!pagination) return null;
-    
-    const { page, totalPages } = pagination;
-    const pageNumbers = [];
-    
-    // 표시할 페이지 번호 범위 계산
-    let startPage = Math.max(1, page - 2);
-    let endPage = Math.min(totalPages, page + 2);
-    
-    // 시작 페이지가 1보다 크게 조정된 경우, 끝 페이지도 조정
-    if (startPage > 1) {
-      endPage = Math.min(totalPages, startPage + 4);
-    }
-    
-    // 끝 페이지가 전체 페이지보다 작게 조정된 경우, 시작 페이지도 조정
-    if (endPage < totalPages) {
-      startPage = Math.max(1, endPage - 4);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
-    }
-    
-    return (
-      <div className="flex justify-center mt-8">
-        <nav className="inline-flex">
-          {/* 이전 페이지 버튼 */}
-          <button
-            onClick={() => handlePageChange(page - 1)}
-            disabled={page === 1}
-            className={`px-3 py-1 rounded-l-md border ${
-              page === 1 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-white text-blue-600 hover:bg-blue-50'
-            }`}
+    if (error) {
+      return (
+        <div className="text-center py-10">
+          <p className="text-red-400 text-lg">{error}</p>
+          <button 
+            onClick={() => router.push('/channels')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            이전
+            채널 목록으로
           </button>
-          
-          {/* 페이지 번호 버튼 */}
-          {pageNumbers.map((num) => (
-            <button
-              key={num}
-              onClick={() => handlePageChange(num)}
-              className={`px-3 py-1 border-t border-b ${
-                num === page
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-blue-600 hover:bg-blue-50'
-              }`}
-            >
-              {num}
-            </button>
-          ))}
-          
-          {/* 다음 페이지 버튼 */}
-          <button
-            onClick={() => handlePageChange(page + 1)}
-            disabled={page === totalPages}
-            className={`px-3 py-1 rounded-r-md border ${
-              page === totalPages
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-white text-blue-600 hover:bg-blue-50'
-            }`}
-          >
-            다음
-          </button>
-        </nav>
-      </div>
-    );
-  };
+        </div>
+      );
+    }
 
-  if (isLoading) {
+    if (!channel) {
+      return <div className="text-center py-10 text-gray-400">채널 정보가 없습니다.</div>;
+    }
+
+    const hasBoard = channel.board !== null;
+    const hasChat = channel.chatRoom !== null;
+
     return (
-      <div className="min-h-screen bg-gray-50 py-10">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <>
+        <div className="flex items-center mb-6">
+          {channel.game?.iconUrl && (
+            <Image
+              src={channel.game.iconUrl}
+              alt={`${channel.game.name} icon`}
+              width={64}
+              height={64}
+              className="rounded-xl mr-5"
+            />
+          )}
+          <div>
+            <h1 className="text-4xl font-bold">{channel.name}</h1>
+            <p className="text-gray-400 mt-1">{channel.description}</p>
           </div>
         </div>
-      </div>
-    );
-  }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-10">
-        <div className="container mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <h1 className="text-2xl font-bold text-red-500 mb-4">오류</h1>
-            <p className="text-gray-700">{error}</p>
-            <Link href="/" className="mt-6 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-              홈으로 돌아가기
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 게시판 카드 */}
+          <div className={`rounded-xl p-6 ${hasBoard ? 'bg-cyber-black-200' : 'bg-cyber-black-200 opacity-50'}`}>
+            <h2 className="text-2xl font-bold mb-3">게시판</h2>
+            <p className="text-gray-400 mb-5 min-h-[40px]">
+              {hasBoard ? (channel.board?.name ? `${channel.board.name}에서 다양한 이야기를 나눠보세요.` : '채널 게시판에서 다양한 이야기를 나눠보세요.') : '이 채널에는 게시판이 없습니다.'}
+            </p>
+            <Link href={hasBoard ? `/channels/${channel.slug}/board` : '#'}>
+              <span
+                className={`inline-block w-full text-center font-semibold py-3 rounded-lg transition-colors ${
+                  hasBoard
+                    ? 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+                    : 'bg-gray-600 cursor-not-allowed'
+                }`}
+              >
+                {hasBoard ? '게시판으로 이동' : '비활성화됨'}
+              </span>
+            </Link>
+          </div>
+
+          {/* 채팅방 카드 */}
+          <div className={`rounded-xl p-6 ${hasChat ? 'bg-cyber-black-200' : 'bg-cyber-black-200 opacity-50'}`}>
+            <h2 className="text-2xl font-bold mb-3">채팅</h2>
+            <p className="text-gray-400 mb-5 min-h-[40px]">
+              {hasChat ? (channel.chatRoom?.name ? `${channel.chatRoom.name}에서 실시간으로 대화하세요.` : '채널 채팅방에서 실시간으로 대화하세요.') : '이 채널에는 채팅방이 없습니다.'}
+            </p>
+            <Link href={hasChat ? `/channels/${channel.slug}/chat` : '#'}>
+               <span
+                className={`inline-block w-full text-center font-semibold py-3 rounded-lg transition-colors ${
+                  hasChat
+                    ? 'bg-green-600 hover:bg-green-700 cursor-pointer'
+                    : 'bg-gray-600 cursor-not-allowed'
+                }`}
+              >
+                {hasChat ? '채팅 참여하기' : '비활성화됨'}
+              </span>
             </Link>
           </div>
         </div>
-      </div>
+      </>
     );
-  }
-
-  if (!boardInfo) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-10">
-        <div className="container mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">존재하지 않는 게시판입니다</h1>
-            <p className="text-gray-700">요청하신 게시판을 찾을 수 없습니다.</p>
-            <Link href="/" className="mt-6 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-              홈으로 돌아가기
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="container mx-auto px-4">
-        {/* 게시판 헤더 */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">{boardInfo.name}</h1>
-          {boardInfo.description && (
-            <p className="text-gray-600 mt-2">{boardInfo.description}</p>
-          )}
-        </div>
-        
-        {/* 게시글 목록 */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* 게시글 목록 헤더 */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-medium">게시글 목록</h2>
-            <Link 
-              href={`/boards/${slug}/write`}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-            >
-              글쓰기
-            </Link>
-          </div>
-          
-          {/* 게시글이 없는 경우 */}
-          {posts.length === 0 ? (
-            <div className="p-10 text-center text-gray-500">
-              등록된 게시글이 없습니다.
-            </div>
-          ) : (
-            <>
-              {/* 게시글 목록 테이블 */}
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제목</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작성자</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작성일</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {posts.map((post) => (
-                    <tr key={post.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <Link href={`/posts/${post.id}`} className="text-blue-600 hover:text-blue-800">
-                          {post.title}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {post.author.name || '알 수 없음'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {formatDistanceToNow(new Date(post.createdAt), { 
-                          addSuffix: true,
-                          locale: ko 
-                        })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {/* 페이지네이션 */}
-              <Pagination />
-            </>
-          )}
-        </div>
+    <div className="min-h-screen bg-cyber-black-100 text-white p-4 sm:p-6 lg:p-8">
+      <div className="max-w-4xl mx-auto">
+        {renderContent()}
       </div>
     </div>
   );

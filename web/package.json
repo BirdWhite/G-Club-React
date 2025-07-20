@@ -3,15 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 8080",
+    "dev": "next dev -p 8080",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
-    "@prisma/client": "^6.11.1",
+    "@next/codemod": "^15.4.2",
+    "@prisma/client": "^6.9.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.5",
     "@tiptap/extension-image": "^2.14.0",
@@ -23,10 +30,11 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.525.0",
     "material-icons": "^1.13.14",
-    "next": "15.3.3",
+    "next": "^15.4.2",
     "prisma": "^6.9.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^18.2.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-dom": "^18.2.0",
     "react-easy-crop": "^5.4.2",
     "react-hot-toast": "^2.5.2",
     "react-toastify": "^11.0.5",
@@ -38,14 +46,16 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.10",
-    "@types/node": "^20",
+    "@types/node": "^20.19.9",
     "@types/react": "^19",
+    "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "postcss": "^8.5.5",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

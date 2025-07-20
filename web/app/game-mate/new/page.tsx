@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'react-hot-toast';
 import { getCurrentDateTime } from '@/lib/dateUtils';
 import GameSearchSelect from '@/components/game-mate/GameSearchSelect';
 import type { Game, GamePostFormData } from '@/types/models';
 
 export default function NewGamePostPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
   
   const [games, setGames] = useState<Game[]>([]);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
@@ -45,9 +45,17 @@ export default function NewGamePostPage() {
     }
   };
 
-  // 게임 목록 불러오기
+  // 인증 상태 및 게임 목록 불러오기
   useEffect(() => {
-    const fetchGames = async () => {
+    const checkAuthAndFetchGames = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/auth/login?callbackUrl=/game-mate/new');
+        return;
+      }
+      setUser(user);
+
       try {
         const res = await fetch('/api/games?limit=100');
         if (res.ok) {
@@ -61,15 +69,8 @@ export default function NewGamePostPage() {
       }
     };
 
-    fetchGames();
-  }, []);
-
-  // 인증 상태 확인
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login?callbackUrl=/game-mate/new');
-    }
-  }, [status, router]);
+    checkAuthAndFetchGames();
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -86,6 +87,11 @@ export default function NewGamePostPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user) {
+      toast.error('로그인이 필요합니다.');
+      return;
+    }
     
     if (!formData.title.trim()) {
       toast.error('제목을 입력해주세요.');
@@ -115,7 +121,7 @@ export default function NewGamePostPage() {
     setSubmitting(true);
     
     try {
-      const response = await fetch('/api/game-mate/posts', {
+      const response = await fetch('/api/game-posts', { // API 경로 확인 필요
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,7 +151,7 @@ export default function NewGamePostPage() {
     return now.toISOString().slice(0, 16);
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) { // user 로딩도 포함
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>

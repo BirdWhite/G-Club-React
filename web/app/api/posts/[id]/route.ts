@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/auth-options';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
-import { UserRole, hasBoardPermission, hasGlobalPermission } from '@/lib/auth/roles';
+import { hasGlobalPermission } from '@/lib/auth/roles';
 import fs from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
 
 // Next.js 15에서 동적 라우트 파라미터 처리
-type Params = Promise<{ id: string }>
+type Params = {
+  id: string;
+}
 
 // GET 요청 처리 - 게시글 조회
 export async function GET(
@@ -16,56 +17,68 @@ export async function GET(
   { params }: { params: Params }
 ) {
   try {
-    // Next.js 15에서는 params를 비동기적으로 처리해야 함
-    const { id } = await params;
-    
-    // 게시글 조회
+    const { id } = params;
+
     const post = await prisma.post.findUnique({
       where: { id },
       include: {
         author: {
           select: {
-            id: true,
+            userId: true,
             name: true,
             image: true
           }
         },
         board: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            description: true
+          include: {
+            channel: true
           }
         }
       }
     });
-    
-    // 게시글이 없는 경우
+
     if (!post) {
       return NextResponse.json({ error: '존재하지 않는 게시글입니다.' }, { status: 404 });
     }
-    
-    // 비공개 게시글인 경우 권한 체크
+
     if (!post.published) {
-      const session = await getServerSession(authOptions);
-      
-      // 로그인하지 않은 경우 접근 불가
-      if (!session || !session.user) {
+      const supabase = await createClient();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
         return NextResponse.json({ error: '비공개 게시글에 접근할 권한이 없습니다.' }, { status: 403 });
       }
-      
-      const userRole = (session.user as any).role as UserRole;
-      const isAdmin = hasGlobalPermission(userRole, 'canAccessAdminPanel');
-      const isAuthor = session.user.id === post.authorId;
-      
-      // 관리자나 작성자가 아닌 경우 접근 불가
+
+      const userProfile = await prisma.userProfile.findUnique({
+        where: { userId: user.id },
+        include: { role: true },
+      });
+
+      if (!userProfile || !userProfile.role) {
+        return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 404 });
+      }
+
+      const isAdmin = hasGlobalPermission(userProfile.role.name, 'canAccessAdminPanel');
+      const isAuthor = user.id === post.authorId;
+
       if (!isAdmin && !isAuthor) {
         return NextResponse.json({ error: '비공개 게시글에 접근할 권한이 없습니다.' }, { status: 403 });
       }
     }
     
-    return NextResponse.json({ post });
+    // board.slug 대신 board.channel.slug를 사용하도록 데이터를 가공
+    const responsePost = {
+      ...post,
+      board: {
+        ...post.board,
+        slug: post.board.channel.slug, // slug를 채널 슬러그로 대체
+      },
+    };
+    // channel 정보는 더 이상 필요 없으므로 제거
+    delete (responsePost.board as any).channel;
+
+
+    return NextResponse.json({ post: responsePost });
   } catch (error) {
     console.error('게시글 조회 오류:', error);
     return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
@@ -78,11 +91,12 @@ export async function PATCH(
   { params }: { params: Params }
 ) {
   try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
+    const { id } = params;
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     // 로그인하지 않은 경우
-    if (!session || !session.user) {
+    if (userError || !user) {
       return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
     }
     
@@ -99,9 +113,17 @@ export async function PATCH(
       return NextResponse.json({ error: '존재하지 않는 게시글입니다.' }, { status: 404 });
     }
     
-    const userRole = (session.user as any).role as UserRole;
-    const isAdmin = hasGlobalPermission(userRole, 'canAccessAdminPanel');
-    const isAuthor = session.user.id === post.authorId;
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      include: { role: true },
+    });
+
+    if (!userProfile || !userProfile.role) {
+      return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    const isAdmin = hasGlobalPermission(userProfile.role.name, 'canAccessAdminPanel');
+    const isAuthor = user.id === post.authorId;
     
     // 자신의 글이 아니고 관리자도 아닌 경우 수정 불가
     if (!isAuthor && !isAdmin) {
@@ -166,16 +188,14 @@ export async function PATCH(
       include: {
         author: {
           select: {
-            id: true,
+            userId: true,
             name: true,
             image: true
           }
         },
         board: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
+          include: {
+            channel: true
           }
         }
       }
@@ -193,7 +213,16 @@ export async function PATCH(
         });
     }
     
-    return NextResponse.json({ post: updatedPost });
+    const responsePost = {
+      ...updatedPost,
+      board: {
+        ...updatedPost.board,
+        slug: updatedPost.board.channel.slug,
+      },
+    };
+    delete (responsePost.board as any).channel;
+
+    return NextResponse.json({ post: responsePost });
   } catch (error) {
     console.error('게시글 수정 오류:', error);
     return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
@@ -206,13 +235,15 @@ export async function DELETE(
   { params }: { params: Params }
 ) {
   try {
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
     // 세션 확인
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
+    if (userError || !user) {
       return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     
     // 게시글 존재 여부 확인
     const post = await prisma.post.findUnique({
@@ -224,10 +255,19 @@ export async function DELETE(
       return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
     }
     
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      include: { role: true },
+    });
+
+    if (!userProfile || !userProfile.role) {
+      return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 404 });
+    }
+
     // 삭제 권한 확인 (작성자 또는 관리자/슈퍼어드민만 삭제 가능)
-    if (post.authorId !== session.user.id && 
-        session.user.role !== 'ADMIN' && 
-        session.user.role !== 'SUPER_ADMIN') {
+    if (post.authorId !== user.id && 
+        userProfile.role.name !== 'ADMIN' && 
+        userProfile.role.name !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
     }
     

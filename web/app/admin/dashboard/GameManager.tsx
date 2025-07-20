@@ -14,11 +14,23 @@ export default function GameManager() {
   const [formData, setFormData] = useState<Omit<Game, 'id' | 'createdAt' | 'updatedAt'>>({
     name: '',
     description: '',
-    iconUrl: '', // null 대신 빈 문자열로 초기화
-    aliases: [] // 문자열 배열로 관리
+    iconUrl: '',
+    aliases: []
   });
+  const [aliasesInput, setAliasesInput] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // 미리보기 URL이 변경될 때 이전 URL을 해제하여 메모리 누수 방지
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   useEffect(() => {
     fetchGames();
@@ -53,11 +65,37 @@ export default function GameManager() {
       return;
     }
 
+    setIsUploading(true);
+
     try {
+      let finalIconUrl = editingGame?.iconUrl || '';
+
+      // 새 파일이 선택된 경우에만 업로드 실행
+      if (selectedFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', selectedFile);
+        uploadFormData.append('uploadType', 'gameIcon');
+
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadFormData,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('아이콘 이미지 업로드에 실패했습니다.');
+        }
+        const { url } = await uploadResponse.json();
+        finalIconUrl = url;
+      }
+
       const url = editingGame ? `/api/games/${editingGame.id}` : '/api/games';
       const method = editingGame ? 'PUT' : 'POST';
       
-      const gameData = { ...formData };
+      const gameData = { 
+        ...formData,
+        iconUrl: finalIconUrl,
+        aliases: aliasesInput.split(',').map(a => a.trim().toLowerCase()).filter(a => a.length > 0)
+      };
       
       const response = await fetch(url, {
         method,
@@ -68,13 +106,18 @@ export default function GameManager() {
         body: JSON.stringify(gameData)
       });
 
-      if (!response.ok) throw new Error(editingGame ? '게임 수정에 실패했습니다.' : '게임 추가에 실패했습니다.');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || (editingGame ? '게임 수정에 실패했습니다.' : '게임 추가에 실패했습니다.'));
+      }
 
       toast.success(editingGame ? '게임이 수정되었습니다.' : '게임이 추가되었습니다.');
       fetchGames();
       resetForm();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '오류가 발생했습니다.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -104,6 +147,9 @@ export default function GameManager() {
       iconUrl: game.iconUrl || '', // null이면 빈 문자열로 설정
       aliases: game.aliases || [] // undefined면 빈 배열로 설정
     });
+    setAliasesInput(game.aliases?.join(', ') || '');
+    setPreviewUrl(null); // 수정 시작 시 미리보기 초기화
+    setSelectedFile(null); // 수정 시작 시 선택 파일 초기화
     setIsAdding(true);
   };
 
@@ -114,36 +160,25 @@ export default function GameManager() {
       iconUrl: '',
       aliases: []
     });
+    setAliasesInput('');
     setEditingGame(null);
     setIsAdding(false);
+    setSelectedFile(null);
+    setPreviewUrl(null);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('isTemporary', 'false');
+    setSelectedFile(file);
 
-    setIsUploading(true);
-    
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error('이미지 업로드에 실패했습니다.');
-
-      const { url } = await response.json();
-      setFormData(prev => ({ ...prev, iconUrl: url }));
-    } catch (err) {
-      toast.error('이미지 업로드 중 오류가 발생했습니다.');
-    } finally {
-      setIsUploading(false);
+    // 기존 미리보기 URL 해제
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
     }
+    // 새 미리보기 URL 생성
+    setPreviewUrl(URL.createObjectURL(file));
   };
 
   if (loading) return <div>로딩 중...</div>;
@@ -152,7 +187,7 @@ export default function GameManager() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-medium">게임 관리</h2>
+        <h2 className="text-lg text-gray-500 font-medium">게임 관리</h2>
         <button
           type="button"
           onClick={() => setIsAdding(true)}
@@ -212,7 +247,7 @@ export default function GameManager() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">
+              <h3 className="text-lg text-gray-500 font-medium">
                 {editingGame ? '게임 수정' : '새 게임 추가'}
               </h3>
               <button
@@ -225,13 +260,42 @@ export default function GameManager() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700">아이콘</label>
+                <div className="mt-1 flex items-center">
+                  <span className="inline-block h-12 w-12 rounded-full overflow-hidden bg-gray-100">
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="미리보기" className="h-full w-full object-cover" />
+                    ) : formData.iconUrl ? (
+                      <img src={formData.iconUrl} alt={formData.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <PhotoIcon className="h-full w-full text-gray-300" />
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                  >
+                    이미지 선택
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    accept="image/*"
+                  />
+                </div>
+              </div>
+              
+              <div>
                 <label className="block text-sm font-medium text-gray-700">게임 이름</label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name || ''}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full text-gray-500 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   required
                 />
               </div>
@@ -241,97 +305,41 @@ export default function GameManager() {
                 <input
                   type="text"
                   name="aliases"
-                  value={formData.aliases?.join(', ') || ''}
-                  onChange={(e) => {
-                    const aliases = e.target.value
-                      .split(',')
-                      .map(a => a.trim())
-                      .filter(a => a.length > 0);
-                    setFormData(prev => ({
-                      ...prev,
-                      aliases
-                    }));
-                  }}
-                  placeholder="쉼표로 구분된 별칭 (예: 리그 오브 레전드, 롤, lol)"
-                  className="w-full p-2 border rounded"
+                  value={aliasesInput}
+                  onChange={(e) => setAliasesInput(e.target.value)}
+                  className="mt-1 block w-full text-gray-500 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="쉼표(,)로 구분하여 입력"
                 />
-                <p className="mt-1 text-xs text-gray-500">게임의 다른 이름을 쉼표로 구분하여 입력하세요.</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">설명</label>
                 <textarea
                   name="description"
+                  rows={3}
                   value={formData.description || ''}
                   onChange={handleInputChange}
-                  rows={3}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full text-gray-500 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">아이콘</label>
-                <div className="mt-1 flex items-center">
-                  {formData.iconUrl ? (
-                    <div className="relative">
-                      <img
-                        src={formData.iconUrl || ''}
-                        alt="미리보기"
-                        className="h-16 w-16 rounded-full object-cover"
-                        onError={(e) => {
-                          // 이미지 로드 실패 시 빈 이미지로 대체
-                          const target = e.target as HTMLImageElement;
-                          target.src = '';
-                          target.style.display = 'none';
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, iconUrl: '' }))}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                      >
-                        <XMarkIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center justify-center h-16 w-16 rounded-full border-2 border-dashed border-gray-300 cursor-pointer hover:border-gray-400"
-                    >
-                      <PhotoIcon className="h-8 w-8 text-gray-400" />
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
+              <div className="pt-5">
+                <div className="flex justify-end">
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="ml-4 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    onClick={resetForm}
+                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
-                    {isUploading ? '업로드 중...' : '이미지 선택'}
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUploading}
+                    className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {isUploading ? '저장 중...' : '저장'}
                   </button>
                 </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  {editingGame ? '수정' : '추가'}
-                </button>
               </div>
             </form>
           </div>

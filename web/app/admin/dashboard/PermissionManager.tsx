@@ -1,127 +1,150 @@
-"use client";
-import { useState, useEffect } from "react";
-import { UserRole, ROLE_NAMES, ROLE_PERMISSIONS, Permission } from "@/lib/auth/roles";
+'use client';
 
-const permissionLabels: Record<keyof Permission, string> = {
-  canViewPosts: "게시글 조회",
-  canCreatePosts: "게시글 작성",
-  canEditOwnPosts: "내 게시글 수정",
-  canDeleteOwnPosts: "내 게시글 삭제",
-  canEditAllPosts: "전체 게시글 수정",
-  canDeleteAllPosts: "전체 게시글 삭제",
-  canViewUserList: "사용자 목록 조회",
-  canManageUsers: "사용자 관리",
-  canChangeUserRoles: "사용자 권한 변경",
-  canAccessAdminPanel: "관리자 대시보드 접근",
-  canManageAdmins: "관리자 관리",
+import { useState, useEffect } from 'react';
+import type { Role, Permission } from '@prisma/client';
+import { useProfile } from '@/contexts/ProfileProvider';
+import { isSuperAdmin } from '@/lib/auth/roles';
+
+type RoleWithPermissions = Role & {
+  permissions: Permission[];
 };
 
 export default function PermissionManager() {
-  const [permissions, setPermissions] = useState(ROLE_PERMISSIONS);
+  const { profile } = useProfile();
+  const [roles, setRoles] = useState<RoleWithPermissions[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // 서버에서 권한 설정 불러오기
-  const loadPermissions = async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch("/api/admin/permissions");
-      const data = await res.json();
-      
-      // 서버에 저장된 권한이 있으면 사용, 없으면 기본값 유지
-      if (data.permissions) {
-        setPermissions(data.permissions);
-      }
-    } catch (err) {
-      console.error("권한 정보 로딩 실패:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const isSuperAdminUser = isSuperAdmin(profile?.role);
 
-  // 컴포넌트 마운트 시 권한 설정 불러오기
   useEffect(() => {
-    loadPermissions();
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [rolesRes, permissionsRes] = await Promise.all([
+          fetch('/api/admin/roles'),
+          fetch('/api/admin/permissions'),
+        ]);
+
+        if (!rolesRes.ok || !permissionsRes.ok) {
+          throw new Error('역할 또는 권한 정보를 불러오는데 실패했습니다.');
+        }
+
+        const rolesData = await rolesRes.json();
+        const permissionsData = await permissionsRes.json();
+        
+        // 권한 목록을 이름 순으로 정렬
+        const sortedPermissions = permissionsData.permissions.sort((a: Permission, b: Permission) => 
+          a.name.localeCompare(b.name)
+        );
+        
+        setRoles(rolesData.roles || []);
+        setPermissions(sortedPermissions || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '알 수 없는 오류 발생');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
-  const handleToggle = (role: UserRole, key: keyof Permission) => {
-    setPermissions((prev) => ({
-      ...prev,
-      [role]: { ...prev[role], [key]: !prev[role][key] },
-    }));
-  };
+  const handlePermissionToggle = async (roleId: string, permissionId: string, currentlyHasPermission: boolean) => {
+    if (!isSuperAdminUser) {
+      alert('권한 변경은 슈퍼 관리자만 가능합니다.');
+      return;
+    }
 
-  // 권한 저장 함수
-  const savePermissions = async () => {
+    setIsSaving(true);
     try {
-      const res = await fetch("/api/admin/permissions", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ permissions }),
+      const res = await fetch(`/api/admin/roles/${roleId}/permissions`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          permissionId,
+          action: currentlyHasPermission ? 'remove' : 'add'
+        }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        alert("권한이 성공적으로 저장되었습니다.");
-        // 저장 후 최신 데이터 다시 불러오기
-        await loadPermissions();
-      } else {
-        alert(data.error || "저장에 실패했습니다.");
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || '권한 변경에 실패했습니다.');
       }
+
+      // 로컬 상태 업데이트
+      setRoles(roles.map(role => {
+        if (role.id !== roleId) return role;
+
+        const updatedPermissions = currentlyHasPermission
+          ? role.permissions.filter(p => p.id !== permissionId)
+          : [...role.permissions, permissions.find(p => p.id === permissionId)!];
+
+        return {
+          ...role,
+          permissions: updatedPermissions,
+        };
+      }));
     } catch (err) {
-      alert("저장 중 오류가 발생했습니다.");
+      alert(err instanceof Error ? err.message : '권한 변경 중 오류 발생');
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  if (isLoading) return <div>로딩 중...</div>;
+  if (error) return <div className="text-red-500">오류: {error}</div>;
+
   return (
-    <div className="mt-6">
-      <h2 className="text-xl font-bold mb-4">역할별 권한 관리</h2>
-      
-      {isLoading ? (
-        <div className="mt-4 text-gray-500">권한 정보 로딩 중...</div>
-      ) : (
-        <button
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          onClick={savePermissions}
-        >
-          저장
-        </button>
-      )}
-      
-      <div className="overflow-x-auto mt-4">
-        {isLoading ? (
-          <div className="p-4 text-center">로딩 중...</div>
-        ) : (
-          <table className="min-w-max bg-white rounded shadow">
-            <thead>
-              <tr>
-                <th className="p-2">권한 항목</th>
-                {Object.values(UserRole).map((role) => (
-                  <th className="p-2" key={role}>{ROLE_NAMES[role]}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Object.keys(permissionLabels).map((key) => (
-                <tr key={key}>
-                  <td className="p-2 font-medium">{permissionLabels[key as keyof Permission]}</td>
-                  {Object.values(UserRole).map((role) => (
-                    <td className="p-2 text-center" key={role}>
-                      <input
-                        type="checkbox"
-                        checked={permissions[role][key as keyof Permission]}
-                        onChange={() => handleToggle(role as UserRole, key as keyof Permission)}
-                        className="accent-blue-500"
-                        disabled={role === "SUPER_ADMIN"}
-                      />
-                    </td>
-                  ))}
-                </tr>
+    <div className="bg-white shadow rounded-lg p-6">
+      <h2 className="text-2xl font-bold mb-4 text-gray-800">권한 관리</h2>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">권한 \ 역할</th>
+              {roles.map(role => (
+                <th key={role.id} className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                  {role.name}
+                </th>
               ))}
-            </tbody>
-          </table>
-        )}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {permissions.map(permission => (
+              <tr key={permission.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{permission.name}</div>
+                  {permission.description && (
+                    <div className="text-xs text-gray-500">{permission.description}</div>
+                  )}
+                </td>
+                {roles.map(role => {
+                  const hasPermission = role.permissions.some(p => p.id === permission.id);
+                  const isDisabled = !isSuperAdminUser || role.name === 'SUPER_ADMIN';
+                  
+                  return (
+                    <td key={role.id} className="px-6 py-4 text-center">
+                      <button
+                        onClick={() => handlePermissionToggle(role.id, permission.id, hasPermission)}
+                        disabled={isDisabled || isSaving}
+                        className={`w-8 h-8 rounded-full font-bold ${
+                          hasPermission
+                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                            : 'bg-red-100 text-red-800 hover:bg-red-200'
+                        } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        {hasPermission ? 'O' : 'X'}
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      
-      <div className="mt-4 text-gray-500 text-sm">※ SUPER_ADMIN 권한은 항상 모든 권한이 활성화되어 있습니다.</div>
     </div>
   );
 }

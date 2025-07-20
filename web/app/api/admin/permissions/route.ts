@@ -1,70 +1,96 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/auth-options';
-import { UserRole, GlobalPermission, hasGlobalPermission } from '@/lib/auth/roles';
+import { type NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
+import { isAdmin_Server, hasPermission_Server } from '@/lib/auth/serverAuth';
+import { type Role } from '@prisma/client';
 
-// GET 요청 처리 - 현재 역할별 글로벌 권한 설정 조회
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      include: { role: true },
+    });
+
+    if (!userProfile || !userProfile.role) {
+      return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
     }
 
-    // 글로벌 권한 설정 조회 (마이그레이션 완료 - 새 테이블 사용)
-    const config = await prisma.globalPermissionConfig.findUnique({ where: { id: 1 } });
-    
-    return NextResponse.json({ 
-      permissions: config?.json || null 
+    // 관리자 권한 확인
+    if (!isAdmin_Server(userProfile.role)) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+    }
+
+    const permissions = await prisma.permission.findMany({
+      orderBy: { name: 'asc' },
     });
-  } catch (error) {
-    console.error('권한 조회 오류:', error);
-    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
+
+    return NextResponse.json({ permissions });
+  } catch (error: any) {
+    console.error('Error fetching permissions:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// PATCH 요청 처리 - 역할별 글로벌 권한 설정 업데이트
-export async function PATCH(request: NextRequest) {
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
-    }
-
-    const sessionRole = (session.user as any).role as UserRole;
-    let currentPermissions: Record<UserRole, GlobalPermission> | undefined;
-
-    // 현재 권한 설정 조회 (마이그레이션 완료 - 새 테이블 사용)
-    const config = await prisma.globalPermissionConfig.findUnique({ where: { id: 1 } });
-    if (config?.json) {
-      const jsonData = config.json as unknown;
-      if (typeof jsonData === 'object' && jsonData !== null && !Array.isArray(jsonData)) {
-        currentPermissions = jsonData as Record<UserRole, GlobalPermission>;
-      }
-    }
-
-    // 권한 체크
-    if (!hasGlobalPermission(sessionRole, 'canChangeUserRoles')) {
-      return NextResponse.json(
-        { error: '권한이 없습니다.' },
-        { status: 403 }
-      );
-    }
-
-    // 요청 데이터 파싱
-    const { permissions } = await request.json();
-
-    // DB에 저장 (upsert) - 마이그레이션 완료 - 새 테이블 사용
-    await prisma.globalPermissionConfig.upsert({
-      where: { id: 1 },
-      update: { json: permissions },
-      create: { id: 1, json: permissions },
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      include: { role: true },
     });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('권한 업데이트 오류:', error);
-    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
+    if (!userProfile || !userProfile.role) {
+      return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const { roleId, permissionName, hasPermission } = body;
+
+    const hasManagePermission = await hasPermission_Server(userProfile.role.id, 'MANAGE_ROLES');
+    if (!hasManagePermission) {
+      return NextResponse.json({ error: 'Not authorized to manage roles' }, { status: 403 });
+    }
+
+    if (hasPermission) {
+      await prisma.role.update({
+        where: { id: roleId },
+        data: {
+          permissions: {
+            connect: { name: permissionName },
+          },
+        },
+      });
+    } else {
+      await prisma.role.update({
+        where: { id: roleId },
+        data: {
+          permissions: {
+            disconnect: { name: permissionName },
+          },
+        },
+      });
+    }
+
+    return NextResponse.json({ message: 'Permission updated successfully' });
+  } catch (error: any) {
+    console.error('Error updating permission:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

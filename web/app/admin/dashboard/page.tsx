@@ -1,16 +1,17 @@
 'use client';
 
-import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import UserRoleManager from './UserRoleManager';
 import PermissionManager from './PermissionManager';
-import BoardManager from './BoardManager';
+import ChannelManager from './ChannelManager';
 import GameManager from './GameManager';
 import { useSearchParams } from 'next/navigation';
+import { useProfile } from '@/contexts/ProfileProvider';
+import { isAdmin } from '@/lib/auth/roles'; // isAdmin 함수 임포트
 
 export default function AdminDashboard() {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const { profile, isLoading } = useProfile();
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -18,18 +19,20 @@ export default function AdminDashboard() {
   const getInitialTab = () => {
     const tabParam = searchParams?.get('tab');
     if (tabParam === 'permission') return 'permission';
-    if (tabParam === 'board') return 'board';
+    if (tabParam === 'channel') return 'channel';
     if (tabParam === 'games') return 'games';
     return 'user';
   };
   
-  const [tab, setTab] = useState<'user' | 'permission' | 'board' | 'games'>(getInitialTab);
+  const [tab, setTab] = useState<'user' | 'permission' | 'channel' | 'games'>(getInitialTab);
+
+  const hasAdminAccess = isAdmin(profile?.role); // isAdmin 함수 사용
 
   useEffect(() => {
-    if (!isLoading && (!isAuthenticated || !isAdmin())) {
+    if (!isLoading && !hasAdminAccess) {
       router.push('/');
     }
-  }, [isAuthenticated, isAdmin, isLoading, router]);
+  }, [profile, isLoading, hasAdminAccess, router]);
 
   const handleTabChange = (newTab: string) => {
     setTab(newTab as any);
@@ -49,7 +52,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!isAuthenticated || !isAdmin()) {
+  if (!hasAdminAccess) {
     return null;
   }
 
@@ -63,25 +66,25 @@ export default function AdminDashboard() {
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => handleTabChange('user')}
-                className={`${tab === 'user' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                className={`${tab === 'user' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-800 hover:text-gray-900 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
                 사용자 관리
               </button>
               <button
                 onClick={() => handleTabChange('permission')}
-                className={`${tab === 'permission' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                className={`${tab === 'permission' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-800 hover:text-gray-900 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
                 권한 관리
               </button>
               <button
-                onClick={() => handleTabChange('board')}
-                className={`${tab === 'board' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                onClick={() => handleTabChange('channel')}
+                className={`${tab === 'channel' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-800 hover:text-gray-900 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
-                게시판 관리
+                채널 관리
               </button>
               <button
                 onClick={() => handleTabChange('games')}
-                className={`${tab === 'games' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                className={`${tab === 'games' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-800 hover:text-gray-900 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
                 게임 관리
               </button>
@@ -91,7 +94,7 @@ export default function AdminDashboard() {
           <div className="mt-6">
             {tab === 'user' && <UserRoleManager />}
             {tab === 'permission' && <PermissionManager />}
-            {tab === 'board' && <BoardManager />}
+            {tab === 'channel' && <ChannelManager />}
             {tab === 'games' && <GameManager />}
           </div>
         </div>

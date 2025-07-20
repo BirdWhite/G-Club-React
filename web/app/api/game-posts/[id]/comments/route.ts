@@ -1,34 +1,32 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/auth-options';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 
-// 댓글 목록 조회
+// 채팅 메시지(댓글) 목록 조회
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id: postId } = await params;
+    const { id: postId } = params;
 
-    // 모집글 존재 여부 확인
-    const postExists = await prisma.gamePost.findUnique({
+    const post = await prisma.gamePost.findUnique({
       where: { id: postId },
-      select: { id: true },
+      include: { chatRoom: true },
     });
 
-    if (!postExists) {
-      return NextResponse.json(
-        { error: '모집글을 찾을 수 없습니다.' },
-        { status: 404 }
-      );
+    if (!post) {
+      return NextResponse.json({ error: '모집글을 찾을 수 없습니다.' }, { status: 404 });
     }
 
-    // 댓글 목록 조회
-    const comments = await prisma.gameComment.findMany({
-      where: { gamePostId: postId },
+    if (!post.chatRoom) {
+      return NextResponse.json([]); // 채팅방이 없으면 빈 배열 반환
+    }
+
+    const messages = await prisma.chatMessage.findMany({
+      where: { chatRoomId: post.chatRoom.id },
       include: {
-        author: {
+        user: { // UserProfile을 'user'로 alias
           select: {
             id: true,
             name: true,
@@ -39,79 +37,78 @@ export async function GET(
       orderBy: { createdAt: 'asc' },
     });
 
-    return NextResponse.json(comments);
+    return NextResponse.json(messages);
   } catch (error) {
-    console.error('댓글 목록 조회 오류:', error);
-    return NextResponse.json(
-      { error: '댓글을 불러오는 중 오류가 발생했습니다.' },
-      { status: 500 }
-    );
+    console.error('채팅 메시지 조회 오류:', error);
+    return NextResponse.json({ error: '메시지를 불러오는 중 오류가 발생했습니다.' }, { status: 500 });
   }
 }
 
-// 댓글 작성
+// 채팅 메시지(댓글) 작성
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!session?.user) {
-    return NextResponse.json(
-      { error: '로그인이 필요합니다.' },
-      { status: 401 }
-    );
+  if (!user) {
+    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
   try {
-    const { id: postId } = await params;
+    const { id: postId } = params;
     const { content } = await request.json();
 
-    // 필수 필드 검증
     if (!content || content.trim() === '') {
-      return NextResponse.json(
-        { error: '댓글 내용을 입력해주세요.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '메시지 내용을 입력해주세요.' }, { status: 400 });
     }
 
-    // 모집글 존재 여부 확인
-    const postExists = await prisma.gamePost.findUnique({
-      where: { id: postId },
-      select: { id: true },
-    });
-
-    if (!postExists) {
-      return NextResponse.json(
-        { error: '모집글을 찾을 수 없습니다.' },
-        { status: 404 }
-      );
+    const post = await prisma.gamePost.findUnique({ where: { id: postId } });
+    if (!post) {
+      return NextResponse.json({ error: '모집글을 찾을 수 없습니다.' }, { status: 404 });
     }
+    
+    // 트랜잭션으로 채팅방 생성 및 메시지 작성 처리
+    const newMessage = await prisma.$transaction(async (tx) => {
+      let chatRoom = await tx.chatRoom.findUnique({
+        where: { gamePostId: postId },
+      });
 
-    // 댓글 생성
-    const comment = await prisma.gameComment.create({
-      data: {
-        content,
-        gamePostId: postId,
-        authorId: session.user.id,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
+      // 채팅방이 없으면 새로 생성
+      if (!chatRoom) {
+        chatRoom = await tx.chatRoom.create({
+          data: {
+            name: `${post.title} 채팅방`,
+            type: 'GAME',
+            gamePostId: postId,
+          },
+        });
+      }
+
+      // 메시지 생성
+      const message = await tx.chatMessage.create({
+        data: {
+          content,
+          chatRoomId: chatRoom.id,
+          userId: user.id, // Supabase user의 id를 UserProfile id로 사용
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
           },
         },
-      },
+      });
+      return message;
     });
 
-    return NextResponse.json(comment, { status: 201 });
+    return NextResponse.json(newMessage, { status: 201 });
   } catch (error) {
-    console.error('댓글 작성 오류:', error);
-    return NextResponse.json(
-      { error: '댓글을 작성하는 중 오류가 발생했습니다.' },
-      { status: 500 }
-    );
+    console.error('채팅 메시지 작성 오류:', error);
+    return NextResponse.json({ error: '메시지 작성 중 오류가 발생했습니다.' }, { status: 500 });
   }
 }
