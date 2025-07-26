@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
-import { UserRole } from '@/lib/auth/roles';
+import { isAdmin } from '@/lib/auth/roles';
 
 // 모집글 상세 조회
 export async function GET(
@@ -32,19 +32,20 @@ export async function GET(
               },
             },
           },
-          orderBy: [
-            { isLeader: 'desc' },
-            { isReserve: 'asc' },
-            { joinedAt: 'asc' },
-          ],
+          orderBy: { joinedAt: 'asc' },
         },
-        _count: {
-          select: {
-            participants: {
-              where: { isReserve: false }
-            }
-          }
-        }
+        waitingList: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: { requestedAt: 'asc' },
+        },
       },
     });
 
@@ -79,16 +80,21 @@ export async function PATCH(
 
   try {
     const { id } = params;
-    const { title, content, maxParticipants, gameDateTime, participants = [] } = await request.json();
+    const { title, content, maxParticipants, startTime } = await request.json();
 
-    if (!title || !content || maxParticipants === undefined || !gameDateTime) {
+    if (!title || !content || maxParticipants === undefined || !startTime) {
       return NextResponse.json({ error: '모든 필수 항목을 입력해주세요.' }, { status: 400 });
     }
     if (maxParticipants < 2 || maxParticipants > 100) {
       return NextResponse.json({ error: '인원수는 2명 이상 100명 이하로 설정해주세요.' }, { status: 400 });
     }
 
-    const existingPost = await prisma.gamePost.findUnique({ where: { id } });
+    const existingPost = await prisma.gamePost.findUnique({ 
+      where: { id },
+      include: {
+        participants: true,
+      }
+    });
 
     if (!existingPost) {
       return NextResponse.json({ error: '모집글을 찾을 수 없습니다.' }, { status: 404 });
@@ -96,68 +102,23 @@ export async function PATCH(
     if (existingPost.authorId !== user.id) {
       return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 });
     }
+    
+    // 현재 참여자 수가 새로운 최대 인원 수보다 많으면 수정 불가
+    if (existingPost.participants.length > maxParticipants) {
+      return NextResponse.json({ error: `현재 참여자 수(${existingPost.participants.length}명)보다 적게 인원을 설정할 수 없습니다.` }, { status: 400 });
+    }
 
-    const result = await prisma.$transaction(async (prisma) => {
-        const updatedPost = await prisma.gamePost.update({
-          where: { id },
-          data: {
-            title,
-            content,
-            maxParticipants,
-            gameDateTime: new Date(gameDateTime),
-          },
-        });
-        
-        // 2. 기존 참여자 삭제 (방장 제외)
-        await prisma.gameParticipant.deleteMany({
-          where: {
-            gamePostId: id,
-            isLeader: false
-          }
-        });
-
-        // 3. 새 참여자 추가 (유효한 참여자만 필터링)
-        if (participants && participants.length > 0) {
-          const validParticipants = participants.filter((p: any) => p && p.userId);
-          if (validParticipants.length > 0) {
-            await prisma.gameParticipant.createMany({
-              data: validParticipants.map((p: any) => ({
-                gamePostId: id,
-                userId: p.userId,
-                isLeader: false,
-                isReserve: Boolean(p.isReserve),
-              })),
-              skipDuplicates: true // 중복된 참여자는 무시
-            });
-          }
-        }
-
-        // 4. 최종 업데이트된 모집글 정보 가져오기
-        const finalPost = await prisma.gamePost.findUnique({
-          where: { id },
-          include: {
-            participants: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    image: true,
-                  }
-                }
-              }
-            }
-          }
-        });
-
-        if (!finalPost) {
-          throw new Error('업데이트된 게시글을 찾을 수 없습니다.');
-        }
-
-        return finalPost;
+    const updatedPost = await prisma.gamePost.update({
+      where: { id },
+      data: {
+        title,
+        content,
+        maxParticipants,
+        startTime: new Date(startTime),
+      },
     });
 
-    return NextResponse.json({ data: result, message: '게시글이 성공적으로 수정되었습니다.' });
+    return NextResponse.json({ data: updatedPost, message: '게시글이 성공적으로 수정되었습니다.' });
   } catch (error) {
     console.error('모집글 수정 오류:', error);
     return NextResponse.json(
@@ -200,10 +161,10 @@ export async function DELETE(
       return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 404 });
     }
 
-    const userRole = userProfile.role.name as UserRole;
-    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+    const userRole = userProfile.role;
+    const userIsAdmin = isAdmin(userRole);
 
-    if (post.authorId !== user.id && !isAdmin) {
+    if (post.authorId !== user.id && !userIsAdmin) {
       return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
     }
 

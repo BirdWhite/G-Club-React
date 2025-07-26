@@ -57,11 +57,8 @@ export async function GET(request: Request) {
             image: true,
           },
         },
-        participants: {
-          select: {
-            id: true,
-          },
-        },
+        participants: true, // _count 대신 전체 참여자 목록 포함
+        waitingList: true,  // _count 대신 전체 대기자 목록 포함
       },
       orderBy: {
         createdAt: 'desc',
@@ -70,15 +67,13 @@ export async function GET(request: Request) {
 
     // 응답 데이터 형식 변환
     const responseData = posts.map((post) => ({
-      id: post.id,
-      title: post.title,
-      content: post.content,
-      maxPlayers: post.maxParticipants,
-      currentPlayers: post.participants.length, // 참여자 수 (작성자 포함)
-      startTime: post.gameDateTime.toISOString(),
-      status: post.status,
-      game: post.game,
-      author: post.author,
+      ...post,
+      // _count를 클라이언트에서 계산할 수 있도록 participants와 waitingList 길이를 기반으로 생성
+      _count: {
+        participants: post.participants.length,
+        waitingList: post.waitingList.length,
+      },
+      startTime: post.startTime.toISOString(),
       createdAt: post.createdAt.toISOString(),
       updatedAt: post.updatedAt.toISOString(),
     }));
@@ -104,9 +99,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { title, content, gameId, maxParticipants, gameDateTime } = await request.json();
+    const { title, content, gameId, maxParticipants, startTime } = await request.json();
 
-    if (!title || !content || !gameId || !gameDateTime || !maxParticipants) {
+    if (!title || !content || !gameId || !startTime || !maxParticipants) {
       return NextResponse.json(
         { error: '모든 필수 항목을 입력해주세요.' },
         { status: 400 }
@@ -130,7 +125,7 @@ export async function POST(request: Request) {
           content,
           gameId,
           maxParticipants,
-          gameDateTime: new Date(gameDateTime),
+          startTime: new Date(startTime),
           authorId: user.id,
         },
       });
@@ -140,8 +135,6 @@ export async function POST(request: Request) {
         data: {
           gamePostId: post.id,
           userId: user.id,
-          isLeader: true,
-          isReserve: false,
         },
       });
 

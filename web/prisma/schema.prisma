@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
@@ -44,9 +45,21 @@ enum ChatRoomType {
 }
 
 enum GamePostStatus {
-  OPEN
-  FULL
-  COMPLETED
+  OPEN // 모집 중
+  FULL // 인원 마감
+  IN_PROGRESS // 게임 진행 중
+  COMPLETED // 모집 완료 및 게임 종료
+}
+
+enum ParticipantType {
+  MEMBER // 확정 멤버
+  GUEST // 게스트 (커스텀 입력)
+}
+
+enum WaitingStatus {
+  WAITING // 대기 중
+  CONFIRMED // 참여 확정
+  CANCELED // 대기 취소
 }
 
 // ========== Models ==========
@@ -92,6 +105,7 @@ model UserProfile {
   // 게임 관련
   gameParticipations GameParticipant[]     @relation("UserProfileGameParticipations")
   gamePosts          GamePost[]            @relation("UserProfileGamePosts")
+  waitingList        WaitingParticipant[]  @relation("UserWaitingList")
   
   // 채팅 및 구독 관련
   subscriptions      ChannelSubscription[] @relation("UserProfileSubscriptions")
@@ -248,39 +262,76 @@ model Game {
   updatedAt   DateTime      @updatedAt
   aliases     String[]
   channel     Channel?      
-  gamePosts   GamePost[]    @relation("GameToGamePosts")
+  gamePosts   GamePost[]
 }
 
 model GamePost {
-  id              String            @id @default(cuid())
-  title           String
-  content         Json              // TipTap 같은 리치 텍스트 에디터의 JSON 출력을 저장
-  authorId        String
-  gameId          String
-  game            Game              @relation("GameToGamePosts", fields: [gameId], references: [id])
-  author          UserProfile       @relation("UserProfileGamePosts", fields: [authorId], references: [id], onDelete: Cascade)
-  participants    GameParticipant[]
-  chatRoom        ChatRoom?         // 게임 포스트에 연결된 채팅방
-  status          GamePostStatus    @default(OPEN)
-  maxParticipants Int
-  startTime       DateTime
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id            String   @id @default(cuid())
+  authorId      String
+  author        UserProfile @relation("UserProfileGamePosts", fields: [authorId], references: [userId])
   
+  title         String
+  content       Json
+  
+  // 게임 정보
+  gameId        String?
+  game          Game?    @relation(fields: [gameId], references: [id])
+  customGameName String? // DB에 없는 게임일 경우
+
+  startTime     DateTime // 게임 시작 시간
+  maxParticipants Int      // 최대 인원
+  
+  status        GamePostStatus @default(OPEN)
+  
+  participants      GameParticipant[]
+  waitingList       WaitingParticipant[]
+  chatRoom          ChatRoom?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   @@index([authorId])
-  @@index([status])
-  @@index([startTime])
+  @@index([status, createdAt])
+  @@index([status, startTime])
 }
 
 model GameParticipant {
-  id         String   @id @default(cuid())
-  gamePostId String
-  userId     String  // UserProfile의 id를 참조
-  isLeader   Boolean  @default(false)
-  joinedAt   DateTime @default(now())
-  isReserve  Boolean  @default(false)
-  gamePost   GamePost @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
-  user       UserProfile     @relation("UserProfileGameParticipations", fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  gamePostId      String
+  gamePost        GamePost @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
+  
+  participantType ParticipantType @default(MEMBER)
+
+  // DB에 있는 유저
+  userId          String?
+  user            UserProfile? @relation("UserProfileGameParticipations", fields: [userId], references: [userId])
+  
+  // 커스텀 입력 유저
+  guestName       String?
+
+  joinedAt        DateTime @default(now())
 
   @@unique([gamePostId, userId])
+  @@unique([gamePostId, guestName])
+  @@index([gamePostId])
+  @@index([userId])
+}
+
+model WaitingParticipant {
+  id              String   @id @default(cuid())
+  gamePostId      String
+  gamePost        GamePost @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
+
+  userId          String
+  user            UserProfile @relation("UserWaitingList", fields: [userId], references: [userId])
+  
+  status          WaitingStatus @default(WAITING)
+
+  // 참여 가능 시간
+  availableTime   String? // "자리 발생 시 즉시 참여" 또는 특정 시간 문자열
+
+  requestedAt     DateTime @default(now()) // 대기 신청 시간 (순서 결정을 위해)
+
+  @@unique([gamePostId, userId])
+  @@index([gamePostId, requestedAt])
 }

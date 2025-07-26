@@ -1,19 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import GameSearchSelect from '@/components/game-mate/GameSearchSelect';
-
-type Game = {
-  id: string;
-  name: string;
-  description?: string | null;
-  iconUrl?: string | null;
-};
+import GameFilterDropdown from './GameFilterDropdown';
 
 type StatusFilterType = 'all' | 'recruiting' | 'open' | 'full' | 'completed';
 
 interface GameFilterProps {
-  games: Game[];
   selectedGame: string;
   statusFilter: StatusFilterType;
   searchTerm: string;
@@ -23,7 +15,6 @@ interface GameFilterProps {
 }
 
 export default function GameFilter({
-  games,
   selectedGame,
   statusFilter,
   searchTerm,
@@ -32,21 +23,13 @@ export default function GameFilter({
   onSearch,
 }: GameFilterProps) {
   // 각 드롭다운에 개별 ref 사용
-  const gameContainerRef = useRef<HTMLDivElement>(null);
   const statusContainerRef = useRef<HTMLDivElement>(null);
-  const [isGameDropdownOpen, setIsGameDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  const [filteredGames, setFilteredGames] = useState<Game[]>(games);
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
 
   // 외부 클릭 감지 및 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // 게임 드롭다운 외부 클릭 감지
-      if (gameContainerRef.current && !gameContainerRef.current.contains(event.target as Node)) {
-        setIsGameDropdownOpen(false);
-      }
-      
       // 상태 필터 드롭다운 외부 클릭 감지
       if (statusContainerRef.current && !statusContainerRef.current.contains(event.target as Node)) {
         setIsStatusDropdownOpen(false);
@@ -57,18 +40,8 @@ export default function GameFilter({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 게임 검색 필터링
-  useEffect(() => {
-    if (localSearchTerm.trim() === '') {
-      setFilteredGames(games);
-    } else {
-      const filtered = games.filter(game =>
-        game.name.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
-        (game.description?.toLowerCase().includes(localSearchTerm.toLowerCase()) ?? false)
-      );
-      setFilteredGames(filtered);
-    }
-  }, [localSearchTerm, games]);
+  // 게임 검색 필터링 로직 제거
+
   // 검색어 변경 핸들러
   const handleSearchChange = (term: string) => {
     setLocalSearchTerm(term);
@@ -110,7 +83,7 @@ export default function GameFilter({
       <div className="flex flex-col md:flex-row gap-4">
         {/* 게임 선택 드롭다운 */}
         <div className="flex-1">
-          <GameSearchSelect
+          <GameFilterDropdown
             value={selectedGame}
             onChange={handleGameSelect}
             placeholder="게임 선택"
@@ -126,7 +99,6 @@ export default function GameFilter({
             onClick={() => {
               console.log('상태 필터 버튼 클릭');
               setIsStatusDropdownOpen(!isStatusDropdownOpen);
-              setIsGameDropdownOpen(false); // 게임 드롭다운은 무조건 닫기
             }}
           >
             {getStatusFilterText(statusFilter)}

@@ -1,3 +1,5 @@
+import { JsonValue } from "@prisma/client/runtime/library";
+
 // ========== Enums ==========
 
 export enum PermissionType {
@@ -37,6 +39,7 @@ export enum ChatRoomType {
 export enum GamePostStatus {
   OPEN = 'OPEN',
   FULL = 'FULL',
+  IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED'
 }
 
@@ -213,8 +216,8 @@ export interface ChatMessage {
 export interface Game {
   id: string;
   name: string;
-  description?: string;
-  iconUrl?: string;
+  description?: string | null;
+  iconUrl?: string | null;
   aliases: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -223,30 +226,35 @@ export interface Game {
 export interface GamePost {
   id: string;
   title: string;
-  content: string;
-  maxPlayers: number;
-  startTime: Date;
+  content: JsonValue;
+  gameId: string; // Add gameId field
+  maxParticipants: number;
+  startTime: Date | string;
   status: GamePostStatus;
-  gameId: string;
-  authorId: string;
-  chatRoomId?: string;
-  
+  game: {
+    id: string; // Add id field to game object
+    name: string;
+    iconUrl?: string | null;
+  } | null;
+  author: {
+    id: string;
+    name: string;
+    image?: string | null;
+  };
+  createdAt: Date | string;
+  updatedAt: Date | string;
+
   // 관계 필드
-  game: Game;
-  author: UserProfile;
   participants: GameParticipant[];
-  chatRoom?: ChatRoom;
-  
-  // 메타데이터
-  createdAt: Date;
-  updatedAt: Date;
+  waitingList?: WaitingParticipant[];
   
   // 가상 필드 (클라이언트 측에서 사용)
   isOwner?: boolean;
   isParticipating?: boolean;
+  isWaiting?: boolean;
   _count?: {
     participants: number;
-    comments: number;
+    waitingList: number;
   };
 }
 
@@ -254,16 +262,25 @@ export interface GameParticipant {
   id: string;
   gamePostId: string;
   userId: string;
-  isLeader: boolean;
-  isReserve: boolean;
-  
-  // 관계 필드
-  gamePost: GamePost;
-  user: UserProfile;
-  
-  // 메타데이터
-  createdAt: Date;
-  updatedAt: Date;
+  joinedAt: Date | string;
+  user: {
+    id: string;
+    name: string;
+    image?: string | null;
+  };
+}
+
+export interface WaitingParticipant {
+  id: string;
+  gamePostId: string;
+  userId: string;
+  requestedAt: Date | string;
+  availableTime?: string | null;
+  user: {
+    id: string;
+    name: string;
+    image?: string | null;
+  };
 }
 
 // 게임 메이트 포스트 폼 데이터

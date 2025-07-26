@@ -192,7 +192,7 @@ export default function Header() {
       const data = await res.json();
       if (data.profile) {
         setProfileData({
-          fullName: data.profile.fullName,
+          fullName: data.profile.name,
           birthDate: data.profile.birthDate,
           image: data.profile.image
         });
@@ -328,7 +328,7 @@ export default function Header() {
                     {/* 프로필 사진 */}
                     <Link href="/profile" className="group relative flex rounded-full focus:outline-none">
                       <span className="sr-only">프로필 페이지로 이동</span>
-                      {profileData?.image ? (
+                      {profileData?.image && !profileData.image.includes('k.kakaocdn.net') ? (
                         <div className="relative h-8 w-8 rounded-full border-2 border-opacity-30 overflow-hidden transition-all duration-200 bg-white">
                           <Image
                             className="absolute inset-0 m-auto object-cover w-full h-full transition-transform duration-200 group-hover:scale-110"
@@ -424,7 +424,7 @@ export default function Header() {
               <div className="pt-4 pb-3 border-t border-gray-200">
                 <div className="flex items-center px-4">
                   <div className="flex-shrink-0">
-                    {profileData?.image ? (
+                    {profileData?.image && !profileData.image.includes('k.kakaocdn.net') ? (
                       <div className="p-0.5 bg-white rounded-full">
                       <Image
                         src={profileData.image}

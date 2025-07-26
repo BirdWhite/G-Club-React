@@ -1,6 +1,6 @@
 'use client';
 
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import { useEditor, EditorContent, BubbleMenu, Content } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -12,10 +12,16 @@ import { LinkMenu } from './LinkMenu';
 import { ResizableImage } from './ResizableImage';
 import { EditorButtons } from './EditorButtons';
 import 'material-icons/iconfont/material-icons.css';
+import { JsonValue } from '@prisma/client/runtime/library';
+
+// content가 Tiptap이 이해할 수 있는 유효한 객체인지 확인하는 타입 가드
+function isValidTiptapJson(value: any): value is Content {
+  return value !== null && typeof value === 'object' && !Array.isArray(value) && 'type' in value && value.type === 'doc';
+}
 
 interface RichTextEditorProps {
-  content: string;
-  onChange: (content: string) => void;
+  content?: JsonValue;
+  onChange: (content: JsonValue) => void;
   postId?: string;
   onImageUpload?: (tempImages: string[]) => void;
   disabled?: boolean;
@@ -76,9 +82,9 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
       }),
       ResizableImage,
     ],
-    content,
+    content: isValidTiptapJson(content) ? content : { type: 'doc', content: [{ type: 'paragraph' }] },
     onUpdate: ({ editor }) => {
-      onChange(editor?.getHTML() || '');
+      onChange(editor.getJSON());
     },
   });
 

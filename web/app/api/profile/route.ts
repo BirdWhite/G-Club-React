@@ -136,7 +136,7 @@ export async function GET() {
           userId,
           name: user.user_metadata?.full_name || `사용자_${userId.substring(0, 6)}`,
           birthDate: new Date('2000-01-01'), // 기본 생년월일
-          image: user.user_metadata?.avatar_url || '',
+          image: '',
           roleId: defaultRole?.id
         },
         include: {

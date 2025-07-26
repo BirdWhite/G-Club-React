@@ -17,6 +17,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
+    "@hookform/resolvers": "^5.2.0",
     "@next/codemod": "^15.4.2",
     "@prisma/client": "^6.9.0",
     "@supabase/ssr": "^0.6.1",
@@ -36,12 +37,14 @@
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.2.0",
     "react-easy-crop": "^5.4.2",
+    "react-hook-form": "^7.61.1",
     "react-hot-toast": "^2.5.2",
     "react-toastify": "^11.0.5",
     "sharp": "^0.34.3",
     "tailwindcss": "^4.1.10",
     "tiptap-extension-resize-image": "^1.2.2",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zod": "^4.0.10"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
