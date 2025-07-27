@@ -1,23 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
-import { hasGlobalPermission } from '@/lib/auth/roles';
+import { hasPermission_Server } from '@/lib/auth/serverAuth';
 import fs from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
 
 // Next.js 15에서 동적 라우트 파라미터 처리
-type Params = {
-  id: string;
+type RouteContext = {
+  params: {
+    id: string;
+  };
 }
 
 // GET 요청 처리 - 게시글 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: Params }
+  { params }: { params: Promise<RouteContext['params']> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const post = await prisma.post.findUnique({
       where: { id },
@@ -58,7 +60,7 @@ export async function GET(
         return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 404 });
       }
 
-      const isAdmin = hasGlobalPermission(userProfile.role.name, 'canAccessAdminPanel');
+      const isAdmin = await hasPermission_Server(userProfile.role.id, 'ADMIN_PANEL_ACCESS');
       const isAuthor = user.id === post.authorId;
 
       if (!isAdmin && !isAuthor) {
@@ -88,10 +90,10 @@ export async function GET(
 // PATCH 요청 처리 - 게시글 수정
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Params }
+  { params }: { params: Promise<RouteContext['params']> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
@@ -122,7 +124,7 @@ export async function PATCH(
       return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 404 });
     }
 
-    const isAdmin = hasGlobalPermission(userProfile.role.name, 'canAccessAdminPanel');
+    const isAdmin = await hasPermission_Server(userProfile.role.id, 'ADMIN_PANEL_ACCESS');
     const isAuthor = user.id === post.authorId;
     
     // 자신의 글이 아니고 관리자도 아닌 경우 수정 불가
@@ -138,7 +140,7 @@ export async function PATCH(
     }
     
     // 이전 게시글 내용에서 이미지 경로 추출
-    const oldImagePaths = extractImagePathsFromContent(post.content);
+    const oldImagePaths = extractImagePathsFromContent(JSON.stringify(post.content));
     
     // 새 게시글 내용에서 이미지 경로 추출
     let processedContent = content;
@@ -232,7 +234,7 @@ export async function PATCH(
 // DELETE 요청 처리 - 게시글 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Params }
+  { params }: { params: Promise<RouteContext['params']> }
 ) {
   try {
     const supabase = await createClient();
@@ -243,7 +245,7 @@ export async function DELETE(
       return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     
     // 게시글 존재 여부 확인
     const post = await prisma.post.findUnique({
@@ -272,7 +274,7 @@ export async function DELETE(
     }
     
     // 게시글에 포함된 이미지 경로 추출
-    const imagePaths = extractImagePathsFromContent(post.content);
+    const imagePaths = extractImagePathsFromContent(JSON.stringify(post.content));
     
     // 트랜잭션으로 게시글과 댓글 삭제
     await prisma.$transaction(async (tx) => {

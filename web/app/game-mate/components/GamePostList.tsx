@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import GamePostCard from './GamePostCard';
 import GameFilter from './GameFilter';
 import { GamePost } from '@/types/models';
 import { PlusCircle } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { useGamePostListSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface GamePostListProps {
   userId?: string;
@@ -16,76 +16,29 @@ type StatusFilterType = 'all' | 'recruiting' | 'open' | 'full' | 'completed';
 
 export default function GamePostList({ userId }: GamePostListProps) {
   const router = useRouter();
-  const [posts, setPosts] = useState<GamePost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedGame, setSelectedGame] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilterType>('recruiting');
   const [searchTerm, setSearchTerm] = useState('');
-  const supabase = useMemo(() => createClient(), []);
   
-  const fetchPosts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const queryParams = new URLSearchParams();
-      
-      if (selectedGame && selectedGame !== 'all') {
-        queryParams.append('gameId', selectedGame);
-      }
-      
-      if (statusFilter && statusFilter !== 'all') {
-        queryParams.append('status', statusFilter);
-      }
-      
-      const response = await fetch(`/api/game-posts?${queryParams.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch posts');
-      }
-      
-      const data = await response.json();
-      setPosts(data);
-      
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedGame, statusFilter]);
+  const { posts, loading, filters, setFilters } = useGamePostListSubscription({
+    status: 'recruiting',
+  });
 
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+  const handleGameChange = (gameId: string) => {
+    setFilters(prev => ({ ...prev, gameId: gameId === 'all' ? undefined : gameId }));
+  };
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('game_post_list')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'GameParticipant' },
-        () => fetchPosts()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'WaitingParticipant' },
-        () => fetchPosts()
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'GamePost' },
-        () => fetchPosts()
-      )
-      .subscribe();
+  const handleStatusChange = (status: StatusFilterType) => {
+    setFilters(prev => ({ ...prev, status: status === 'all' ? undefined : status }));
+  };
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, fetchPosts]);
+  const filteredPosts = posts.filter(post => 
+    post.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const renderPosts = () => {
     if (loading) {
       return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
             <div key={index} className="bg-white p-4 rounded-lg shadow animate-pulse">
               <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
               <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
@@ -101,7 +54,7 @@ export default function GamePostList({ userId }: GamePostListProps) {
       );
     }
 
-    if (posts.length === 0) {
+    if (filteredPosts.length === 0) {
       return (
         <div className="text-center py-12 bg-white rounded-lg shadow">
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -115,7 +68,7 @@ export default function GamePostList({ userId }: GamePostListProps) {
 
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {posts.map((post) => (
+        {filteredPosts.map((post: GamePost) => (
           <GamePostCard 
             key={post.id}
             post={post}
@@ -130,10 +83,10 @@ export default function GamePostList({ userId }: GamePostListProps) {
     <div>
       <div className="bg-white p-4 sm:p-6 rounded-lg shadow mb-6">
         <GameFilter
-          selectedGame={selectedGame}
-          onGameChange={setSelectedGame}
-          statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
+          selectedGame={filters.gameId || 'all'}
+          onGameChange={handleGameChange}
+          statusFilter={(filters.status as StatusFilterType) || 'all'}
+          onStatusChange={handleStatusChange}
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
         />
@@ -152,4 +105,4 @@ export default function GamePostList({ userId }: GamePostListProps) {
       {renderPosts()}
     </div>
   );
-} 
+}

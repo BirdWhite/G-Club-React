@@ -1,19 +1,26 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-// 게임메이트 특화 훅들
-export function useGamePostListSubscription(userId?: string) {
+// 게임메이트 목록을 위한 실시간 구독 훅
+export function useGamePostListSubscription(
+  initialFilters: { status?: string; gameId?: string } = {}
+) {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState(initialFilters);
   const supabase = useMemo(() => createClient(), []);
 
-  const fetchPosts = useCallback(async () => {
+  // API를 통해 게시글 목록을 가져오는 함수
+  const fetchPosts = useCallback(async (currentFilters: any) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/game-posts');
-      if (!response.ok) {
-        throw new Error('Failed to fetch posts');
-      }
+      const query = new URLSearchParams();
+      if (currentFilters.status) query.append('status', currentFilters.status);
+      if (currentFilters.gameId) query.append('gameId', currentFilters.gameId);
+      
+      const response = await fetch(`/api/game-posts?${query.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      
       const data = await response.json();
       setPosts(data);
     } catch (error) {
@@ -23,82 +30,43 @@ export function useGamePostListSubscription(userId?: string) {
     }
   }, []);
 
+  // 필터가 변경될 때마다 데이터를 다시 가져옴
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    fetchPosts(filters);
+  }, [filters, fetchPosts]);
 
-  // 실시간 구독 설정 - 개별 아이템 업데이트 방식
+  // 실시간 구독 설정
   useEffect(() => {
-    const channel = supabase
-      .channel('game_post_list')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'GameParticipant' },
-        () => {
-          // 참여자 변경 시 해당 게시글만 업데이트
-          console.log('GameParticipant changed - updating affected posts');
-          // TODO: 특정 게시글만 업데이트하는 로직 구현
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'WaitingParticipant' },
-        () => {
-          // 대기자 변경 시 해당 게시글만 업데이트
-          console.log('WaitingParticipant changed - updating affected posts');
-          // TODO: 특정 게시글만 업데이트하는 로직 구현
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'GamePost' },
-        (payload: any) => {
-          // 게시글 상태 변경 시 해당 게시글만 업데이트
-          console.log('GamePost updated:', payload);
-          setPosts((prev: any[]) => 
-            prev.map((post: any) => 
-              post.id === payload.new.id 
-                ? { ...post, ...payload.new }
-                : post
-            )
-          );
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'GamePost' },
-        (payload: any) => {
-          // 새 게시글 추가
-          console.log('New GamePost inserted:', payload);
-          setPosts((prev: any[]) => [payload.new, ...prev]);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'GamePost' },
-        (payload: any) => {
-          // 게시글 삭제
-          console.log('GamePost deleted:', payload);
-          setPosts((prev: any[]) => prev.filter((post: any) => post.id !== payload.old.id));
-        }
-      )
+    // 데이터 변경 신호를 받으면 fetchPosts를 다시 호출
+    const refetch = () => {
+      console.log('Realtime change detected, refetching posts...');
+      fetchPosts(filters);
+    };
+
+    const channel = supabase.channel(`game_post_list_${Date.now()}`, {
+      config: { broadcast: { self: false } },
+    }); // 고유한 채널 이름 사용
+    
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'GamePost' }, refetch)
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, fetchPosts, filters]); // filters를 의존성에 추가
 
-  return { posts, loading, refresh: fetchPosts };
+  return { posts, loading, filters, setFilters };
 }
 
-export function useGamePostDetailSubscription(postId: string) {
-  const [post, setPost] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+// 게임메이트 상세 페이지를 위한 실시간 구독 훅 (기존 로직 유지)
+export function useGamePostDetailSubscription(postId: string, initialPost: any = null) {
+  const [post, setPost] = useState<any>(initialPost);
+  const [loading, setLoading] = useState(!initialPost);
   const supabase = useMemo(() => createClient(), []);
 
   const fetchPost = useCallback(async () => {
-    setLoading(true);
+    if (!loading) setLoading(true);
     try {
       const response = await fetch(`/api/game-posts/${postId}`);
       if (!response.ok) {
@@ -108,19 +76,24 @@ export function useGamePostDetailSubscription(postId: string) {
       setPost(data);
     } catch (error) {
       console.error('Error fetching post:', error);
+      // Optionally set post to null or some error state
     } finally {
       setLoading(false);
     }
-  }, [postId]);
+  }, [postId, loading]);
 
   useEffect(() => {
-    fetchPost();
-  }, [fetchPost]);
+    if (!initialPost) {
+      fetchPost();
+    }
+  }, [fetchPost, initialPost]);
 
   // 실시간 구독 설정 - 개별 필드 업데이트 방식
   useEffect(() => {
     const channel = supabase
-      .channel(`game_post:${postId}`)
+      .channel(`game_post:${postId}`, {
+        config: { broadcast: { self: false } },
+      })
       .on(
         'postgres_changes',
         {

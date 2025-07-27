@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 8080",
+    "dev": "next dev -p 54321",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -19,9 +19,9 @@
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.2.0",
     "@next/codemod": "^15.4.2",
-    "@prisma/client": "^6.9.0",
+    "@supabase/realtime-js": "2.12.2",
     "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "^2.50.5",
+    "@supabase/supabase-js": "^2.52.1",
     "@tiptap/extension-image": "^2.14.0",
     "@tiptap/extension-link": "^2.14.0",
     "@tiptap/extension-youtube": "^2.23.0",
@@ -32,7 +32,6 @@
     "lucide-react": "^0.525.0",
     "material-icons": "^1.13.14",
     "next": "^15.4.2",
-    "prisma": "^6.9.0",
     "react": "^18.2.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.2.0",
@@ -46,8 +45,12 @@
     "uuid": "^11.1.0",
     "zod": "^4.0.10"
   },
+  "overrides": {
+    "@supabase/realtime-js": "2.12.2"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@prisma/client": "^6.12.0",
     "@tailwindcss/postcss": "^4.1.10",
     "@types/node": "^20.19.9",
     "@types/react": "^19",
@@ -58,6 +61,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "postcss": "^8.5.5",
+    "prisma": "^6.12.0",
     "ts-node": "^10.9.2",
     "typescript": "^5"
   }

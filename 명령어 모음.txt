@@ -1,7 +1,0 @@
-
-npm run dev
- - 사이트 실행 명령어(개발 버전)
-
-npx prisma studio
- - 데이터베이스 관리 명령어
- 

@@ -1,11 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/supabase/auth';
 import prisma from '@/lib/prisma';
 
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
+
 // 참여 신청
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<RouteContext['params']> }
 ) {
   const user = await getCurrentUser();
   if (!user) {
@@ -15,7 +21,7 @@ export async function POST(
   const userId = user.id;
 
   try {
-    const { id: gamePostId } = params;
+    const { id: gamePostId } = await params;
 
     const post = await prisma.gamePost.findUnique({
       where: { id: gamePostId },
@@ -72,8 +78,8 @@ export async function POST(
 
 // 참여 취소
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<RouteContext['params']> }
 ) {
   const user = await getCurrentUser();
   if (!user) {
@@ -83,7 +89,7 @@ export async function DELETE(
   const userId = user.id;
 
   try {
-    const { id: gamePostId } = params;
+    const { id: gamePostId } = await params;
 
     const participation = await prisma.gameParticipant.findUnique({
       where: {

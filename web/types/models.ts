@@ -238,6 +238,7 @@ export interface GamePost {
   } | null;
   author: {
     id: string;
+    userId: string;
     name: string;
     image?: string | null;
   };

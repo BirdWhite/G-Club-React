@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 import { getUserProfile } from '@/lib/user';
-import { hasPermissionServer, isSuperAdminServer } from '@/lib/auth/serverAuth'; // 1. 서버 전용 함수 임포트
+import { hasPermission_Server, isSuperAdmin_Server } from '@/lib/auth/serverAuth';
 
-type Params = {
-    userId: string;
+type RouteContext = {
+    params: {
+        userId: string;
+    }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Params }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<RouteContext['params']> }) {
   try {
-    const targetUserProfileId = params.userId; // URL 파라미터는 UserProfile의 ID (CUID) 입니다.
+    const { userId: targetUserProfileId } = await params; // URL 파라미터는 UserProfile의 ID (CUID) 입니다.
 
     const supabase = await createClient();
     const { data: { user: adminUser }, error: userError } = await supabase.auth.getUser();
@@ -26,7 +28,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Params }
     }
 
     // 역할 변경 권한 확인 (서버 전용 함수 사용)
-    if (!hasPermissionServer(adminProfile.role, 'admin:role:manage')) {
+    if (!await hasPermission_Server(adminProfile.roleId!, 'admin:role:manage')) {
       return NextResponse.json({ error: '사용자 역할을 변경할 권한이 없습니다.' }, { status: 403 });
     }
 
@@ -51,14 +53,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Params }
     }
 
     // 슈퍼 관리자가 아닌 경우, 다른 슈퍼 관리자 또는 자신의 역할을 변경할 수 없음
-    if (!isSuperAdminServer(adminProfile.role)) {
+    if (!isSuperAdmin_Server(adminProfile.role)) {
         if (targetUser.role?.name === 'SUPER_ADMIN') {
             return NextResponse.json({ error: '슈퍼 관리자의 역할은 변경할 수 없습니다.' }, { status: 403 });
         }
     }
     
     // 슈퍼 관리자가 자기 자신을 변경하는 경우는 허용, 그 외에는 자신의 역할 변경 불가
-    if (targetUser.userId === adminUser.id && !isSuperAdminServer(adminProfile.role)) {
+    if (targetUser.userId === adminUser.id && !isSuperAdmin_Server(adminProfile.role)) {
         return NextResponse.json({ error: '자신의 역할은 변경할 수 없습니다.' }, { status: 403 });
     }
 

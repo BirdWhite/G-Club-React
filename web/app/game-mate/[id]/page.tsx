@@ -19,6 +19,7 @@ async function getPost(id: string): Promise<GamePost | null> {
         author: {
           select: {
             id: true,
+            userId: true,
             name: true,
             image: true,
           },
@@ -78,7 +79,7 @@ export default async function GamePostDetailPage({ params }: { params: Promise<{
   }
 
   const userId = user?.id;
-  const isOwner = userId === post.author.id;
+  const isOwner = userId === post.author.userId;
   const isParticipating = post.participants?.some(p => p.userId === userId);
   const isWaiting = post.waitingList?.some(w => w.userId === userId);
 

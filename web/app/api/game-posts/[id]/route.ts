@@ -1,15 +1,21 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
-import { isAdmin } from '@/lib/auth/roles';
+import { isAdmin } from '@/lib/auth/utils';
+
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
 
 // 모집글 상세 조회
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<RouteContext['params']> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const post = await prisma.gamePost.findUnique({
       where: { id },
@@ -68,8 +74,8 @@ export async function GET(
 
 // 모집글 수정
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<RouteContext['params']> }
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -79,7 +85,7 @@ export async function PATCH(
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const { title, content, maxParticipants, startTime } = await request.json();
 
     if (!title || !content || maxParticipants === undefined || !startTime) {
@@ -130,8 +136,8 @@ export async function PATCH(
 
 // 모집글 삭제
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<RouteContext['params']> }
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -141,7 +147,7 @@ export async function DELETE(
   }
   
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const post = await prisma.gamePost.findUnique({
       where: { id },
