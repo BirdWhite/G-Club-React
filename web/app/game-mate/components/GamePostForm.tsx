@@ -57,10 +57,18 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
       const url = isEditMode ? `/api/game-posts/${initialData.id}` : '/api/game-posts';
       const method = isEditMode ? 'PATCH' : 'POST';
 
+      // 사용자가 입력한 로컬 시간을 UTC 시간으로 변환
+      const utcStartTime = new Date(data.startTime).toISOString();
+
+      const payload = {
+        ...data,
+        startTime: utcStartTime,
+      };
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();

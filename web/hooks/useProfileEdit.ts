@@ -3,6 +3,7 @@ import { getCroppedImg, resizeImage, getImageDimensions } from '@/lib/cropImage'
 import { useProfileForm } from './useProfileForm';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useProfile } from '@/contexts/ProfileProvider'; // 1. useProfile 훅 임포트
 
 type CropArea = {
   x: number;
@@ -21,6 +22,7 @@ interface ProfileData {
 export const useProfileEdit = () => {
   const supabase = createClient();
   const router = useRouter();
+  const { refetchProfile } = useProfile(); // 2. refetchProfile 함수 가져오기
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [session, setSession] = useState<any>(null);
@@ -303,8 +305,8 @@ export const useProfileEdit = () => {
       
       console.log('프로필 정보 업데이트 성공');
       
-      // 프로필 업데이트 성공 시 이벤트 발생 - Header 컴포넌트에서 감지하여 프로필 데이터 새로고침
-      window.dispatchEvent(new CustomEvent('profileUpdated'));
+      // 3. 커스텀 이벤트를 삭제하고 refetchProfile 호출
+      await refetchProfile();
       
       // 프로필 페이지로 리다이렉트
       router.push('/profile');

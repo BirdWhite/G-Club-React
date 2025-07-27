@@ -8,7 +8,7 @@ const nextConfig = {
       },
       {
         protocol: 'http',
-        hostname: '144.24.71.70',
+        hostname: 'pnu-ultimate.kro.kr',
         port: '54321',
         pathname: '/storage/v1/object/public/**',
       },

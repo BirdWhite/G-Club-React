@@ -3,114 +3,38 @@
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-interface ProfileData {
-  fullName: string;
-  image?: string | null;
-  birthDate: string;
-  [key: string]: any;
-}
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  const { profile, isLoading, error } = useProfile();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
-    
-    // 사용자 정보 가져오기
-    const getUser = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error || !user) {
-          router.push('/login');
-          return;
-        }
-        
-        setUser(user);
-        fetchProfile(user.id);
-      } catch (error) {
-        console.error('사용자 정보를 가져오는 중 오류 발생:', error);
-        router.push('/login');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    // 초기 사용자 정보 로드
-    getUser();
-    
-    // 페이지 가시성 변경 시 사용자 정보 갱신
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        getUser();
-      }
-    };
-    
-    // 페이지 가시성 변경 이벤트 리스너 등록
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // 클린업 함수
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [router]);
-  
-  const fetchProfile = async (userId: string) => {
-    try {
-      setIsLoading(true);
-      
-      // API를 통해 프로필 조회
-      const response = await fetch('/api/profile/check', {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('프로필 조회에 실패했습니다.');
-      }
-      
-      const result = await response.json();
-      
-      // 프로필이 없는 경우 등록 페이지로 리다이렉트
-      if (!result.hasProfile) {
-        router.push('/profile/register');
-        return;
-      }
-      
-      // 프로필 데이터 설정
-      setProfile(result.profile);
-    } catch (error) {
-      console.error('프로필 로딩 중 오류 발생:', error);
-      setError('프로필을 불러오는 중 오류가 발생했습니다.');
-      // 에러 발생 시에도 등록 페이지로 이동
-      router.push('/profile/register');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setIsMounted(true);
+  }, []);
 
-  // 클라이언트 사이드에서만 렌더링
-  if (!isClient || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
+
+  if (error) {
+    // 프로필 로딩 실패 시 (예: 프로필이 없는 경우) 등록 페이지로 이동
+    // ProfileProvider에서 프로필이 null일 때의 처리를 이미 하고 있다면 이 부분은 더 단순화될 수 있습니다.
+    router.push('/profile/register');
+    return null; // 리다이렉트 중에는 아무것도 렌더링하지 않음
+  }
   
-  if (!user) {
-    return null; // 로그인 페이지로 리다이렉트 처리로 인해 여기까지 오지 않음
+  if (!profile) {
+    // 로딩이 끝났지만 프로필이 없는 경우 (예: 로그아웃 상태)
+    // 혹은 아직 생성되지 않은 경우
+    router.push('/auth/login');
+    return null;
   }
 
   // 사용자 ID 표시
@@ -119,33 +43,36 @@ export default function ProfilePage() {
     return `ID: ${userId}`;
   };
 
-  const displayName = user.user_metadata?.full_name || '사용자';
-  const createdAt = user?.created_at ? new Date(user.created_at) : new Date();
-  const formattedDate = createdAt.toLocaleDateString('ko-KR', {
+  const displayName = profile.name || '사용자';
+  const createdAt = profile.createdAt ? new Date(profile.createdAt) : new Date();
+  
+  // isMounted가 true일 때만 날짜를 포맷팅하여 보여줍니다.
+  const formattedDate = isMounted ? createdAt.toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  });
+  }) : '...';
   
   // 생년월일 포맷팅
-  const formattedBirthDate = profile?.birthDate 
+  const formattedBirthDate = isMounted && profile?.birthDate 
     ? new Date(profile.birthDate).toLocaleDateString('ko-KR', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         timeZone: 'UTC' // 시간대 문제 방지
       })
-    : '미등록';
+    : '...';
 
-  const getRoleLabel = (role?: string) => {
-    if (!role) return '일반 사용자';
+  const getRoleLabel = (roleName?: string) => {
+    if (!roleName) return '일반 사용자';
     
     const roles: Record<string, string> = {
-      user: '일반 사용자',
-      admin: '관리자',
-      premium: '프리미엄 사용자'
+      USER: '일반 사용자',
+      ADMIN: '관리자',
+      SUPER_ADMIN: '최고 관리자',
+      NONE: '역할 없음'
     };
-    return roles[role] || role;
+    return roles[roleName] || roleName;
   };
 
   return (
@@ -154,14 +81,14 @@ export default function ProfilePage() {
         <div className="flex flex-col md:flex-row gap-6">
           {/* 프로필 이미지 */}
           <div className="w-32 h-32 md:w-40 md:h-40 relative rounded-full overflow-hidden border-4 border-blue-100">
-            {profile?.image ? (
+            {profile.image ? (
               <Image
                 src={profile.image}
                 alt={displayName}
                 fill
                 className="object-cover"
                 priority
-                unoptimized={profile.image.includes('127.0.0.1')} // 로컬 이미지 최적화 비활성화
+                unoptimized={profile.image.includes('127.0.0.1') || profile.image.includes('pnu-ultimate.kro.kr')} // 로컬 및 개발 서버 이미지 최적화 비활성화
               />
             ) : (
               <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
@@ -175,8 +102,8 @@ export default function ProfilePage() {
           {/* 프로필 정보 */}
           <div className="flex-1">
             <div className="flex flex-col">
-              <h1 className="text-2xl font-bold">{user.user_metadata?.full_name || '사용자'}</h1>
-              <p className="text-gray-500 text-sm mb-4">{formatUserId(user.id)}</p>
+              <h1 className="text-2xl font-bold">{profile.name || '사용자'}</h1>
+              <p className="text-gray-500 text-sm mb-4">{formatUserId(profile.userId)}</p>
               <Link 
                 href="/profile/edit"
                 className="inline-block px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm md:text-base w-fit"
@@ -203,7 +130,7 @@ export default function ProfilePage() {
               <div>
                 <h3 className="text-sm font-medium text-gray-500">권한</h3>
                 <p className="mt-1 text-gray-800">
-                  {getRoleLabel(user.role)}
+                  {getRoleLabel(profile.role?.name)}
                 </p>
               </div>
             </div>

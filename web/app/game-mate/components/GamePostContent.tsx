@@ -1,15 +1,24 @@
+'use client';
+
 import type { GamePost } from '@/types/models';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { formatRelativeTime } from '@/lib/dateUtils';
 import RichTextViewer from '@/components/editor/RichTextViewer';
+import { useEffect, useState } from 'react';
 
 interface GamePostContentProps {
   post: GamePost;
 }
 
 export default function GamePostContent({ post }: GamePostContentProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
   return (
     <div className="bg-white shadow-sm overflow-hidden sm:rounded-lg">
       <div className="px-4 py-5 sm:p-6">
@@ -31,12 +40,12 @@ export default function GamePostContent({ post }: GamePostContentProps) {
               {post.createdAt && (
                 <div className="flex space-x-1 text-sm text-gray-500">
                   <time dateTime={typeof post.createdAt === 'string' ? post.createdAt : post.createdAt.toISOString()}>
-                    {formatDistanceToNow(new Date(post.createdAt), { 
+                    {isMounted ? formatDistanceToNow(new Date(post.createdAt), { 
                       addSuffix: true, 
                       locale: ko 
-                    })}
+                    }) : '...'}
                   </time>
-                  {post.updatedAt && new Date(post.createdAt).getTime() !== new Date(post.updatedAt).getTime() && (
+                  {isMounted && post.updatedAt && new Date(post.createdAt).getTime() !== new Date(post.updatedAt).getTime() && (
                     <span>(수정됨)</span>
                   )}
                 </div>
@@ -68,7 +77,7 @@ export default function GamePostContent({ post }: GamePostContentProps) {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>시작 시간: <span className="font-semibold">{formatRelativeTime(new Date(post.startTime))}</span></span>
+              <span>시작 시간: <span className="font-semibold">{isMounted ? formatRelativeTime(new Date(post.startTime)) : '...'}</span></span>
             </div>
           </div>
         )}
