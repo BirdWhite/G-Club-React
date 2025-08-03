@@ -6,14 +6,27 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import toast from 'react-hot-toast';
 import { Game, GamePost } from '@/types/models';
-import GameSearchSelect from '@/components/GameSearchSelect';
+import { GameSearchSelect } from '@/components/ui/game-search-select';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { JsonValue } from '@prisma/client/runtime/library';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Slider } from '@/components/ui/slider';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { TimePicker } from '@/components/ui/time-picker';
 
 const formSchema = z.object({
   title: z.string().min(2, '제목은 2자 이상 입력해주세요.').max(100, '제목은 100자를 초과할 수 없습니다.'),
   gameId: z.string().min(1, '게임을 선택해주세요.'),
   maxParticipants: z.number().min(2, '최소 2명 이상이어야 합니다.').max(100, '최대 100명까지 가능합니다.'),
+  startDate: z.date({ message: '시작 날짜를 선택해주세요.' }),
   startTime: z.string().min(1, '시작 시간을 선택해주세요.'),
   content: z.custom<JsonValue>().refine(value => {
     if (!value || typeof value !== 'object' || !('content' in value)) {
@@ -39,26 +52,53 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
   const router = useRouter();
   const isEditMode = !!initialData;
 
+  // 현재 시간에서 가장 가까운 30분 단위 시간 계산
+  const getNextTimeSlot = () => {
+    // 서버 사이드에서는 기본값 반환
+    if (typeof window === 'undefined') {
+      return '12:00';
+    }
+    
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // 현재 분을 30분 단위로 올림
+    let nextMinute = currentMinute;
+    if (currentMinute > 30) {
+      nextMinute = 0;
+      now.setHours(currentHour + 1);
+    } else if (currentMinute > 0) {
+      nextMinute = 30;
+    }
+    
+    return `${now.getHours().toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`;
+  };
+
   const form = useForm<GamePostFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: initialData?.title || '',
       gameId: initialData?.gameId || '',
-      maxParticipants: initialData?.maxParticipants || 4,
-      startTime: initialData?.startTime ? new Date(initialData.startTime).toISOString().slice(0, 16) : '',
+      maxParticipants: initialData?.maxParticipants || 10,
+      startDate: initialData?.startTime ? new Date(initialData.startTime) : new Date(),
+      startTime: initialData?.startTime ? new Date(initialData.startTime).toTimeString().slice(0, 5) : getNextTimeSlot(),
       content: initialData?.content || { type: 'doc', content: [{ type: 'paragraph' }] },
     },
   });
 
-  const { handleSubmit, control, formState: { isSubmitting, errors } } = form;
+  const { handleSubmit, formState: { isSubmitting } } = form;
 
   const onSubmit = async (data: GamePostFormData) => {
     try {
       const url = isEditMode ? `/api/game-posts/${initialData.id}` : '/api/game-posts';
       const method = isEditMode ? 'PATCH' : 'POST';
 
-      // 사용자가 입력한 로컬 시간을 UTC 시간으로 변환
-      const utcStartTime = new Date(data.startTime).toISOString();
+      // 날짜와 시간을 결합하여 UTC 시간으로 변환
+      const [hours, minutes] = data.startTime.split(':').map(Number);
+      const combinedDateTime = new Date(data.startDate);
+      combinedDateTime.setHours(hours, minutes, 0, 0);
+      const utcStartTime = combinedDateTime.toISOString();
 
       const payload = {
         ...data,
@@ -84,86 +124,188 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
     }
   };
 
-  const commonInputStyles = "block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm";
-  const commonButtonStyles = "inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2";
-  const primaryButtonStyles = "text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500";
-  const secondaryButtonStyles = "text-gray-700 bg-white hover:bg-gray-50 border-gray-300";
 
 
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-      <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">제목</label>
-        <Controller
+
+    return (
+    <Form {...form}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
           name="title"
-          control={control}
-          render={({ field }) => <input id="title" placeholder="파티원을 구하는 목적을 명확하게 보여주세요." {...field} className={commonInputStyles} />}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>제목</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="파티원을 구하는 목적을 명확하게 보여주세요." 
+                  className="bg-cyber-black-100 border-cyber-black-300 focus:bg-cyber-black-200"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-            <label htmlFor="gameId" className="block text-sm font-medium text-gray-700 mb-1">게임</label>
-            <Controller
-                name="gameId"
-                control={control}
-                render={({ field }) => (
-                    <GameSearchSelect
-                        value={field.value}
-                        onChange={field.onChange}
-                    />
-                )}
-            />
-            {errors.gameId && <p className="text-red-500 text-sm mt-1">{errors.gameId.message}</p>}
-        </div>
-        <div>
-            <label htmlFor="maxParticipants" className="block text-sm font-medium text-gray-700 mb-1">최대 인원</label>
-            <Controller
-                name="maxParticipants"
-                control={control}
-                render={({ field }) => (
-                    <input 
-                        id="maxParticipants" 
-                        type="number" 
-                        {...field} 
-                        onChange={e => field.onChange(Number(e.target.value))}
-                        className={commonInputStyles} 
-                    />
-                )}
-            />
-            {errors.maxParticipants && <p className="text-red-500 text-sm mt-1">{errors.maxParticipants.message}</p>}
-        </div>
-      </div>
-      
-      <div>
-        <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">시작 시간</label>
-        <Controller
-          name="startTime"
-          control={control}
-          render={({ field }) => <input id="startTime" type="datetime-local" {...field} className={commonInputStyles} />}
-        />
-        {errors.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime.message}</p>}
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <FormField
+            control={form.control}
+            name="gameId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>게임</FormLabel>
+                <FormControl>
+                  <GameSearchSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">내용</label>
-        <Controller
+          <FormField
+            control={form.control}
+            name="maxParticipants"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>최대 인원</FormLabel>
+                <FormControl>
+                  <div className="space-y-4">
+                    <Input 
+                      type="number" 
+                      value={field.value || ''}
+                      onChange={e => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          field.onChange(0);
+                        } else {
+                          const numValue = Number(value);
+                          if (!isNaN(numValue)) {
+                            field.onChange(numValue);
+                          }
+                        }
+                      }}
+                      min="2"
+                      max="100"
+                      className="bg-cyber-black-100 border-cyber-black-300 focus:bg-cyber-black-200"
+                    />
+                    
+                    {/* 슬라이더 */}
+                    <div className="space-y-2">
+                      <Slider
+                        value={[[2, 4, 5, 8, 10].indexOf(field.value)]}
+                        onValueChange={([newValue]) => {
+                          const values = [2, 4, 5, 8, 10];
+                          const selectedValue = values[newValue];
+                          field.onChange(selectedValue);
+                        }}
+                        max={4}
+                        min={0}
+                        step={1}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>2</span>
+                        <span>4</span>
+                        <span>5</span>
+                        <span>8</span>
+                        <span>10</span>
+                      </div>
+                    </div>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <FormField
+            control={form.control}
+            name="startDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>시작 날짜</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className="w-full pl-3 text-left font-normal bg-cyber-black-100 border-cyber-black-300 hover:bg-cyber-black-200"
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP", { locale: ko })
+                        ) : (
+                          <span>날짜를 선택하세요</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                      }
+                      initialFocus
+                      locale={ko}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="startTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>시작 시간</FormLabel>
+                <FormControl>
+                  <TimePicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="시간을 선택하세요"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
           name="content"
-          control={control}
-          render={({ field }) => <RichTextEditor content={field.value} onChange={field.onChange} />}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>내용</FormLabel>
+              <FormControl>
+                <RichTextEditor content={field.value} onChange={field.onChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.content && <p className="text-red-500 text-sm mt-1">{errors.content.message}</p>}
-      </div>
 
-      <div className="flex justify-end space-x-4">
-        <button type="button" onClick={() => router.back()} className={`${commonButtonStyles} ${secondaryButtonStyles}`}>
-          취소
-        </button>
-        <button type="submit" disabled={isSubmitting} className={`${commonButtonStyles} ${primaryButtonStyles} disabled:opacity-50`}>
-          {isSubmitting ? '저장 중...' : (isEditMode ? '수정하기' : '작성하기')}
-        </button>
-      </div>
-    </form>
+        <div className="flex justify-end space-x-4">
+          <Button type="button" variant="outline" onClick={() => router.back()}>
+            취소
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? '저장 중...' : (isEditMode ? '수정하기' : '작성하기')}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 } 

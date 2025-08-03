@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // 파일 유형 검증
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      return NextResponse.json({ error: '지원되지 않는 파일 형식입니다.' }, { status: 400 });
+      return NextResponse.json({ error: '지원되지 않는 파일 형식입니다. JPEG, PNG, GIF, WebP 형식만 업로드 가능합니다.' }, { status: 400 });
     }
     
     // 파일 크기 제한 (2MB)
@@ -62,10 +62,25 @@ export async function POST(request: NextRequest) {
 
     // 'gameIcon' 타입일 경우 Supabase 스토리지에 업로드
     if (uploadType === 'gameIcon') {
+      // 관리자 권한 확인
+      const { data: userProfile } = await supabase
+        .from('UserProfile')
+        .select(`
+          role:Role(name)
+        `)
+        .eq('userId', user.id)
+        .single();
+
+      if (!userProfile?.role || !['ADMIN', 'SUPER_ADMIN'].includes((userProfile.role as any).name)) {
+        return NextResponse.json({ 
+          error: '게임 아이콘 업로드는 관리자만 가능합니다.' 
+        }, { status: 403 });
+      }
+
       const { data, error } = await supabase.storage
         .from('game-icons')
         .upload(fileName, finalBuffer, {
-          contentType: isGif ? 'image/gif' : 'image/webp',
+          contentType: 'image/webp',
           upsert: false,
         });
 

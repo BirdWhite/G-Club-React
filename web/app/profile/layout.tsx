@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '내 프로필 | G-Club',
+  title: '내 프로필 | Ultimate',
   description: '내 프로필을 확인하고 관리하세요.',
 };
 

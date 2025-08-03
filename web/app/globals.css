@@ -1,10 +1,18 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
   --color-cyber-blue: #38BDF8;   /* 일렉트릭 블루: 포인트, 버튼 */
-  --color-cyber-purple: #A78BFA; /* 매지컬 퍼플: 액센트, 강조 */
-  --color-cyber-orange: #FB7185; /* 네온 오렌지: 알림, 강조 */
+  --color-cyber-purple: #C252E1; /* 매지컬 퍼플: 액센트, 강조 */
+  --color-cyber-orange: #F97316; /* 네온 오렌지: 알림, 강조 */
   --color-cyber-gray: #E5E7EB;   /* 실버 그레이: 카드, 서브 배경 */
+  --color-cyber-darkgray: #6B7280;
+  --color-cyber-green: #34D399;
+  --color-cyber-yellow: #FDE047;
+  --color-cyber-pink: #F472B6;
+  --color-cyber-red: #EF4444;
 
   /* Lightest to Darkest 순서로 재정렬, 500을 기준으로! */
   --color-cyber-black-50:  #283245;  /* 밝게 조정 */
@@ -18,7 +26,6 @@
   --color-cyber-black-800: #06080d;
   --color-cyber-black-900: #030306;
 
-  
 }
 
 @font-face {
@@ -45,30 +52,30 @@
     top: 0;
     z-index: 50;
   }
-  
+
   /* 로고 스타일 */
   .header-logo {
-    color: var(--color-cyber-blue);
-    transition: color 0.2s ease;
+    color: white;
+    transition: all 0.2s ease;
   }
-  
+
   .header-logo:hover {
-    color: var(--color-cyber-blue-light);
+    color: var(--color-cyber-blue);
   }
-  
+
   /* 네비게이션 링크 기본 스타일 */
   .nav-link {
     border-color: transparent;
     color: var(--color-cyber-gray-400);
     transition: all 0.2s ease;
   }
-  
+
   /* 활성화된 네비게이션 링크 */
   .nav-link-active {
     border-color: var(--color-cyber-blue) !important;
     color: var(--color-cyber-gray) !important;
   }
-  
+
   /* 네비게이션 링크 호버 효과 */
   .nav-link:not(.nav-link-active):hover {
     border-color: var(--color-cyber-gray-500);
@@ -104,4 +111,126 @@
     background-color: #0ea5e9;
     transform: translateY(-1px);
   }
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: var(--color-cyber-black-100);
+  --foreground: var(--color-cyber-gray);
+  --card: var(--color-cyber-black-200);
+  --card-foreground: var(--color-cyber-gray);
+  --popover: var(--color-cyber-black-200);
+  --popover-foreground: var(--color-cyber-gray);
+  --primary: var(--color-cyber-blue);
+  --primary-foreground: var(--color-cyber-black-900);
+  --secondary: var(--color-cyber-black-300);
+  --secondary-foreground: var(--color-cyber-gray);
+  --muted: var(--color-cyber-black-300);
+  --muted-foreground: var(--color-cyber-darkgray);
+  --accent: var(--color-cyber-black-300);
+  --accent-foreground: var(--color-cyber-gray);
+  --destructive: var(--color-cyber-orange);
+  --border: var(--color-cyber-black-300);
+  --input: var(--color-cyber-black-100);
+  --ring: var(--color-cyber-blue);
+  --chart-1: var(--color-cyber-blue);
+  --chart-2: var(--color-cyber-purple);
+  --chart-3: var(--color-cyber-green);
+  --chart-4: var(--color-cyber-orange);
+  --chart-5: var(--color-cyber-pink);
+  --sidebar: var(--color-cyber-black-200);
+  --sidebar-foreground: var(--color-cyber-gray);
+  --sidebar-primary: var(--color-cyber-blue);
+  --sidebar-primary-foreground: var(--color-cyber-black-900);
+  --sidebar-accent: var(--color-cyber-black-300);
+  --sidebar-accent-foreground: var(--color-cyber-gray);
+  --sidebar-border: var(--color-cyber-black-300);
+  --sidebar-ring: var(--color-cyber-blue);
+
+}
+
+.dark {
+  --background: var(--color-cyber-black-100);
+  --foreground: var(--color-cyber-gray);
+  --card: var(--color-cyber-black-200);
+  --card-foreground: var(--color-cyber-gray);
+  --popover: var(--color-cyber-black-200);
+  --popover-foreground: var(--color-cyber-gray);
+  --primary: var(--color-cyber-blue);
+  --primary-foreground: var(--color-cyber-black-900);
+  --secondary: var(--color-cyber-black-300);
+  --secondary-foreground: var(--color-cyber-gray);
+  --muted: var(--color-cyber-black-300);
+  --muted-foreground: var(--color-cyber-darkgray);
+  --accent: var(--color-cyber-black-300);
+  --accent-foreground: var(--color-cyber-gray);
+  --destructive: var(--color-cyber-orange);
+  --border: var(--color-cyber-black-300);
+  --input: var(--color-cyber-black-100);
+  --ring: var(--color-cyber-blue);
+  --chart-1: var(--color-cyber-blue);
+  --chart-2: var(--color-cyber-purple);
+  --chart-3: var(--color-cyber-green);
+  --chart-4: var(--color-cyber-orange);
+  --chart-5: var(--color-cyber-pink);
+  --sidebar: var(--color-cyber-black-200);
+  --sidebar-foreground: var(--color-cyber-gray);
+  --sidebar-primary: var(--color-cyber-blue);
+  --sidebar-primary-foreground: var(--color-cyber-black-900);
+  --sidebar-accent: var(--color-cyber-black-300);
+  --sidebar-accent-foreground: var(--color-cyber-gray);
+  --sidebar-border: var(--color-cyber-black-300);
+  --sidebar-ring: var(--color-cyber-blue);
+
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+
+  }
+  body {
+    @apply bg-background text-foreground;
+
+  }
+
 }

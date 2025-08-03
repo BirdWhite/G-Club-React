@@ -1,3 +1,7 @@
+// TODO: 이 파일은 새로운 shadcn/ui 기반 GameSearchSelect로 대체되었습니다. 
+// 새로운 컴포넌트: web/components/ui/game-search-select.tsx
+// 이 파일은 참고용으로 남겨두었으며, 모든 기능이 새 컴포넌트로 이전되면 삭제해야 합니다.
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -97,7 +101,7 @@ export default function GameSearchSelect({
       <div className="relative">
         <button
           type="button"
-          className="inline-flex justify-between w-full rounded-md border border-gray-300 shadow-sm px-4 py-2.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="inline-flex justify-between w-full rounded-md border border-cyber-black-300 shadow-sm px-4 py-2.5 bg-cyber-black-100 text-sm font-medium text-cyber-gray hover:bg-cyber-black-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-blue transition-colors"
           onClick={toggleDropdown}
         >
           <span className="truncate">{getSelectedGameName()}</span>
@@ -119,13 +123,13 @@ export default function GameSearchSelect({
         </button>
 
         {isOpen && (
-          <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+          <div className="absolute z-10 mt-1 w-full rounded-md bg-cyber-black-200 shadow-lg ring-1 ring-black ring-opacity-5 border border-cyber-black-300">
             {/* 게임 검색 입력창 */}
-            <div className="px-3 py-2 border-b border-gray-200">
+            <div className="px-3 py-2 border-b border-cyber-black-300">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
-                    className="h-4 w-4 text-gray-400"
+                    className="h-4 w-4 text-cyber-gray/40"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                     fill="currentColor"
@@ -140,7 +144,7 @@ export default function GameSearchSelect({
                 <input
                   ref={inputRef}
                   type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="block w-full pl-10 pr-3 py-2 border border-cyber-black-300 rounded-md text-sm leading-5 bg-cyber-black-100 placeholder-cyber-gray/50 text-cyber-gray focus:outline-none focus:ring-cyber-blue focus:border-cyber-blue"
                   placeholder="게임 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -153,14 +157,14 @@ export default function GameSearchSelect({
               {showAllOption && (
                 <li
                   className={`relative cursor-pointer select-none py-2 pl-3 pr-9 ${
-                    value === 'all' ? 'bg-indigo-100 text-indigo-900' : 'text-gray-900 hover:bg-indigo-50'
+                    value === 'all' ? 'bg-cyber-blue/20 text-cyber-blue' : 'text-cyber-gray hover:bg-cyber-black-300'
                   }`}
                   onClick={() => handleSelect('all')}
                 >
                   <div className="flex items-center">
                     <span className="ml-3 block truncate font-medium">전체 게임</span>
                     {value === 'all' && (
-                      <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-indigo-600">
+                      <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-cyber-blue">
                         <svg
                           className="h-5 w-5"
                           xmlns="http://www.w3.org/2000/svg"
@@ -180,13 +184,13 @@ export default function GameSearchSelect({
               )}
 
               {filteredGames.length === 0 ? (
-                <li className="px-4 py-2 text-sm text-gray-700">검색 결과가 없습니다.</li>
+                <li className="px-4 py-2 text-sm text-cyber-gray/60">검색 결과가 없습니다.</li>
               ) : (
                 filteredGames.map((game) => (
                   <li
                     key={game.id}
                     className={`relative cursor-pointer select-none py-2 pl-3 pr-9 ${
-                      value === game.id ? 'bg-indigo-100 text-indigo-900' : 'text-gray-900 hover:bg-indigo-50'
+                      value === game.id ? 'bg-cyber-blue/20 text-cyber-blue' : 'text-cyber-gray hover:bg-cyber-black-300'
                     }`}
                     onClick={() => handleSelect(game.id)}
                   >
@@ -204,7 +208,7 @@ export default function GameSearchSelect({
                       )}
                       <span className="ml-3 block truncate font-medium">{game.name}</span>
                       {value === game.id && (
-                        <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-indigo-600">
+                        <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-cyber-blue">
                           <svg
                             className="h-5 w-5"
                             xmlns="http://www.w3.org/2000/svg"

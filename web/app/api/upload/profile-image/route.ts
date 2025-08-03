@@ -48,6 +48,15 @@ export async function POST(request: Request) {
       );
     }
 
+    // 파일 형식 검증
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: '지원되지 않는 파일 형식입니다. JPEG, PNG, GIF, WebP 형식만 업로드 가능합니다.' },
+        { status: 400 }
+      );
+    }
+
     // 사용자 ID를 기반으로 파일명 생성 (항상 .webp 확장자 사용)
     const fileName = `${user.id}.webp`;
     console.log('사용자 ID:', user.id, '파일명:', fileName);

@@ -13,6 +13,7 @@ async function getPost(id: string): Promise<GamePost | null> {
             author: {
                 select: {
                     id: true,
+                    userId: true,
                     name: true,
                     image: true,
                 }
@@ -74,25 +75,25 @@ async function getGames(): Promise<Game[]> {
     }
 }
 
-export default async function EditGamePostPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function EditGamePostPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const [post, games, user] = await Promise.all([
     getPost(id),
     getGames(),
     getCurrentUser()
   ]);
 
-  if (!post || post.author.id !== user?.id) {
+  if (!post || post.author.userId !== user?.id) {
     notFound();
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-cyber-black max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-extrabold text-gray-900">모집글 수정하기</h1>
-        <p className="mt-2 text-sm text-gray-600">게시글 내용을 수정하고 다시 파티원을 모집해보세요.</p>
+        <h1 className="text-3xl font-extrabold text-cyber-gray">모집글 수정하기</h1>
+        <p className="mt-2 text-sm text-cyber-gray/60">게시글 내용을 수정하고 다시 파티원을 모집해보세요.</p>
       </div>
-      <div className="bg-white shadow-lg rounded-lg p-6 sm:p-8">
+      <div className="bg-cyber-black-200 border border-cyber-black-300 shadow-lg rounded-lg p-6 sm:p-8">
         <GamePostForm games={games} initialData={post} />
       </div>
     </div>

@@ -86,6 +86,7 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
     onUpdate: ({ editor }) => {
       onChange(editor.getJSON());
     },
+
   });
 
   // 에디터 초기화 확인
@@ -314,6 +315,116 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
           width: 100%;
           height: 100%;
           border: none;
+        }
+        
+        /* Tiptap 에디터 하이라이트 제거 */
+        .ProseMirror {
+          outline: none !important;
+          border: none !important;
+        }
+        .ProseMirror:focus {
+          outline: none !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+        .ProseMirror * {
+          outline: none !important;
+        }
+        .ProseMirror *:focus {
+          outline: none !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+        .ProseMirror p {
+          outline: none !important;
+          border: none !important;
+        }
+        .ProseMirror p:focus {
+          outline: none !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+        .ProseMirror p.is-editor-empty:first-child::before {
+          color: #adb5bd;
+          content: attr(data-placeholder);
+          float: left;
+          height: 0;
+          pointer-events: none;
+        }
+        
+        /* 리스트 스타일 */
+        .ProseMirror ol {
+          list-style-type: decimal;
+          list-style-position: outside;
+          margin: 0.5em 0;
+          padding-left: 2em;
+        }
+        
+        .ProseMirror ul {
+          list-style-type: disc;
+          list-style-position: outside;
+          margin: 0.5em 0;
+          padding-left: 2em;
+        }
+        
+        .ProseMirror li {
+          margin-bottom: 0.25em;
+          display: list-item;
+        }
+        
+        .ProseMirror li ol,
+        .ProseMirror li ul {
+          margin: 0.25em 0;
+          padding-left: 1em;
+        }
+        
+        /* 리스트 항목 내부 텍스트 스타일 */
+        .ProseMirror li p {
+          margin: 0;
+          display: inline;
+        }
+        
+        /* 제목 스타일 */
+        .ProseMirror h1 {
+          font-size: 2em;
+          font-weight: bold;
+          margin: 1em 0 0.5em 0;
+          color: #ffffff;
+        }
+        
+        .ProseMirror h2 {
+          font-size: 1.5em;
+          font-weight: bold;
+          margin: 0.8em 0 0.4em 0;
+          color: #ffffff;
+        }
+        
+        .ProseMirror h3 {
+          font-size: 1.25em;
+          font-weight: bold;
+          margin: 0.6em 0 0.3em 0;
+          color: #ffffff;
+        }
+        
+        .ProseMirror h4 {
+          font-size: 1.1em;
+          font-weight: bold;
+          margin: 0.5em 0 0.25em 0;
+          color: #ffffff;
+        }
+        
+        .ProseMirror h5 {
+          font-size: 1em;
+          font-weight: bold;
+          margin: 0.4em 0 0.2em 0;
+          color: #ffffff;
+        }
+        
+        .ProseMirror h6 {
+          font-size: 0.9em;
+          font-weight: bold;
+          margin: 0.3em 0 0.15em 0;
+          color: #ffffff;
         }
       `}</style>
       

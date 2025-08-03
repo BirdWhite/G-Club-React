@@ -1,3 +1,7 @@
+// TODO: 이 파일은 새로운 shadcn/ui 기반 GameSearchSelect로 대체되었습니다. 
+// 새로운 컴포넌트: web/components/ui/game-search-select.tsx
+// 이 파일은 참고용으로 남겨두었으며, 모든 기능이 새 컴포넌트로 이전되면 삭제해야 합니다.
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -128,7 +132,7 @@ export default function GameSearchSelect({ value, onChange, className = '', init
         <input
           ref={inputRef}
           type="text"
-          className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+          className="w-full rounded-md border border-cyber-black-300 bg-cyber-black-100 py-2 pl-3 pr-10 shadow-sm focus:border-cyber-blue focus:outline-none focus:ring-1 focus:ring-cyber-blue sm:text-sm text-cyber-gray placeholder-cyber-gray/40"
           value={query}
           onChange={handleInputChange}
           onFocus={handleFocus}
@@ -144,7 +148,7 @@ export default function GameSearchSelect({ value, onChange, className = '', init
           }}
         >
           <svg
-            className={`h-5 w-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            className={`h-5 w-5 text-cyber-gray/60 transition-transform ${isOpen ? 'rotate-180' : ''}`}
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
@@ -160,10 +164,10 @@ export default function GameSearchSelect({ value, onChange, className = '', init
       </div>
 
       {isOpen && (
-        <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg">
+        <div className="absolute z-10 mt-1 w-full rounded-md bg-cyber-black-200 border border-cyber-black-300 shadow-lg">
           <ul className="max-h-60 overflow-auto py-1 text-base focus:outline-none sm:text-sm">
             <li
-              className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:bg-indigo-600 hover:text-white"
+              className="relative cursor-default select-none py-2 pl-3 pr-9 text-cyber-gray hover:bg-cyber-blue hover:text-white"
               onClick={() => handleSelect(null)}
             >
               <span className="ml-3 truncate font-semibold">
@@ -174,7 +178,7 @@ export default function GameSearchSelect({ value, onChange, className = '', init
               games.map((game) => (
                 <li
                   key={game.id}
-                  className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:bg-indigo-600 hover:text-white"
+                  className="relative cursor-default select-none py-2 pl-3 pr-9 text-cyber-gray hover:bg-cyber-blue hover:text-white"
                   onClick={() => handleSelect(game)}
                 >
                   <div className="flex items-center">
@@ -210,9 +214,9 @@ export default function GameSearchSelect({ value, onChange, className = '', init
               ))
             ) : (
               query && (
-                <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-                  검색 결과가 없습니다.
-                </div>
+                              <div className="relative cursor-default select-none py-2 px-4 text-cyber-gray/60">
+                검색 결과가 없습니다.
+              </div>
               )
             )}
           </ul>

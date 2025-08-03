@@ -56,27 +56,27 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
 
   const { dateStr, timeStr } = formatGameTime(post.startTime);
   const statusInfo = {
-    OPEN: { text: '모집 중', className: 'bg-green-100 text-green-800 group-hover:bg-green-200 group-hover:text-green-900' },
-    FULL: { text: '인원 마감', className: 'bg-yellow-100 text-yellow-800 group-hover:bg-yellow-200 group-hover:text-yellow-900' },
-    IN_PROGRESS: { text: '게임 중', className: 'bg-purple-100 text-purple-800 group-hover:bg-purple-200 group-hover:text-purple-900' },
-    COMPLETED: { text: '모집 완료', className: 'bg-gray-100 text-gray-800 group-hover:bg-gray-200 group-hover:text-gray-900' },
+    OPEN: { text: '모집 중', className: 'bg-cyber-green/20 text-cyber-green group-hover:bg-cyber-green/30' },
+    FULL: { text: '인원 마감', className: 'bg-cyber-yellow/20 text-cyber-yellow group-hover:bg-cyber-yellow/30' },
+    IN_PROGRESS: { text: '게임 중', className: 'bg-cyber-purple/20 text-cyber-purple group-hover:bg-cyber-purple/30' },
+    COMPLETED: { text: '게임 완료', className: 'bg-cyber-gray/20 text-cyber-gray group-hover:bg-cyber-gray/30' },
   };
   
   const currentStatus = statusInfo[post.status] || statusInfo.COMPLETED;
   const plainContent = extractTextFromContent(post.content);
 
   return (
-    <div className="group bg-white overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1">
+    <div className="group bg-cyber-black-200 overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-cyber-black-300">
       <Link href={`/game-mate/${post.id}`} className="flex-1 flex flex-col p-4">
         {/* 상단: 상태 및 시간 */}
         <div className="flex items-center justify-between mb-3 text-xs">
           <span className={`px-2 py-1 rounded-full font-semibold transition-colors duration-300 ${currentStatus.className}`}>
             {currentStatus.text}
           </span>
-          <div className="flex items-center text-gray-500">
-            <Clock className="h-4 w-4 mr-1 text-gray-400" />
+          <div className="flex items-center text-cyber-purple">
+            <Clock className="h-4 w-4 mr-1 text-cyber-purple" />
             <time dateTime={typeof post.startTime === 'string' ? post.startTime : post.startTime.toISOString()}>
-              {dateStr} {timeStr}
+              {isToday(new Date(post.startTime)) ? timeStr : `${dateStr} ${timeStr}`}
             </time>
           </div>
         </div>
@@ -84,7 +84,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
         {/* 중단: 게임 정보, 제목, 작성자, 내용 */}
         <div className="flex items-center min-w-0 mb-2">
             {post.game?.iconUrl ? (
-              <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 mr-2 flex-shrink-0">
+              <div className="w-8 h-8 rounded-lg overflow-hidden border border-cyber-black-300 mr-2 flex-shrink-0 bg-white">
                 <img 
                   src={post.game.iconUrl} 
                   alt={post.game.name}
@@ -92,39 +92,39 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
                 />
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center mr-2 flex-shrink-0">
-                <span className="text-indigo-800 font-medium text-xs">
+              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center mr-2 flex-shrink-0 border border-cyber-black-300">
+                <span className="text-cyber-blue font-medium text-xs">
                   {post.game?.name?.[0] || 'G'}
                 </span>
               </div>
             )}
-            <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-700 transition-colors duration-300 truncate">
+            <span className="text-sm font-medium text-cyber-gray group-hover:text-cyber-blue transition-colors duration-300 truncate">
               {post.game?.name || '게임'}
             </span>
         </div>
         
         <div className="flex justify-between items-start gap-2 mb-1">
-            <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-800 transition-colors duration-300 line-clamp-2">
+            <h3 className="text-lg font-bold text-cyber-gray group-hover:text-white transition-colors duration-300 line-clamp-2">
               {post.title}
             </h3>
-            <div className="text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-300 flex-shrink-0 mt-1">
+            <div className="text-sm text-cyber-gray/60 group-hover:text-cyber-gray transition-colors duration-300 flex-shrink-0 mt-1">
               {post.author?.name || '익명'}
             </div>
         </div>
 
-        <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300 line-clamp-2 mb-4 flex-grow">
+        <p className="text-sm text-cyber-gray/70 group-hover:text-cyber-gray transition-colors duration-300 line-clamp-2 mb-4 flex-grow">
           {plainContent}
         </p>
 
         {/* 하단: 참여 인원 */}
-        <div className="mt-auto pt-2 border-t border-gray-100 flex items-center justify-between text-sm text-gray-600">
+        <div className="mt-auto pt-2 border-t border-cyber-black-300 flex items-center justify-between text-sm text-cyber-gray/60">
           <div className="flex items-center">
-            <Users className="h-4 w-4 mr-1.5 text-gray-400" />
-            <span className="font-medium text-gray-900">
+            <Users className="h-4 w-4 mr-1.5 text-cyber-gray/40" />
+            <span className="font-medium text-cyber-gray">
               {`${post._count?.participants || 0} / ${post.maxParticipants}명`}
             </span>
             {post._count && post._count.waitingList > 0 && (
-              <span className="ml-2 text-blue-600 font-medium">(+{post._count.waitingList} 대기)</span>
+              <span className="ml-2 text-cyber-blue font-medium">(+{post._count.waitingList} 대기)</span>
             )}
           </div>
         </div>
@@ -133,16 +133,16 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
         {!isOwner && (
           <div className="absolute bottom-3 right-4">
             {isParticipating ? (
-              <span className="px-3 py-1.5 text-sm font-semibold text-white bg-green-500 rounded-full shadow-md">
+              <span className="px-3 py-1.5 text-sm font-semibold text-cyber-black bg-cyber-green rounded-full shadow-md">
                 참여중
               </span>
             ) : isWaiting ? (
-              <span className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-500 rounded-full shadow-md">
+              <span className="px-3 py-1.5 text-sm font-semibold text-cyber-black bg-cyber-blue rounded-full shadow-md">
                 대기중
               </span>
             ) : (
                post.status === 'OPEN' && (
-                <span className="px-3 py-1.5 text-sm font-semibold text-white bg-indigo-600 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="px-3 py-1.5 text-sm font-semibold text-cyber-black bg-cyber-blue rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
                   참여 가능
                 </span>
                )

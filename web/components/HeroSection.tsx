@@ -15,7 +15,7 @@ export const HeroSection = ({ onStartClick, onLearnMoreClick }: HeroSectionProps
       <div className="rounded-2xl p-8 bg-[#111113] border border-[#1e1e24] shadow-2xl">
         <div className="h-full flex flex-col justify-center">
           <h1 className="text-4xl md:text-5xl font-bold text-cyber-gray mb-6 leading-tight">
-            G Club에 오신 것을<br />환영합니다
+            Ultimate에 오신 것을<br />환영합니다
           </h1>
           <p className="text-xl text-cyber-gray/80 mb-8 max-w-2xl">
             게이머들을 위한 최고의 커뮤니티에서 함께하세요. 실력 향상, 팀원 모집, 게임 정보 공유까지 한 곳에서!

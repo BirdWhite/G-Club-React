@@ -30,6 +30,7 @@ async function getPost(id: string): Promise<GamePost | null> {
             user: {
               select: {
                 id: true,
+                userId: true,
                 name: true,
                 image: true,
               },
@@ -42,6 +43,7 @@ async function getPost(id: string): Promise<GamePost | null> {
             user: {
               select: {
                 id: true,
+                userId: true,
                 name: true,
                 image: true,
               },
@@ -91,7 +93,7 @@ export default async function GamePostDetailPage({ params }: { params: Promise<{
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-cyber-black max-w-4xl mx-auto px-4 py-8">
       <GamePostDetailClient initialPost={initialPostState} userId={userId} />
     </div>
   );

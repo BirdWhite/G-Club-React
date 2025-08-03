@@ -20,12 +20,12 @@ export default async function NewGamePostPage() {
   const games = await getGames();
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-cyber-black max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-extrabold text-gray-900">게임메이트 모집하기</h1>
-        <p className="mt-2 text-sm text-gray-600">함께 게임을 즐길 파티원을 모집해보세요!</p>
+        <h1 className="text-3xl font-extrabold text-cyber-gray">게임메이트 모집하기</h1>
+        <p className="mt-2 text-sm text-cyber-gray/60">함께 게임을 즐길 파티원을 모집해보세요!</p>
       </div>
-      <div className="bg-white shadow-lg rounded-lg p-6 sm:p-8">
+      <div className="bg-cyber-black-200 border border-cyber-black-300 shadow-lg rounded-lg p-6 sm:p-8">
         <GamePostForm games={games} />
       </div>
     </div>

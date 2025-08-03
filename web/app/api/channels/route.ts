@@ -13,7 +13,8 @@ export async function GET() {
         game: {
           select: {
             id: true,
-            name: true
+            name: true,
+            iconUrl: true
           }
         }
       }

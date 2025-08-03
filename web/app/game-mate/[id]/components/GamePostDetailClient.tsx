@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GamePost, GameParticipant, WaitingParticipant } from '@/types/models';
 import toast from 'react-hot-toast';
@@ -20,6 +20,14 @@ interface GamePostDetailClientProps {
 export default function GamePostDetailClient({ initialPost, userId }: GamePostDetailClientProps) {
   const router = useRouter();
   const { post, loading: isSubmitting, refresh } = useGamePostDetailSubscription(initialPost.id, initialPost);
+  
+  // 게시글이 삭제된 경우 리다이렉트
+  useEffect(() => {
+    if (post === null) {
+      toast.error('게시글이 삭제되었습니다.');
+      router.push('/game-mate');
+    }
+  }, [post, router]);
   
   const currentPost = post || initialPost;
 
@@ -85,9 +93,15 @@ export default function GamePostDetailClient({ initialPost, userId }: GamePostDe
     router.push(`/game-mate/${currentPost.id}/edit`);
   };
 
+  const handleToggleStatus = () => handleAction(
+    () => fetch(`/api/game-posts/${currentPost.id}/toggle-status`, { method: 'PATCH' }),
+    '게임 상태가 변경되었습니다.',
+    '게임 상태 변경 중 오류가 발생했습니다.'
+  );
+
   const isOwner = currentPost.isOwner; // Use server-provided value
-  const isParticipating = currentPost.participants?.some((p: GameParticipant) => p.userId === userId);
-  const isWaiting = currentPost.waitingList?.some((w: WaitingParticipant) => w.userId === userId);
+  const isParticipating = currentPost.isParticipating; // Use server-provided value
+  const isWaiting = currentPost.isWaiting; // Use server-provided value
 
   return (
     <>
@@ -104,29 +118,41 @@ export default function GamePostDetailClient({ initialPost, userId }: GamePostDe
       </div>
 
       <div className="mt-8">
-        <h3 className="text-xl font-bold mb-4">참여자 목록 ({currentPost._count?.participants || 0}/{currentPost.maxParticipants})</h3>
+        <div className="flex items-center mb-4">
+          <h3 className="text-xl font-bold text-cyber-gray mr-3">참여자 목록</h3>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30">
+            {currentPost._count?.participants || 0}/{currentPost.maxParticipants}
+          </span>
+        </div>
         <ParticipantList
           participants={currentPost.participants}
-          authorId={currentPost.author.id}
+          authorId={currentPost.author.userId}
         />
       </div>
 
       {currentPost.waitingList && currentPost.waitingList.length > 0 && (
          <div className="mt-8">
-            <h3 className="text-xl font-bold mb-4">예비 명단 ({currentPost._count?.waitingList || 0}명)</h3>
+            <div className="flex items-center mb-4">
+              <h3 className="text-xl font-bold text-cyber-gray mr-3">예비 명단</h3>
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30">
+                {currentPost._count?.waitingList || 0}명
+              </span>
+            </div>
             <WaitingList waitingList={currentPost.waitingList} />
          </div>
       )}
 
-      {!isOwner && userId && (
+      {userId && (
         <div className="mt-8">
           <ActionButtons
             postStatus={currentPost.status}
             isParticipating={isParticipating}
             isWaiting={isWaiting}
+            isOwner={isOwner}
             onParticipate={handleParticipate}
             onCancelParticipation={handleCancelParticipation}
             onWait={handleWait}
+            onToggleStatus={handleToggleStatus}
             loading={isSubmitting}
           />
         </div>

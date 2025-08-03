@@ -30,7 +30,7 @@ interface PostData {
   };
 }
 
-// 간단한 TipTap JSON-to-HTML 렌더러
+// TipTap JSON-to-HTML 렌더러
 function renderTipTapContent(content: any): string {
     if (typeof content === 'string') {
         return content;
@@ -38,13 +38,88 @@ function renderTipTapContent(content: any): string {
     if (content && content.type === 'doc' && Array.isArray(content.content)) {
         return content.content.map((node: any) => {
             if (node.type === 'paragraph') {
-                return `<p>${node.content?.map((textNode: any) => textNode.text).join('') || ''}</p>`;
+                return `<p>${renderTextContent(node.content)}</p>`;
             }
-            // 다른 노드 타입(headings, lists 등)에 대한 처리 추가 가능
+            if (node.type === 'orderedList') {
+                const listItems = node.content?.map((listItem: any) => {
+                    const itemContent = listItem.content?.map((itemNode: any) => {
+                        if (itemNode.type === 'paragraph') {
+                            return renderTextContent(itemNode.content);
+                        }
+                        if (itemNode.type === 'orderedList') {
+                            // 중첩된 리스트 처리
+                            const nestedItems = itemNode.content?.map((nestedItem: any) => {
+                                const nestedContent = nestedItem.content?.map((nestedNode: any) => {
+                                    if (nestedNode.type === 'paragraph') {
+                                        return renderTextContent(nestedNode.content);
+                                    }
+                                    return '';
+                                }).join('');
+                                return `<li>${nestedContent}</li>`;
+                            }).join('');
+                            return `<ol>${nestedItems}</ol>`;
+                        }
+                        return '';
+                    }).join('');
+                    return `<li>${itemContent}</li>`;
+                }).join('');
+                return `<ol>${listItems}</ol>`;
+            }
+            if (node.type === 'bulletList') {
+                const listItems = node.content?.map((listItem: any) => {
+                    const itemContent = listItem.content?.map((itemNode: any) => {
+                        if (itemNode.type === 'paragraph') {
+                            return renderTextContent(itemNode.content);
+                        }
+                        return '';
+                    }).join('');
+                    return `<li>${itemContent}</li>`;
+                }).join('');
+                return `<ul>${listItems}</ul>`;
+            }
+            if (node.type === 'heading') {
+                const level = node.attrs?.level || 1;
+                const text = renderTextContent(node.content);
+                return `<h${level}>${text}</h${level}>`;
+            }
             return '';
         }).join('');
     }
     return '';
+}
+
+// 텍스트 노드와 마크를 처리하는 함수
+function renderTextContent(content: any[]): string {
+    if (!content || !Array.isArray(content)) return '';
+    
+    return content.map((node: any) => {
+        if (node.type === 'text') {
+            let text = node.text || '';
+            
+            // 마크 처리
+            if (node.marks && Array.isArray(node.marks)) {
+                node.marks.forEach((mark: any) => {
+                    switch (mark.type) {
+                        case 'bold':
+                            text = `<strong>${text}</strong>`;
+                            break;
+                        case 'italic':
+                            text = `<em>${text}</em>`;
+                            break;
+                        case 'strike':
+                            text = `<s>${text}</s>`;
+                            break;
+                        case 'link':
+                            text = `<a href="${mark.attrs?.href || '#'}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+                            break;
+                    }
+                });
+            }
+            
+            return text;
+        }
+        return '';
+    }).join('');
 }
 
 
@@ -229,7 +304,7 @@ export default function PostDetailPage() {
           </div>
           
           <div 
-            className="prose prose-invert max-w-none"
+            className="prose prose-invert max-w-none [&>ol]:list-decimal [&>ol]:list-inside [&>ul]:list-disc [&>ul]:list-inside [&>ol>li]:mb-2 [&>ul>li]:mb-2 [&>ol>li>ol]:ml-4 [&>ol>li>ul]:ml-4 [&>ul>li>ol]:ml-4 [&>ul>li>ul]:ml-4 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h1]:mt-6 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mb-3 [&>h2]:mt-5 [&>h3]:text-xl [&>h3]:font-bold [&>h3]:mb-2 [&>h3]:mt-4 [&>h4]:text-lg [&>h4]:font-bold [&>h4]:mb-2 [&>h4]:mt-3 [&>h5]:text-base [&>h5]:font-bold [&>h5]:mb-1 [&>h5]:mt-2 [&>h6]:text-sm [&>h6]:font-bold [&>h6]:mb-1 [&>h6]:mt-2 [&>p>strong]:font-bold [&>p>em]:italic [&>p>s]:line-through [&>p>b]:font-bold [&>p>i]:italic [&>p>del]:line-through [&>strong]:font-bold [&>em]:italic [&>s]:line-through [&>b]:font-bold [&>i]:italic [&>del]:line-through"
             dangerouslySetInnerHTML={{ __html: renderTipTapContent(post.content) }}
           />
         </div>

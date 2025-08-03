@@ -9,6 +9,9 @@ export function useGamePostListSubscription(
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState(initialFilters);
   const supabase = useMemo(() => createClient(), []);
+  
+  // 참여자 정보 캐시 (DELETE 이벤트 시 postId 찾기용)
+  const participantCache = useMemo(() => new Map<string, string>(), []);
 
   // API를 통해 게시글 목록을 가져오는 함수
   const fetchPosts = useCallback(async (currentFilters: any) => {
@@ -23,38 +26,214 @@ export function useGamePostListSubscription(
       
       const data = await response.json();
       setPosts(data);
+      
+      // 참여자 정보 캐시 업데이트
+      data.forEach((post: any) => {
+        post.participants?.forEach((participant: any) => {
+          if (participant.userId) {
+            participantCache.set(participant.userId, post.id);
+          }
+        });
+        post.waitingList?.forEach((waiting: any) => {
+          if (waiting.userId) {
+            participantCache.set(waiting.userId, post.id);
+          }
+        });
+      });
     } catch (error) {
       console.error('Error fetching posts:', error);
     } finally {
       setLoading(false);
     }
+  }, [participantCache]);
+
+  // 개별 게시글을 가져오는 함수 (부분 업데이트용)
+  const fetchSinglePost = useCallback(async (postId: string) => {
+    try {
+      const response = await fetch(`/api/game-posts/${postId}?list=true`);
+      if (!response.ok) throw new Error('Failed to fetch post');
+      
+      const updatedPost = await response.json();
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId ? updatedPost : post
+        )
+      );
+    } catch (error) {
+      console.error('Error fetching single post:', error);
+    }
   }, []);
+
+  // 디바운스된 게시글 업데이트 함수
+  const debouncedFetchSinglePost = useCallback((() => {
+    let timeoutId: NodeJS.Timeout;
+    const pendingUpdates = new Set<string>();
+    
+    return (postId: string) => {
+      pendingUpdates.add(postId);
+      
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        // 모든 대기 중인 업데이트를 한 번에 처리
+        pendingUpdates.forEach(id => {
+          fetchSinglePost(id);
+        });
+        pendingUpdates.clear();
+      }, 300); // 300ms 디바운스
+    };
+  })(), [fetchSinglePost]);
+
+  // 새 게시글을 목록에 추가하는 함수
+  const addNewPost = useCallback(async (postId: string) => {
+    try {
+      const response = await fetch(`/api/game-posts/${postId}?list=true`);
+      if (!response.ok) throw new Error('Failed to fetch post');
+      
+      const newPost = await response.json();
+      
+      // 필터 조건 확인
+      let shouldAdd = true;
+      
+      if (filters.status) {
+        if (filters.status === 'recruiting') {
+          shouldAdd = newPost.status === 'OPEN' || newPost.status === 'FULL';
+        } else {
+          shouldAdd = newPost.status === filters.status;
+        }
+      }
+      
+      if (filters.gameId && filters.gameId !== 'all') {
+        shouldAdd = shouldAdd && newPost.gameId === filters.gameId;
+      }
+      
+      if (shouldAdd) {
+        setPosts(prevPosts => [newPost, ...prevPosts]);
+      }
+    } catch (error) {
+      console.error('Error adding new post:', error);
+    }
+  }, [filters]);
 
   // 필터가 변경될 때마다 데이터를 다시 가져옴
   useEffect(() => {
     fetchPosts(filters);
   }, [filters, fetchPosts]);
 
-  // 실시간 구독 설정
+  // 실시간 구독 설정 - 부분 업데이트 방식
   useEffect(() => {
-    // 데이터 변경 신호를 받으면 fetchPosts를 다시 호출
-    const refetch = () => {
-      console.log('Realtime change detected, refetching posts...');
-      fetchPosts(filters);
-    };
-
     const channel = supabase.channel(`game_post_list_${Date.now()}`, {
       config: { broadcast: { self: false } },
-    }); // 고유한 채널 이름 사용
+    });
     
+    // GamePost 테이블 변경사항 처리
     channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'GamePost' }, refetch)
-      .subscribe();
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'GamePost' 
+      }, (payload: any) => {
+        // 새 게시글 추가 - 목록 맨 앞에 추가
+        addNewPost(payload.new.id);
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'GamePost' 
+      }, (payload: any) => {
+        // 게시글 업데이트 (참여자 수 변경 포함)
+        fetchSinglePost(payload.new.id);
+      })
+      .on('postgres_changes', { 
+        event: 'DELETE', 
+        schema: 'public', 
+        table: 'GamePost' 
+      }, (payload: any) => {
+        // 게시글 삭제
+        setPosts(prevPosts => 
+          prevPosts.filter(post => post.id !== payload.old.id)
+        );
+      })
+      // 참여자 수 변경을 위해 다시 추가
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'GameParticipant' 
+      }, (payload: any) => {
+        let postId = payload.new?.gamePostId || payload.old?.gamePostId;
+        
+        // DELETE 이벤트 시 캐시에서 postId 찾기
+        if (!postId && payload.eventType === 'DELETE' && payload.old?.userId) {
+          postId = participantCache.get(payload.old.userId);
+          if (postId) {
+            // 캐시에서 제거
+            participantCache.delete(payload.old.userId);
+          } else {
+            // 캐시에 없으면 전체 목록 새로고침
+            fetchPosts(filters);
+            return;
+          }
+        }
+        
+        // INSERT 이벤트 시 캐시에 추가
+        if (payload.eventType === 'INSERT' && payload.new?.userId && payload.new?.gamePostId) {
+          participantCache.set(payload.new.userId, payload.new.gamePostId);
+        }
+        
+        if (postId) {
+          debouncedFetchSinglePost(postId);
+          
+          // 참여자 제거 시 즉시 업데이트 (더 안정적)
+          if (payload.eventType === 'DELETE') {
+            setTimeout(() => {
+              fetchSinglePost(postId);
+            }, 100);
+          }
+        }
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'WaitingParticipant' 
+      }, (payload: any) => {
+        let postId = payload.new?.gamePostId || payload.old?.gamePostId;
+        
+        // DELETE 이벤트 시 캐시에서 postId 찾기
+        if (!postId && payload.eventType === 'DELETE' && payload.old?.userId) {
+          postId = participantCache.get(payload.old.userId);
+          if (postId) {
+            // 캐시에서 제거
+            participantCache.delete(payload.old.userId);
+          } else {
+            // 캐시에 없으면 전체 목록 새로고침
+            fetchPosts(filters);
+            return;
+          }
+        }
+        
+        // INSERT 이벤트 시 캐시에 추가
+        if (payload.eventType === 'INSERT' && payload.new?.userId && payload.new?.gamePostId) {
+          participantCache.set(payload.new.userId, payload.new.gamePostId);
+        }
+        
+        if (postId) {
+          debouncedFetchSinglePost(postId);
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          // 실시간 연결 실패 시 폴링으로 대체
+          const interval = setInterval(() => {
+            fetchPosts(filters);
+          }, 5000); // 5초마다 폴링
+          
+          return () => clearInterval(interval);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, fetchPosts, filters]); // filters를 의존성에 추가
+  }, [supabase, fetchSinglePost, addNewPost, fetchPosts, filters, debouncedFetchSinglePost]);
 
   return { posts, loading, filters, setFilters };
 }
@@ -64,15 +243,33 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
   const [post, setPost] = useState<any>(initialPost);
   const [loading, setLoading] = useState(!initialPost);
   const supabase = useMemo(() => createClient(), []);
+  
+  // 참여자 캐시 추가
+  const participantCache = useMemo(() => new Map<string, string>(), []);
 
   const fetchPost = useCallback(async () => {
     if (!loading) setLoading(true);
     try {
       const response = await fetch(`/api/game-posts/${postId}`);
       if (!response.ok) {
+        if (response.status === 404) {
+          // 게시글이 삭제된 경우
+          setPost(null);
+          return;
+        }
         throw new Error('Failed to fetch post');
       }
       const data = await response.json();
+      
+      // 참여자 캐시 업데이트
+      if (data.participants) {
+        data.participants.forEach((participant: any) => {
+          if (participant.userId) {
+            participantCache.set(participant.userId, postId);
+          }
+        });
+      }
+      
       setPost(data);
     } catch (error) {
       console.error('Error fetching post:', error);
@@ -80,13 +277,22 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
     } finally {
       setLoading(false);
     }
-  }, [postId, loading]);
+  }, [postId, loading, participantCache]);
 
   useEffect(() => {
     if (!initialPost) {
       fetchPost();
+    } else {
+      // initialPost가 있을 때도 캐시 초기화
+      if (initialPost.participants) {
+        initialPost.participants.forEach((participant: any) => {
+          if (participant.userId) {
+            participantCache.set(participant.userId, postId);
+          }
+        });
+      }
     }
-  }, [fetchPost, initialPost]);
+  }, [fetchPost, initialPost, participantCache, postId]);
 
   // 실시간 구독 설정 - 개별 필드 업데이트 방식
   useEffect(() => {
@@ -97,28 +303,67 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'GameParticipant',
           filter: `gamePostId=eq.${postId}`,
         },
-        () => {
-          // 참여자 변경 시 게시글 정보만 업데이트
-          console.log('GameParticipant changed for post:', postId);
+        (payload: any) => {
+          console.log('GameParticipant INSERT for post:', postId, payload);
+          // 캐시에 새 참여자 추가
+          if (payload.new && payload.new.userId) {
+            participantCache.set(payload.new.userId, postId);
+          }
           fetchPost();
         }
       )
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'DELETE',
+          schema: 'public',
+          table: 'GameParticipant',
+          filter: `gamePostId=eq.${postId}`,
+        },
+        (payload: any) => {
+          console.log('GameParticipant DELETE for post:', postId, payload);
+          console.log('DELETE payload details:', {
+            old: payload.old,
+            new: payload.new,
+            eventType: payload.eventType
+          });
+          // 캐시에서 해당 참여자 제거
+          if (payload.old && payload.old.userId) {
+            participantCache.delete(payload.old.userId);
+          }
+          // 즉시 새로고침
+          console.log('Fetching post after DELETE event...');
+          fetchPost();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
           schema: 'public',
           table: 'WaitingParticipant',
           filter: `gamePostId=eq.${postId}`,
         },
         () => {
-          // 대기자 변경 시 게시글 정보만 업데이트
-          console.log('WaitingParticipant changed for post:', postId);
+          console.log('WaitingParticipant INSERT for post:', postId);
+          fetchPost();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'WaitingParticipant',
+          filter: `gamePostId=eq.${postId}`,
+        },
+        () => {
+          console.log('WaitingParticipant DELETE for post:', postId);
           fetchPost();
         }
       )
@@ -131,9 +376,46 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
           filter: `id=eq.${postId}`,
         },
         (payload: any) => {
-          // 게시글 정보 변경 시 해당 필드만 업데이트
+          // 게시글 정보 변경 시 전체 데이터 새로고침 (참여자 정보 포함)
           console.log('GamePost updated:', payload);
-          setPost((prev: any) => prev ? { ...prev, ...payload.new } : payload.new);
+          fetchPost();
+        }
+      )
+      // 백업: 모든 GameParticipant 이벤트 감지 (필터 없이)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'GameParticipant',
+        },
+        (payload: any) => {
+          console.log('GameParticipant ANY event:', payload);
+          
+          // 해당 게시글의 이벤트인지 확인
+          let isForOurPost = false;
+          
+          if (payload.new && payload.new.gamePostId === postId) {
+            isForOurPost = true;
+          } else if (payload.old && payload.old.gamePostId === postId) {
+            isForOurPost = true;
+          } else if (payload.eventType === 'DELETE') {
+            // DELETE 이벤트의 경우 항상 해당 게시글의 이벤트로 간주
+            isForOurPost = true;
+          }
+          
+          if (isForOurPost) {
+            console.log('This event is for our post, updating...');
+            
+            if (payload.eventType === 'DELETE') {
+              // DELETE 이벤트의 경우 전체 새로고침 (안전한 방법)
+              console.log('Handling DELETE event, refreshing post data...');
+              fetchPost();
+            } else {
+              // 다른 이벤트의 경우 전체 새로고침
+              fetchPost();
+            }
+          }
         }
       )
       .subscribe();

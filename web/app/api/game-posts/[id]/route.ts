@@ -16,23 +16,37 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const isList = searchParams.get('list') === 'true';
+    
+    // 현재 사용자 정보 가져오기
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id;
 
     const post = await prisma.gamePost.findUnique({
       where: { id },
       include: {
-        game: true,
+        game: {
+          select: {
+            name: true,
+            iconUrl: true,
+          },
+        },
         author: {
           select: {
             id: true,
+            userId: true,
             name: true,
             image: true,
           },
         },
-        participants: {
+        participants: isList ? true : {
           include: {
             user: {
               select: {
                 id: true,
+                userId: true,
                 name: true,
                 image: true,
               },
@@ -40,11 +54,12 @@ export async function GET(
           },
           orderBy: { joinedAt: 'asc' },
         },
-        waitingList: {
+        waitingList: isList ? true : {
           include: {
             user: {
               select: {
                 id: true,
+                userId: true,
                 name: true,
                 image: true,
               },
@@ -62,7 +77,41 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(post);
+    // 목록용 응답인 경우 _count 추가
+    if (isList) {
+      const responseData = {
+        ...post,
+        _count: {
+          participants: Array.isArray(post.participants) ? post.participants.length : 0,
+          waitingList: Array.isArray(post.waitingList) ? post.waitingList.length : 0,
+        },
+        startTime: post.startTime.toISOString(),
+        createdAt: post.createdAt.toISOString(),
+        updatedAt: post.updatedAt.toISOString(),
+        // 사용자 상태 정보 추가
+        isOwner: userId === post.author.userId,
+        isParticipating: userId ? Array.isArray(post.participants) && post.participants.some((p: any) => p.userId === userId) : false,
+        isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w: any) => w.userId === userId) : false,
+      };
+      return NextResponse.json(responseData);
+    }
+
+    // 상세 조회 시에도 _count 정보 포함
+    const responseData = {
+      ...post,
+      _count: {
+        participants: Array.isArray(post.participants) ? post.participants.length : 0,
+        waitingList: Array.isArray(post.waitingList) ? post.waitingList.length : 0,
+      },
+      startTime: post.startTime.toISOString(),
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
+      // 사용자 상태 정보 추가
+      isOwner: userId === post.author.userId,
+      isParticipating: userId ? Array.isArray(post.participants) && post.participants.some((p: any) => p.userId === userId) : false,
+      isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w: any) => w.userId === userId) : false,
+    };
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error('모집글 상세 조회 오류:', error);
     return NextResponse.json(

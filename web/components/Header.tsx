@@ -252,8 +252,22 @@ export default function Header() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/">
-                <span className="header-logo text-xl font-bold">G-Club</span>
+              <Link href="/" className="flex items-center group">
+                <svg 
+                  version="1.2" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  viewBox="0 0 250 250" 
+                  width="32" 
+                  height="32"
+                  className="header-logo transition-colors duration-200"
+                >
+                  <title>Ultimate</title>
+                  <g id="Layer 1">
+                    <path id="모양 3" fillRule="evenodd" className="fill-current" d="m125.3 178.4l17.7-15.4v-67.8l96.4-51.5 5.2-40.6-137 72.5v87.3z"/>
+                    <path id="모양 1" fillRule="evenodd" className="fill-current" d="m6 3l4.9 40.6 76.8 40.9v-38z"/>
+                    <path id="모양 2" fillRule="evenodd" className="fill-current" d="m14.3 70.7l4.9 40.5 33 17.6v55.7l73.2 61.8 72.9-61.4-0.2-56 32.8-17.5 5.3-40.7-73.5 39.1 0.1 60.4-37.5 31.7-37.4-31.4v-60.6z"/>
+                  </g>
+                </svg>
               </Link>
             </div>
             <nav className="hidden sm:ml-6 sm:flex sm:space-x-8">

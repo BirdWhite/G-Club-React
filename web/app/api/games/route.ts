@@ -11,33 +11,27 @@ export async function GET(request: Request) {
       
       try {
         
-        // 1. 이름으로 검색
-        const nameSearchPromise = prisma.game.findMany({
-          where: {
-            name: { contains: searchQuery, mode: 'insensitive' }
-          },
+        // 모든 게임을 가져와서 JavaScript에서 필터링
+        const allGames = await prisma.game.findMany({
           orderBy: { name: 'asc' },
         });
         
-        // 2. 별칭으로 검색
-        const aliasSearchPromise = prisma.game.findMany({
-          where: {
-            aliases: { has: searchQuery }
-          },
-          orderBy: { name: 'asc' },
+        const searchQueryLower = searchQuery.toLowerCase();
+        
+        // 이름과 별칭으로 필터링
+        const filteredGames = allGames.filter(game => {
+          // 이름으로 검색
+          const nameMatch = game.name.toLowerCase().includes(searchQueryLower);
+          
+          // 별칭으로 검색 (부분 검색 지원)
+          const aliasMatch = game.aliases?.some(alias => 
+            alias.toLowerCase().includes(searchQueryLower)
+          ) || false;
+          
+          return nameMatch || aliasMatch;
         });
         
-        const [nameResults, aliasResults] = await Promise.all([nameSearchPromise, aliasSearchPromise]);
-        
-        // 중복 제거를 위해 Set 사용
-        const gamesMap = new Map();
-        [...nameResults, ...aliasResults].forEach(game => {
-          gamesMap.set(game.id, game);
-        });
-        
-        const games = Array.from(gamesMap.values());
-        
-        return NextResponse.json(games);
+        return NextResponse.json(filteredGames);
         
       } catch (error) {
         console.error('게임 검색 중 오류 발생 (Prisma 쿼리):', error);

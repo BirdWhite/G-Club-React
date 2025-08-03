@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
+import { GamePostStatus } from '@/types/models';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -17,7 +18,7 @@ export async function PATCH(
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     
     const post = await prisma.gamePost.findUnique({
       where: { id },
@@ -42,8 +43,28 @@ export async function PATCH(
       );
     }
 
-    // 상태 토글 (OPEN <-> COMPLETED)
-    const newStatus = post.status === 'OPEN' ? 'COMPLETED' : 'OPEN';
+    // 순환식 상태 변경: OPEN/FULL -> IN_PROGRESS -> COMPLETED -> OPEN
+    let newStatus: GamePostStatus;
+    let message: string;
+    
+    switch (post.status) {
+      case 'OPEN':
+      case 'FULL':
+        newStatus = GamePostStatus.IN_PROGRESS;
+        message = '게임이 시작되었습니다.';
+        break;
+      case 'IN_PROGRESS':
+        newStatus = GamePostStatus.COMPLETED;
+        message = '게임이 완료되었습니다.';
+        break;
+      case 'COMPLETED':
+        newStatus = GamePostStatus.OPEN;
+        message = '모집이 재개되었습니다.';
+        break;
+      default:
+        newStatus = GamePostStatus.IN_PROGRESS;
+        message = '게임이 시작되었습니다.';
+    }
     
     const updatedPost = await prisma.gamePost.update({
       where: { id },
@@ -55,7 +76,7 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       status: updatedPost.status,
-      message: `모집이 ${newStatus === 'OPEN' ? '재개' : '마감'}되었습니다.`
+      message: message
     });
     
   } catch (error) {
