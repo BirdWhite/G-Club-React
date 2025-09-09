@@ -18,17 +18,3 @@ export function isSuperAdmin(role: { name: string } | null | undefined): boolean
   if (!role) return false;
   return role.name === 'SUPER_ADMIN';
 }
-
-export function canManageChannels(role?: { name: string, permissions?: { name: string }[] } | null): boolean {
-  if (!role) {
-    return false;
-  }
-  // 슈퍼 어드민은 모든 권한을 가집니다.
-  if (role.name === 'SUPER_ADMIN') {
-    return true;
-  }
-  if (!role.permissions) {
-    return false;
-  }
-  return role.permissions.some(p => p.name === 'MANAGE_CHANNELS');
-} 

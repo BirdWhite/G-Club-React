@@ -60,10 +60,10 @@ export default function GameFilter({
         {/* 상태 필터 드롭다운 */}
         <div className="w-full md:w-40">
           <Select value={statusFilter} onValueChange={handleStatusSelect}>
-            <SelectTrigger className="w-full bg-cyber-black-100 border-cyber-black-300 hover:bg-cyber-black-200">
+            <SelectTrigger className="w-full bg-cyber-black-100 border-cyber-black-200 hover:bg-cyber-black-50">
               <SelectValue placeholder="상태 선택" />
             </SelectTrigger>
-            <SelectContent className="bg-cyber-black-200 border-cyber-black-300">
+            <SelectContent className="bg-cyber-black-50 border-cyber-black-200">
               <SelectItem value="all">전체</SelectItem>
               <SelectItem value="recruiting">모집 중</SelectItem>
               <SelectItem value="open">자리 있음</SelectItem>

@@ -66,7 +66,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   const plainContent = extractTextFromContent(post.content);
 
   return (
-    <div className="group bg-cyber-black-200 overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-cyber-black-300">
+    <div className="group bg-cyber-black-50 overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-cyber-black-200">
       <Link href={`/game-mate/${post.id}`} className="flex-1 flex flex-col p-4">
         {/* 상단: 상태 및 시간 */}
         <div className="flex items-center justify-between mb-3 text-xs">
@@ -84,7 +84,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
         {/* 중단: 게임 정보, 제목, 작성자, 내용 */}
         <div className="flex items-center min-w-0 mb-2">
             {post.game?.iconUrl ? (
-              <div className="w-8 h-8 rounded-lg overflow-hidden border border-cyber-black-300 mr-2 flex-shrink-0 bg-white">
+              <div className="w-8 h-8 rounded-lg overflow-hidden border border-cyber-black-200 mr-2 flex-shrink-0 bg-white">
                 <img 
                   src={post.game.iconUrl} 
                   alt={post.game.name}
@@ -92,7 +92,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
                 />
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center mr-2 flex-shrink-0 border border-cyber-black-300">
+              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center mr-2 flex-shrink-0 border border-cyber-black-200">
                 <span className="text-cyber-blue font-medium text-xs">
                   {post.game?.name?.[0] || 'G'}
                 </span>
@@ -117,7 +117,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
         </p>
 
         {/* 하단: 참여 인원 */}
-        <div className="mt-auto pt-2 border-t border-cyber-black-300 flex items-center justify-between text-sm text-cyber-gray/60">
+        <div className="mt-auto pt-2 border-t border-cyber-black-200 flex items-center justify-between text-sm text-cyber-gray/60">
           <div className="flex items-center">
             <Users className="h-4 w-4 mr-1.5 text-cyber-gray/40" />
             <span className="font-medium text-cyber-gray">

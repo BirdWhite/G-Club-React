@@ -25,7 +25,7 @@
   --color-cyber-black-700: #090d16;
   --color-cyber-black-800: #06080d;
   --color-cyber-black-900: #030306;
-
+  --color-cyber-black: var(--color-cyber-black-500);
 }
 
 @font-face {
@@ -37,7 +37,7 @@
 
 @layer base {
   body {
-    background-color: var(--color-cyber-black-100);
+    background-color: var(--color-cyber-black-200);
     color: var(--color-cyber-gray);
     min-height: 100vh;
     font-family: 'Paperlogy-8ExtraBold', Arial, Helvetica, sans-serif;
@@ -156,20 +156,20 @@
   --radius: 0.625rem;
   --background: var(--color-cyber-black-100);
   --foreground: var(--color-cyber-gray);
-  --card: var(--color-cyber-black-200);
+  --card: var(--color-cyber-black-50);
   --card-foreground: var(--color-cyber-gray);
-  --popover: var(--color-cyber-black-200);
+  --popover: var(--color-cyber-black-50);
   --popover-foreground: var(--color-cyber-gray);
   --primary: var(--color-cyber-blue);
   --primary-foreground: var(--color-cyber-black-900);
-  --secondary: var(--color-cyber-black-300);
+  --secondary: var(--color-cyber-black-100);
   --secondary-foreground: var(--color-cyber-gray);
-  --muted: var(--color-cyber-black-300);
+  --muted: var(--color-cyber-black-100);
   --muted-foreground: var(--color-cyber-darkgray);
-  --accent: var(--color-cyber-black-300);
+  --accent: var(--color-cyber-black-100);
   --accent-foreground: var(--color-cyber-gray);
   --destructive: var(--color-cyber-orange);
-  --border: var(--color-cyber-black-300);
+  --border: var(--color-cyber-black-200);
   --input: var(--color-cyber-black-100);
   --ring: var(--color-cyber-blue);
   --chart-1: var(--color-cyber-blue);
@@ -191,20 +191,20 @@
 .dark {
   --background: var(--color-cyber-black-100);
   --foreground: var(--color-cyber-gray);
-  --card: var(--color-cyber-black-200);
+  --card: var(--color-cyber-black-50);
   --card-foreground: var(--color-cyber-gray);
-  --popover: var(--color-cyber-black-200);
+  --popover: var(--color-cyber-black-50);
   --popover-foreground: var(--color-cyber-gray);
   --primary: var(--color-cyber-blue);
   --primary-foreground: var(--color-cyber-black-900);
-  --secondary: var(--color-cyber-black-300);
+  --secondary: var(--color-cyber-black-100);
   --secondary-foreground: var(--color-cyber-gray);
-  --muted: var(--color-cyber-black-300);
+  --muted: var(--color-cyber-black-100);
   --muted-foreground: var(--color-cyber-darkgray);
-  --accent: var(--color-cyber-black-300);
+  --accent: var(--color-cyber-black-100);
   --accent-foreground: var(--color-cyber-gray);
   --destructive: var(--color-cyber-orange);
-  --border: var(--color-cyber-black-300);
+  --border: var(--color-cyber-black-200);
   --input: var(--color-cyber-black-100);
   --ring: var(--color-cyber-blue);
   --chart-1: var(--color-cyber-blue);

@@ -1,7 +1,7 @@
 'use client';
 
 import type { Role as PrismaRole, Permission as PrismaPermission, UserProfile } from '@prisma/client';
-import { isAdmin as isAdminUtil, isSuperAdmin as isSuperAdminUtil, canManageChannels as canManageChannelsUtil } from './utils';
+import { isAdmin as isAdminUtil, isSuperAdmin as isSuperAdminUtil } from './utils';
 
 // DB 스키마와 일치하는 타입 정의
 export type RoleWithPermissions = PrismaRole & {
@@ -49,5 +49,4 @@ export async function hasPermission(
 // Re-export for client-side usage to avoid breaking changes
 export const isAdmin = isAdminUtil;
 export const isSuperAdmin = isSuperAdminUtil;
-export const canManageChannels = canManageChannelsUtil;
 

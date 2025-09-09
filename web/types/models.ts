@@ -32,7 +32,6 @@ export enum PermissionType {
 }
 
 export enum ChatRoomType {
-  CHANNEL = 'CHANNEL',    // 채널 채팅방
   GAME = 'GAME'           // 게임 채팅방
 }
 
@@ -80,91 +79,13 @@ export interface UserProfile {
   updatedAt: Date;
   
   // 관계 필드
-  comments: Comment[];
-  posts: Post[];
   gameParticipations: GameParticipant[];
   gamePosts: GamePost[];
-  subscriptions: ChannelSubscription[];
   chatMessages: ChatMessage[];
   chatRooms: ChatParticipant[];
 }
 
-// 채널 관련 모델
-export interface Channel {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  isActive: boolean;
-  isPrivate: boolean;
-  order: number;
-  createdAt: Date;
-  updatedAt: Date;
-  
-  // 관계 필드
-  board?: Board;
-  chatRoom?: ChatRoom;
-  subscribers: ChannelSubscription[];
-}
 
-export interface Board {
-  id: string;
-  channel: Channel;
-  channelId: string;
-  name: string;
-  description?: string;
-  isActive: boolean;
-  order: number;
-  posts: Post[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface ChannelSubscription {
-  id: string;
-  channel: Channel;
-  channelId: string;
-  user: UserProfile;
-  userId: string;
-  subscribedAt: Date;
-  updatedAt: Date;
-}
-
-// 게시물 관련 모델
-export interface Post {
-  id: string;
-  title: string;
-  content: string;
-  published: boolean;
-  boardId: string;
-  authorId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  
-  // 관계 필드
-  comments: Comment[];
-  author: UserProfile;
-  board: Board;
-  
-  // 추가 필드
-  viewCount: number;
-  likeCount: number;
-  isNotice: boolean;
-  isSecret: boolean;
-}
-
-export interface Comment {
-  id: string;
-  content: string;
-  postId: string;
-  authorId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  
-  // 관계 필드
-  author: UserProfile;
-  post: Post;
-}
 
 // 채팅 관련 모델
 export interface ChatRoom {
@@ -176,8 +97,6 @@ export interface ChatRoom {
   maxMembers?: number;
   
   // 관계 필드
-  channelId?: string;
-  channel?: Channel;
   gamePostId?: string;
   gamePost?: GamePost;
   

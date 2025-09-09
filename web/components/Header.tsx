@@ -274,7 +274,6 @@ export default function Header() {
               {isMounted && (
                 <>
                   <NavLink href="/">홈</NavLink>
-                  <NavLink href="/channels">채널</NavLink>
                   <NavLink href="/game-mate">게임메이트</NavLink>
                   {/* 4. isAdmin일 때만 관리자 대시보드 링크 표시 */}
                   {isAdmin && (
@@ -414,7 +413,6 @@ export default function Header() {
               {isMounted && (
                 <>
                   <Link href="/" className="nav-link-mobile">홈</Link>
-                  <Link href="/channels" className="nav-link-mobile">채널</Link>
                   <Link href="/game-mate" className="nav-link-mobile">게임메이트</Link>
                   {session && (
                       <Link href="/profile" className="nav-link-mobile">마이페이지</Link>

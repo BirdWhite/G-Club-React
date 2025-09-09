@@ -1,6 +1,5 @@
 import { FC } from 'react';
 import Link from 'next/link';
-import { NoticeSection } from './NoticeSection';
 
 interface HeroSectionProps {
   onStartClick?: () => void;
@@ -37,8 +36,6 @@ export const HeroSection = ({ onStartClick, onLearnMoreClick }: HeroSectionProps
         </div>
       </div>
 
-      {/* 공지사항 섹션 */}
-      {/* <NoticeSection /> */}
     </section>
   );
 };

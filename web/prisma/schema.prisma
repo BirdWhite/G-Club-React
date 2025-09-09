@@ -40,7 +40,6 @@ enum PermissionType {
 }
 
 enum ChatRoomType {
-  CHANNEL    // 채널 채팅방
   GAME       // 게임 채팅방
 }
 
@@ -99,116 +98,29 @@ model UserProfile {
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
-  // 게시글 및 댓글 관련
-  comments           Comment[]             @relation("UserProfileComments")
-  posts              Post[]                @relation("UserProfilePosts")
   
   // 게임 관련
   gameParticipations GameParticipant[]     @relation("UserProfileGameParticipations")
   gamePosts          GamePost[]            @relation("UserProfileGamePosts")
   waitingList        WaitingParticipant[]  @relation("UserWaitingList")
   
-  // 채팅 및 구독 관련
-  subscriptions      ChannelSubscription[] @relation("UserProfileSubscriptions")
+  // 채팅 관련
   chatMessages       ChatMessage[]         @relation("UserProfileChatMessages")
   chatRooms          ChatParticipant[]     @relation("UserProfileChatRooms")
 }
 
-// 채널 관련 모델
-model Channel {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  slug        String   @unique
-  description String?
-  isActive    Boolean  @default(true)
-  boardActive Boolean  @default(true)
-  chatActive  Boolean  @default(true)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  board        Board?                // 채널에 속한 게시판 (없을 수 있음)
-  chatRoom     ChatRoom?             // 채널에 속한 채팅방 (없을 수 있음)
-  subscribers  ChannelSubscription[]
-  
-  gameId      String?  @unique
-  game        Game?    @relation(fields: [gameId], references: [id])
-  
-  @@index([isActive, order])
-}
 
-model Board {
-  id           String     @id @default(cuid())
-  channel      Channel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  channelId    String     @unique
-  name         String
-  description  String?
-  isActive     Boolean    @default(true)
-  order        Int        @default(0)
-  posts        Post[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-}
-
-model ChannelSubscription {
-  id           String    @id @default(cuid())
-  channel      Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  channelId    String
-  user         UserProfile @relation("UserProfileSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
-  userId       String
-  subscribedAt DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  @@unique([channelId, userId])
-  @@index([userId, subscribedAt])
-}
-
-// 게시판 관련 모델
-model Post {
-  id          String    @id @default(cuid())
-  title       String
-  content     Json      // TipTap 같은 리치 텍스트 에디터의 JSON 출력을 저장
-  published   Boolean   @default(false)
-  boardId     String
-  authorId    String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  comments    Comment[] @relation("PostComments")
-  author      UserProfile @relation("UserProfilePosts", fields: [authorId], references: [userId], onDelete: Cascade)
-  board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  viewCount   Int       @default(0)
-  likeCount   Int       @default(0)
-  isNotice    Boolean   @default(false)  // 공지사항 여부
-  isSecret    Boolean   @default(false)  // 비밀글 여부
-  
-  @@index([boardId])
-  @@index([authorId])
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  content   String
-  postId    String
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  author    UserProfile @relation("UserProfileComments", fields: [authorId], references: [id], onDelete: Cascade)
-  post      Post        @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
-}
 
 // 채팅 관련 모델
 model ChatRoom {
   id           String        @id @default(cuid())
-  type         ChatRoomType  @default(CHANNEL)
+  type         ChatRoomType  @default(GAME)
   name         String
   description  String?
   isActive     Boolean       @default(true)
   maxMembers   Int?          // 최대 참여자 수 (null이면 제한 없음)
   
-  // 채팅방 소유자 (채널 또는 게임 포스트)
-  channelId    String?       @unique  // 채널에 속한 경우
-  channel      Channel?      @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  
+  // 채팅방 소유자 (게임 포스트)
   gamePostId   String?       @unique  // 게임 포스트에 속한 경우
   gamePost     GamePost?     @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
   
@@ -220,8 +132,6 @@ model ChatRoom {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   
-  // 제약 조건: 채널 또는 게임 포스트 중 하나에만 연결
-  @@unique([channelId, gamePostId])
   @@index([type])
 }
 
@@ -262,7 +172,6 @@ model Game {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   aliases     String[]
-  channel     Channel?      
   gamePosts   GamePost[]
 }
 
