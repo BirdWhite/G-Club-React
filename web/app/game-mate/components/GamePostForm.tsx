@@ -21,6 +21,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { TimePicker } from '@/components/ui/time-picker';
+import ParticipantManager, { Participant } from './ParticipantManager';
 
 const formSchema = z.object({
   title: z.string().min(2, '제목은 2자 이상 입력해주세요.').max(100, '제목은 100자를 초과할 수 없습니다.'),
@@ -39,6 +40,11 @@ const formSchema = z.object({
     }
     return true;
   }, { message: '내용을 입력해주세요.' }),
+  participants: z.array(z.object({
+    name: z.string().min(1, '이름은 필수입니다.'),
+    userId: z.string().optional(),
+    note: z.string().optional(),
+  })).default([]),
 });
 
 type GamePostFormData = z.infer<typeof formSchema>;
@@ -76,7 +82,7 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
   };
 
   const form = useForm<GamePostFormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       title: initialData?.title || '',
       gameId: initialData?.gameId || '',
@@ -84,6 +90,11 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
       startDate: initialData?.startTime ? new Date(initialData.startTime) : new Date(),
       startTime: initialData?.startTime ? new Date(initialData.startTime).toTimeString().slice(0, 5) : getNextTimeSlot(),
       content: initialData?.content || { type: 'doc', content: [{ type: 'paragraph' }] },
+      participants: initialData?.participants?.map(p => ({
+        name: p.participantType === 'GUEST' ? (p.guestName || '') : (p.user?.name || ''),
+        userId: p.participantType === 'GUEST' ? '' : (p.user?.userId || ''),
+        note: p.participantType === 'GUEST' ? '게스트 참여자' : ''
+      })) || [],
     },
   });
 
@@ -104,6 +115,7 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
         ...data,
         startTime: utcStartTime,
       };
+
 
       const response = await fetch(url, {
         method,
@@ -129,9 +141,9 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
 
     return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-8">
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="title"
           render={({ field }) => (
             <FormItem>
@@ -150,7 +162,7 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FormField
-            control={form.control}
+            control={form.control as any}
             name="gameId"
             render={({ field }) => (
               <FormItem>
@@ -167,7 +179,7 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
           />
 
           <FormField
-            control={form.control}
+            control={form.control as any}
             name="maxParticipants"
             render={({ field }) => (
               <FormItem>
@@ -225,7 +237,7 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FormField
-            control={form.control}
+            control={form.control as any}
             name="startDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
@@ -265,7 +277,7 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
           />
 
           <FormField
-            control={form.control}
+            control={form.control as any}
             name="startTime"
             render={({ field }) => (
               <FormItem>
@@ -284,13 +296,31 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
         </div>
 
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="content"
           render={({ field }) => (
             <FormItem>
               <FormLabel>내용</FormLabel>
               <FormControl>
                 <RichTextEditor content={field.value} onChange={field.onChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control as any}
+          name="participants"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <ParticipantManager
+                  participants={field.value || []}
+                  onChange={field.onChange}
+                  maxParticipants={form.watch('maxParticipants')}
+                  disabled={isSubmitting}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

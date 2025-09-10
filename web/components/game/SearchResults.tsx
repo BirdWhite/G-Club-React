@@ -2,11 +2,11 @@
 
 import { memo } from 'react';
 import { UserPlus } from 'lucide-react';
-import type { User } from '@/types/game';
+import type { UserProfile } from '@/types/models';
 
 interface SearchResultItemProps {
-  user: User;
-  onAdd: (user: User) => void;
+  user: UserProfile;
+  onAdd: (user: UserProfile) => void;
 }
 
 const SearchResultItem = memo(({ user, onAdd }: SearchResultItemProps) => {
@@ -31,8 +31,8 @@ const SearchResultItem = memo(({ user, onAdd }: SearchResultItemProps) => {
 SearchResultItem.displayName = 'SearchResultItem';
 
 interface SearchResultsProps {
-  users: User[];
-  onAdd: (user: User) => void;
+  users: UserProfile[];
+  onAdd: (user: UserProfile) => void;
   className?: string;
 }
 

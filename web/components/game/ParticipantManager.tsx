@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { X, User as UserIcon } from 'lucide-react';
-import type { User, GameParticipant } from '@/types/models';
+import type { UserProfile, GameParticipant } from '@/types/models';
 import SearchInput from './SearchInput';
 import SearchResults from './SearchResults';
 
@@ -42,7 +42,7 @@ export default function ParticipantManager({
 }: ParticipantManagerProps) {
   const [participants, setParticipants] = useState<GameParticipant[]>(initialParticipants);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -60,10 +60,31 @@ export default function ParticipantManager({
       try {
         const res = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
         if (res.ok) {
-          const users = await res.json();
+          const apiUsers = await res.json();
+          // API 응답을 UserProfile 타입으로 변환
+          const users: UserProfile[] = apiUsers.map((apiUser: any) => ({
+            id: apiUser.userId || `guest-${Date.now()}`,
+            userId: apiUser.userId || `guest-${Date.now()}`,
+            name: apiUser.name,
+            image: apiUser.image,
+            birthDate: new Date(), // 게스트의 경우 기본값
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            gameParticipations: [],
+            gamePosts: [],
+            chatMessages: [],
+            chatRooms: [],
+            isGuest: apiUser.isGuest
+          }));
           // 이미 참가 중인 사용자 필터링
           const available = users.filter(
-            (user: User) => !currentParticipants.some((p) => p.user.id === user.id)
+            (user: UserProfile) => {
+              if (user.isGuest) {
+                return !currentParticipants.some((p) => p.guestName === user.name);
+              } else {
+                return !currentParticipants.some((p) => p.userId === user.userId);
+              }
+            }
           );
           setFilteredUsers(available);
         } else {
@@ -119,19 +140,33 @@ export default function ParticipantManager({
   }, []);
 
   // 참여자 추가
-  const addParticipant = useCallback((user: User) => {
+  const addParticipant = useCallback((user: UserProfile) => {
     setParticipants(prev => {
-      if (prev.some((p) => p.user.id === user.id)) {
-        toast.error('이미 추가된 참여자입니다.');
-        return prev;
+      // 중복 체크 (게스트는 이름으로, 일반 사용자는 userId로)
+      if (user.isGuest) {
+        if (prev.some((p) => p.guestName === user.name)) {
+          toast.error('이미 추가된 게스트 참여자입니다.');
+          return prev;
+        }
+      } else {
+        if (prev.some((p) => p.userId === user.userId)) {
+          toast.error('이미 추가된 사용자입니다.');
+          return prev;
+        }
       }
 
       const newParticipant: GameParticipant = {
         id: `temp-${Date.now()}`,
-        user,
-        isLeader: false,
-        isReserve: false,
-        createdAt: new Date().toISOString(),
+        gamePostId: '', // 임시값, 실제 저장 시 설정
+        participantType: user.isGuest ? 'GUEST' : 'MEMBER',
+        userId: user.isGuest ? undefined : user.userId,
+        guestName: user.isGuest ? user.name : undefined,
+        joinedAt: new Date().toISOString(),
+        user: user.isGuest ? undefined : {
+          id: user.id,
+          name: user.name,
+          image: user.image
+        }
       };
 
       setSearchQuery('');
@@ -206,19 +241,26 @@ export default function ParticipantManager({
               >
                 <div className="flex items-center gap-2">
                   <UserIcon className="h-5 w-5 text-gray-500" />
- <div className="flex flex-col">
+                  <div className="flex flex-col">
                     <span className="font-medium">
-                      {participant.user.name || '이름 없음'}
+                      {participant.user?.name || participant.guestName || '이름 없음'}
                     </span>
-                    <span className="text-xs text-gray-500">@{participant.user.id}</span>
+                    <span className="text-xs text-gray-500">
+                      {participant.user ? `@${participant.user.id}` : '게스트 참여자'}
+                    </span>
                   </div>
-                  {participant.isLeader && (
-                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
-                      방장
+                  {participant.participantType === 'MEMBER' && (
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                      멤버
+                    </span>
+                  )}
+                  {participant.participantType === 'GUEST' && (
+                    <span className="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">
+                      게스트
                     </span>
                   )}
                 </div>
-                {!participant.isLeader && (
+                {participant.participantType !== 'MEMBER' && (
                   <button
                     type="button"
                     onClick={() => removeParticipant(participant.id)}

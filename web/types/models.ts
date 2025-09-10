@@ -77,6 +77,7 @@ export interface UserProfile {
   role?: Role;
   createdAt: Date;
   updatedAt: Date;
+  isGuest?: boolean; // 게스트 참여자 여부
   
   // 관계 필드
   gameParticipations: GameParticipant[];
@@ -84,6 +85,7 @@ export interface UserProfile {
   chatMessages: ChatMessage[];
   chatRooms: ChatParticipant[];
 }
+
 
 
 
@@ -181,13 +183,16 @@ export interface GamePost {
 export interface GameParticipant {
   id: string;
   gamePostId: string;
-  userId: string;
-  joinedAt: Date | string;
-  user: {
+  participantType: 'MEMBER' | 'GUEST';
+  userId?: string;
+  user?: {
     id: string;
+    userId: string;
     name: string;
     image?: string | null;
   };
+  guestName?: string;
+  joinedAt: Date | string;
 }
 
 export interface WaitingParticipant {

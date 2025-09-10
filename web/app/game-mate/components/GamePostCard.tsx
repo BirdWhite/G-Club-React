@@ -57,34 +57,42 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   const { dateStr, timeStr } = formatGameTime(post.startTime);
   const statusInfo = {
     OPEN: { text: '모집 중', className: 'bg-cyber-green/20 text-cyber-green group-hover:bg-cyber-green/30' },
-    FULL: { text: '인원 마감', className: 'bg-cyber-yellow/20 text-cyber-yellow group-hover:bg-cyber-yellow/30' },
+    FULL: { text: '가득 참', className: 'bg-cyber-yellow/20 text-cyber-yellow group-hover:bg-cyber-yellow/30' },
     IN_PROGRESS: { text: '게임 중', className: 'bg-cyber-purple/20 text-cyber-purple group-hover:bg-cyber-purple/30' },
-    COMPLETED: { text: '게임 완료', className: 'bg-cyber-gray/20 text-cyber-gray group-hover:bg-cyber-gray/30' },
+    COMPLETED: { text: '완료 됨', className: 'bg-cyber-gray/20 text-cyber-gray group-hover:bg-cyber-gray/30' },
   };
   
-  const currentStatus = statusInfo[post.status] || statusInfo.COMPLETED;
+  // 내가 참여중이면 상태를 "참여중"으로 표시 (완료 상태가 아닐 때만)
+  const getDisplayStatus = () => {
+    if (!isOwner && isParticipating && post.status !== 'COMPLETED') {
+      return { text: '참여 중', className: 'bg-cyber-blue/20 text-cyber-blue group-hover:bg-cyber-blue/30' };
+    }
+    return statusInfo[post.status] || statusInfo.COMPLETED;
+  };
+  
+  const currentStatus = getDisplayStatus();
   const plainContent = extractTextFromContent(post.content);
 
   return (
     <div className="group bg-cyber-black-50 overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-cyber-black-200">
       <Link href={`/game-mate/${post.id}`} className="flex-1 flex flex-col p-4">
-        {/* 상단: 상태 및 시간 */}
+        {/* 상단: 시간 및 상태 */}
         <div className="flex items-center justify-between mb-3 text-xs">
-          <span className={`px-2 py-1 rounded-full font-semibold transition-colors duration-300 ${currentStatus.className}`}>
-            {currentStatus.text}
-          </span>
           <div className="flex items-center text-cyber-purple">
             <Clock className="h-4 w-4 mr-1 text-cyber-purple" />
             <time dateTime={typeof post.startTime === 'string' ? post.startTime : post.startTime.toISOString()}>
               {isToday(new Date(post.startTime)) ? timeStr : `${dateStr} ${timeStr}`}
             </time>
           </div>
+          <span className={`px-2 py-1 rounded-full font-semibold transition-colors duration-300 ${currentStatus.className}`}>
+            {currentStatus.text}
+          </span>
         </div>
 
         {/* 중단: 게임 정보, 제목, 작성자, 내용 */}
         <div className="flex items-center min-w-0 mb-2">
             {post.game?.iconUrl ? (
-              <div className="w-8 h-8 rounded-lg overflow-hidden border border-cyber-black-200 mr-2 flex-shrink-0 bg-white">
+              <div className="w-8 h-8 rounded-lg overflow-hidden mr-2 flex-shrink-0">
                 <img 
                   src={post.game.iconUrl} 
                   alt={post.game.name}
@@ -92,7 +100,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
                 />
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center mr-2 flex-shrink-0 border border-cyber-black-200">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-2 flex-shrink-0">
                 <span className="text-cyber-blue font-medium text-xs">
                   {post.game?.name?.[0] || 'G'}
                 </span>
@@ -116,32 +124,43 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
           {plainContent}
         </p>
 
-        {/* 하단: 참여 인원 */}
-        <div className="mt-auto pt-2 border-t border-cyber-black-200 flex items-center justify-between text-sm text-cyber-gray/60">
-          <div className="flex items-center">
-            <Users className="h-4 w-4 mr-1.5 text-cyber-gray/40" />
-            <span className="font-medium text-cyber-gray">
-              {`${post._count?.participants || 0} / ${post.maxParticipants}명`}
-            </span>
-            {post._count && post._count.waitingList > 0 && (
-              <span className="ml-2 text-cyber-blue font-medium">(+{post._count.waitingList} 대기)</span>
-            )}
+        {/* 하단: 참여 인원 진행바 */}
+        <div className="mt-auto pt-2 border-t border-cyber-black-200">
+          {/* 진행바 (내부에 아이콘과 텍스트) */}
+          <div className="relative w-full bg-cyber-black-200 rounded-full h-6 overflow-hidden">
+            {/* 진행바 배경 */}
+            <div 
+              className={`h-full transition-all duration-300 ease-out ${
+                post.status === 'COMPLETED' 
+                  ? 'bg-cyber-gray/30' 
+                  : (post._count?.participants || 0) >= post.maxParticipants
+                    ? 'bg-cyber-yellow/30'
+                    : 'bg-gradient-to-r from-cyber-blue/70 to-cyber-green/70'
+              }`}
+              style={{ 
+                width: `${Math.min(((post._count?.participants || 0) / post.maxParticipants) * 100, 100)}%` 
+              }}
+            />
+            
+            {/* 좌측 고정 텍스트 */}
+            <div className="absolute inset-0 flex items-center justify-start pl-2">
+              <div className="flex items-center text-xs font-semibold text-white/80">
+                <Users className="h-3 w-3 mr-1" />
+                <span>{`${post._count?.participants || 0}/${post.maxParticipants}`}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* 참여 상태 오버레이 (우측 하단) */}
+        {/* 참여 상태 오버레이 (우측 하단) - 대기중과 참여 가능만 표시 */}
         {!isOwner && (
           <div className="absolute bottom-3 right-4">
-            {isParticipating ? (
-              <span className="px-3 py-1.5 text-sm font-semibold text-cyber-black bg-cyber-green rounded-full shadow-md">
-                참여중
-              </span>
-            ) : isWaiting ? (
+            {isWaiting ? (
               <span className="px-3 py-1.5 text-sm font-semibold text-cyber-black bg-cyber-blue rounded-full shadow-md">
                 대기중
               </span>
             ) : (
-               post.status === 'OPEN' && (
+               post.status === 'OPEN' && !isParticipating && (
                 <span className="px-3 py-1.5 text-sm font-semibold text-cyber-black bg-cyber-blue rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
                   참여 가능
                 </span>

@@ -42,16 +42,6 @@ export async function GET(
           },
         },
         participants: isList ? true : {
-          include: {
-            user: {
-              select: {
-                id: true,
-                userId: true,
-                name: true,
-                image: true,
-              },
-            },
-          },
           orderBy: { joinedAt: 'asc' },
         },
         waitingList: isList ? true : {
@@ -77,12 +67,29 @@ export async function GET(
       );
     }
 
+    // 참여자 정보를 별도로 조회 (게스트 참여자 포함)
+    const participants = await prisma.gameParticipant.findMany({
+      where: { gamePostId: id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            userId: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: { joinedAt: 'asc' },
+    });
+
     // 목록용 응답인 경우 _count 추가
     if (isList) {
       const responseData = {
         ...post,
+        participants: participants,
         _count: {
-          participants: Array.isArray(post.participants) ? post.participants.length : 0,
+          participants: participants.length,
           waitingList: Array.isArray(post.waitingList) ? post.waitingList.length : 0,
         },
         startTime: post.startTime.toISOString(),
@@ -90,7 +97,7 @@ export async function GET(
         updatedAt: post.updatedAt.toISOString(),
         // 사용자 상태 정보 추가
         isOwner: userId === post.author.userId,
-        isParticipating: userId ? Array.isArray(post.participants) && post.participants.some((p: any) => p.userId === userId) : false,
+        isParticipating: userId ? participants.some((p: any) => p.userId === userId) : false,
         isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w: any) => w.userId === userId) : false,
       };
       return NextResponse.json(responseData);
@@ -99,8 +106,9 @@ export async function GET(
     // 상세 조회 시에도 _count 정보 포함
     const responseData = {
       ...post,
+      participants: participants,
       _count: {
-        participants: Array.isArray(post.participants) ? post.participants.length : 0,
+        participants: participants.length,
         waitingList: Array.isArray(post.waitingList) ? post.waitingList.length : 0,
       },
       startTime: post.startTime.toISOString(),
@@ -108,7 +116,7 @@ export async function GET(
       updatedAt: post.updatedAt.toISOString(),
       // 사용자 상태 정보 추가
       isOwner: userId === post.author.userId,
-      isParticipating: userId ? Array.isArray(post.participants) && post.participants.some((p: any) => p.userId === userId) : false,
+      isParticipating: userId ? participants.some((p: any) => p.userId === userId) : false,
       isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w: any) => w.userId === userId) : false,
     };
     return NextResponse.json(responseData);
@@ -135,10 +143,15 @@ export async function PATCH(
 
   try {
     const { id } = await params;
-    const { title, content, maxParticipants, startTime } = await request.json();
+    const { title, content, maxParticipants, startTime, participants = [] } = await request.json();
 
     if (!title || !content || maxParticipants === undefined || !startTime) {
       return NextResponse.json({ error: '모든 필수 항목을 입력해주세요.' }, { status: 400 });
+    }
+
+    // content 필드 검증
+    if (typeof content !== 'object' || content === null) {
+      return NextResponse.json({ error: '내용 형식이 올바르지 않습니다.' }, { status: 400 });
     }
     if (maxParticipants < 2 || maxParticipants > 100) {
       return NextResponse.json({ error: '인원수는 2명 이상 100명 이하로 설정해주세요.' }, { status: 400 });
@@ -163,14 +176,86 @@ export async function PATCH(
       return NextResponse.json({ error: `현재 참여자 수(${existingPost.participants.length}명)보다 적게 인원을 설정할 수 없습니다.` }, { status: 400 });
     }
 
-    const updatedPost = await prisma.gamePost.update({
-      where: { id },
-      data: {
-        title,
-        content,
-        maxParticipants,
-        startTime: new Date(startTime),
-      },
+    const updatedPost = await prisma.$transaction(async (prisma) => {
+      // 게시글 업데이트
+      const post = await prisma.gamePost.update({
+        where: { id },
+        data: {
+          title,
+          content,
+          maxParticipants,
+          startTime: new Date(startTime),
+        },
+      });
+
+      // 기존 참여자 중 작성자 제외하고 모두 제거
+      await prisma.gameParticipant.deleteMany({
+        where: {
+          gamePostId: id,
+          OR: [
+            { userId: { not: user.id } }, // 일반 사용자 중 작성자 제외
+            { userId: null } // 게스트 참여자 모두 제거
+          ]
+        },
+      });
+
+      // 새로운 참여자들 추가 (빈 참여자 필터링)
+      const validParticipants = participants.filter((p: any) => {
+        const hasValidUserId = p.userId && p.userId.trim().length > 0;
+        const hasValidName = p.name && p.name.trim().length > 0;
+        return hasValidUserId || hasValidName;
+      });
+      
+      for (const participant of validParticipants) {
+        if (participant.userId && participant.userId.trim()) {
+          // 기존 사용자 확인
+          const existingUser = await prisma.userProfile.findUnique({
+            where: { userId: participant.userId }
+          });
+
+          if (existingUser) {
+            // 이미 존재하는 참여자인지 확인 (작성자 제외)
+            const existingParticipant = await prisma.gameParticipant.findFirst({
+              where: {
+                gamePostId: id,
+                userId: existingUser.userId,
+              },
+            });
+
+            if (!existingParticipant) {
+              // 기존 사용자를 참여자로 추가
+              await prisma.gameParticipant.create({
+                data: {
+                  gamePostId: id,
+                  participantType: 'MEMBER',
+                  userId: existingUser.userId,
+                },
+              });
+            }
+          }
+        } else if (participant.name && participant.name.trim()) {
+          // 이미 존재하는 게스트 참여자인지 확인
+          const existingGuest = await prisma.gameParticipant.findFirst({
+            where: {
+              gamePostId: id,
+              guestName: participant.name,
+            },
+          });
+
+          if (!existingGuest) {
+            // 게스트 참여자 추가
+            await prisma.gameParticipant.create({
+              data: {
+                gamePostId: id,
+                participantType: 'GUEST',
+                guestName: participant.name,
+              },
+            });
+          }
+        }
+      }
+
+      return post;
     });
 
     return NextResponse.json({ data: updatedPost, message: '게시글이 성공적으로 수정되었습니다.' });

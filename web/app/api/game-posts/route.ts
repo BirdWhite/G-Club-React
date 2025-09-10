@@ -99,7 +99,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { title, content, gameId, maxParticipants, startTime } = await request.json();
+    const { title, content, gameId, maxParticipants, startTime, participants = [] } = await request.json();
 
     if (!title || !content || !gameId || !startTime || !maxParticipants) {
       return NextResponse.json(
@@ -134,9 +134,40 @@ export async function POST(request: Request) {
       await prisma.gameParticipant.create({
         data: {
           gamePostId: post.id,
+          participantType: 'MEMBER',
           userId: user.id,
         },
       });
+
+      // 추가 참여자들 추가
+      for (const participant of participants) {
+        if (participant.userId && participant.userId.trim()) {
+          // 기존 사용자 확인
+          const existingUser = await prisma.userProfile.findUnique({
+            where: { userId: participant.userId }
+          });
+
+          if (existingUser) {
+            // 기존 사용자를 참여자로 추가
+            await prisma.gameParticipant.create({
+              data: {
+                gamePostId: post.id,
+                participantType: 'MEMBER',
+                userId: existingUser.userId,
+              },
+            });
+          }
+        } else if (participant.name && participant.name.trim()) {
+          // 게스트 참여자 추가
+          await prisma.gameParticipant.create({
+            data: {
+              gamePostId: post.id,
+              participantType: 'GUEST',
+              guestName: participant.name,
+            },
+          });
+        }
+      }
 
       return post;
     });

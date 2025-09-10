@@ -48,23 +48,31 @@ export default function ParticipantList({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {sortedParticipants.map((participant) => {
         const isOwner = participant.userId === authorId;
+        const isGuest = participant.participantType === 'GUEST';
+        const displayName = isGuest ? participant.guestName : (participant.user?.name || '익명');
+        const displayImage = isGuest ? null : participant.user?.image;
+        
         return (
           <div key={participant.id} className="flex items-center p-3 bg-cyber-black-200 border border-cyber-black-300 rounded-lg shadow-lg">
             <div className="flex-shrink-0">
-              {participant.user.image ? (
+              {displayImage ? (
                 <div className="relative h-12 w-12 rounded-full overflow-hidden bg-white p-0.5">
                   <Image
-                    src={participant.user.image}
-                    alt={participant.user.name || '프로필'}
+                    src={displayImage}
+                    alt={displayName || '프로필'}
                     fill
                     sizes="48px"
                     className="object-cover rounded-full"
                   />
                 </div>
               ) : (
-                <div className="h-12 w-12 rounded-full bg-cyber-black-300 flex items-center justify-center">
-                  <span className="text-xl font-bold text-cyber-gray/60">
-                    {participant.user.name ? participant.user.name.charAt(0).toUpperCase() : '?'}
+                <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
+                  isGuest ? 'bg-orange-500' : 'bg-cyber-black-300'
+                }`}>
+                  <span className={`text-xl font-bold ${
+                    isGuest ? 'text-white' : 'text-cyber-gray/60'
+                  }`}>
+                    {displayName ? displayName.charAt(0).toUpperCase() : '?'}
                   </span>
                 </div>
               )}
@@ -72,8 +80,13 @@ export default function ParticipantList({
             <div className="ml-4">
               <div className="flex items-center">
                 <p className="text-sm font-bold text-cyber-gray">
-                  {participant.user.name || '익명'}
+                  {displayName}
                 </p>
+                {isGuest && (
+                  <span className="ml-1.5 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">
+                    게스트
+                  </span>
+                )}
                 {isOwner && (
                   <Crown className="ml-1.5 h-5 w-5 text-yellow-500" />
                 )}
