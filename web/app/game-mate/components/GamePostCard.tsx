@@ -63,9 +63,9 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
     EXPIRED: { text: '만료 됨', className: 'bg-cyber-red/20 text-cyber-red group-hover:bg-cyber-red/30' },
   };
   
-  // 내가 참여중이면 상태를 "참여중"으로 표시 (완료 상태가 아닐 때만)
+  // 내가 참여중이면 상태를 "참여중"으로 표시 (완료/만료 상태가 아닐 때만)
   const getDisplayStatus = () => {
-    if (!isOwner && isParticipating && post.status !== 'COMPLETED') {
+    if (!isOwner && isParticipating && post.status !== 'COMPLETED' && post.status !== 'EXPIRED') {
       return { text: '참여 중', className: 'bg-cyber-blue/20 text-cyber-blue group-hover:bg-cyber-blue/30' };
     }
     return statusInfo[post.status] || statusInfo.COMPLETED;
@@ -132,7 +132,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
             {/* 진행바 배경 */}
             <div 
               className={`h-full transition-all duration-300 ease-out ${
-                post.status === 'COMPLETED' 
+                post.status === 'COMPLETED' || post.status === 'EXPIRED'
                   ? 'bg-cyber-gray/30' 
                   : (post._count?.participants || 0) >= post.maxParticipants
                     ? 'bg-cyber-green/70'
@@ -153,8 +153,8 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
           </div>
         </div>
 
-        {/* 참여 상태 오버레이 (우측 하단) - 대기중과 참여 가능만 표시 */}
-        {!isOwner && (
+        {/* 참여 상태 오버레이 (우측 하단) - 대기중과 참여 가능만 표시 (완료/만료 상태 제외) */}
+        {!isOwner && post.status !== 'COMPLETED' && post.status !== 'EXPIRED' && (
           <div className="absolute bottom-3 right-4">
             {isWaiting ? (
               <span className="px-3 py-1.5 text-sm font-semibold text-cyber-black bg-cyber-blue rounded-full shadow-md">

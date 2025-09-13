@@ -110,6 +110,24 @@ export default function UserRoleManager() {
 
   const handleRoleChange = async (userId: string, newRoleId: string) => {
     try {
+      // 새 역할 정보 가져오기
+      const newRole = roles.find(role => role.id === newRoleId);
+      const targetUser = users.find(user => user.id === userId);
+      
+      // 어드민이나 슈퍼 어드민 권한을 줄 때 확인 알림
+      if (newRole && (newRole.name === 'ADMIN' || newRole.name === 'SUPER_ADMIN')) {
+        const roleName = newRole.name === 'ADMIN' ? '어드민' : '슈퍼 어드민';
+        const userName = targetUser?.name || '알 수 없는 사용자';
+        
+        const confirmed = window.confirm(
+          `${userName}에게 ${roleName} 권한을 주시겠습니까?\n\n해당 사용자는 관리자 권한을 갖게 됩니다.`
+        );
+        
+        if (!confirmed) {
+          return; // 사용자가 취소한 경우
+        }
+      }
+
       const res = await fetch(`/api/admin/users/${userId}/role`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -130,31 +148,44 @@ export default function UserRoleManager() {
     }
   };
 
-  // 부원 승인 함수 (NONE -> USER)
-  const handleApproveMember = async (userId: string) => {
+  // 부원 승인/취소 함수 (NONE <-> USER)
+  const handleToggleMemberStatus = async (userId: string, currentRole: string) => {
     try {
-      // USER 역할 ID 찾기
-      const userRole = roles.find(role => role.name === 'USER');
-      if (!userRole) {
-        console.error('USER 역할을 찾을 수 없습니다.');
-        return;
+      let targetRoleId: string;
+      
+      if (currentRole === 'NONE') {
+        // NONE -> USER (승인)
+        const userRole = roles.find(role => role.name === 'USER');
+        if (!userRole) {
+          console.error('USER 역할을 찾을 수 없습니다.');
+          return;
+        }
+        targetRoleId = userRole.id;
+      } else {
+        // USER -> NONE (승인 취소)
+        const noneRole = roles.find(role => role.name === 'NONE');
+        if (!noneRole) {
+          console.error('NONE 역할을 찾을 수 없습니다.');
+          return;
+        }
+        targetRoleId = noneRole.id;
       }
 
       const res = await fetch(`/api/admin/users/${userId}/role`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roleId: userRole.id }),
+        body: JSON.stringify({ roleId: targetRoleId }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || '부원 승인에 실패했습니다.');
+        throw new Error(data.error || '부원 상태 변경에 실패했습니다.');
       }
 
       // 현재 페이지 데이터 다시 로드
       await fetchData(currentPage, searchTerm, roleFilter, false);
     } catch (err) {
-      console.error('부원 승인 중 오류:', err);
+      console.error('부원 상태 변경 중 오류:', err);
       // 오류 발생 시 이전 상태로 되돌리기 위해 데이터 다시 로드
       await fetchData(currentPage, searchTerm, roleFilter, false);
     }
@@ -192,7 +223,7 @@ export default function UserRoleManager() {
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">사용자 역할 관리</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">사용자 관리</h2>
       
       {/* 검색 및 필터 섹션 */}
       <div className="mb-6 space-y-4">
@@ -306,7 +337,7 @@ export default function UserRoleManager() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     {user.role?.name === 'NONE' ? (
                       <button
-                        onClick={() => handleApproveMember(user.id)}
+                        onClick={() => handleToggleMemberStatus(user.id, 'NONE')}
                         className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                       >
                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,6 +345,22 @@ export default function UserRoleManager() {
                         </svg>
                         승인
                       </button>
+                    ) : user.role?.name === 'USER' ? (
+                      <div className="group relative">
+                        <button
+                          onClick={() => handleToggleMemberStatus(user.id, 'USER')}
+                          className="inline-flex items-center justify-center w-20 px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 bg-green-100 text-green-800 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        >
+                          <svg className="w-3 h-3 mr-1 group-hover:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <svg className="w-3 h-3 mr-1 hidden group-hover:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span className="group-hover:hidden">승인됨</span>
+                          <span className="hidden group-hover:inline">취소</span>
+                        </button>
+                      </div>
                     ) : (
                       <span className="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded-md">
                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

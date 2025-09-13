@@ -97,6 +97,8 @@ export function useGamePostListSubscription(
       if (filters.status) {
         if (filters.status === 'recruiting') {
           shouldAdd = newPost.status === 'OPEN' || newPost.status === 'FULL';
+        } else if (filters.status === 'completed_expired') {
+          shouldAdd = newPost.status === 'COMPLETED' || newPost.status === 'EXPIRED';
         } else {
           shouldAdd = newPost.status === filters.status;
         }

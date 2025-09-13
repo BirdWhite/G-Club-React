@@ -36,11 +36,32 @@
 }
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
   body {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
     background-color: var(--color-cyber-black-200);
     color: var(--color-cyber-gray);
-    min-height: 100vh;
     font-family: 'Paperlogy-8ExtraBold', Arial, Helvetica, sans-serif;
+    overflow-x: hidden;
+  }
+  
+  
+  
+  /* 메인 콘텐츠 영역 */
+  main {
+    flex: 1;
+    min-height: 0; /* flexbox에서 스크롤 문제 해결 */
   }
 
   /* 헤더 스타일 */
@@ -247,4 +268,78 @@
 
   }
 
+}
+
+/* 다크 모드 스크롤바 스타일 */
+@layer utilities {
+  /* 웹킷 기반 브라우저 (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-cyber-black-100);
+    border-radius: 6px;
+    border: 1px solid var(--color-cyber-black-200);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-cyber-black-300);
+    border-radius: 6px;
+    border: 2px solid var(--color-cyber-black-100);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-cyber-black-400);
+    border-color: var(--color-cyber-black-200);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: var(--color-cyber-gray);
+    border-color: var(--color-cyber-black-300);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: var(--color-cyber-black-100);
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: var(--color-cyber-black-300) var(--color-cyber-black-100);
+  }
+
+  /* 스크롤바가 항상 보이도록 설정 */
+  .scrollbar-visible {
+    scrollbar-width: auto;
+    scrollbar-color: var(--color-cyber-black-300) var(--color-cyber-black-100);
+  }
+
+  .scrollbar-visible::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  .scrollbar-visible::-webkit-scrollbar-track {
+    background: var(--color-cyber-black-100);
+    border-radius: 6px;
+    border: 1px solid var(--color-cyber-black-200);
+  }
+
+  .scrollbar-visible::-webkit-scrollbar-thumb {
+    background: var(--color-cyber-black-300);
+    border-radius: 6px;
+    border: 2px solid var(--color-cyber-black-100);
+  }
+
+  .scrollbar-visible::-webkit-scrollbar-thumb:hover {
+    background: var(--color-cyber-black-400);
+    border-color: var(--color-cyber-black-200);
+  }
+
+  .scrollbar-visible::-webkit-scrollbar-thumb:active {
+    background: var(--color-cyber-gray);
+    border-color: var(--color-cyber-black-300);
+  }
 }

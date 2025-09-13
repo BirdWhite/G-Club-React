@@ -80,7 +80,7 @@ export default function ProfileEditPage() {
           <button
             type="button"
             onClick={() => router.push('/')}
-            className="flex-1 bg-cyber-black-100 text-cyber-gray py-2 px-4 rounded-md hover:bg-cyber-black-200 transition-colors border border-cyber-black-300"
+            className="flex-1 bg-cyber-black-100 text-cyber-gray py-2 px-4 rounded-md hover:bg-cyber-black-200 transition-colors border border-cyber-black-300 hover:border-cyber-gray"
           >
             취소
           </button>

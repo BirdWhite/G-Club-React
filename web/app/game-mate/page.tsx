@@ -23,7 +23,7 @@ export default function GameMatePage() {
   // 로딩 중이거나 프로필이 없는 경우
   if (isLoading || !profile) {
     return (
-      <div className="min-h-screen bg-cyber-black-200 flex items-center justify-center">
+      <div className="h-full bg-cyber-black-200 flex items-center justify-center overflow-hidden">
         <div className="text-cyber-gray">로딩 중...</div>
       </div>
     );
@@ -35,15 +35,15 @@ export default function GameMatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-cyber-black-200">
+    <div className="h-full bg-cyber-black-200 overflow-y-auto scrollbar-visible">
       <div className="bg-cyber-black-100 border-b border-cyber-black-200">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-cyber-gray">게임메이트 찾기</h1>
           <p className="mt-1 text-sm text-cyber-gray/60">함께 게임을 즐길 파티원을 찾아보세요!</p>
         </div>
       </div>
       
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
         <GamePostList userId={profile?.userId} />
       </main>
     </div>

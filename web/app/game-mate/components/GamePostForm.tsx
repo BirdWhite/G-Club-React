@@ -22,6 +22,8 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { TimePicker } from '@/components/ui/time-picker';
 import ParticipantManager, { Participant } from './ParticipantManager';
+import { useProfile } from '@/contexts/ProfileProvider';
+import { useEffect } from 'react';
 
 const formSchema = z.object({
   title: z.string().min(2, '제목은 2자 이상 입력해주세요.').max(100, '제목은 100자를 초과할 수 없습니다.'),
@@ -57,6 +59,7 @@ interface GamePostFormProps {
 export default function GamePostForm({ games, initialData }: GamePostFormProps) {
   const router = useRouter();
   const isEditMode = !!initialData;
+  const { profile } = useProfile();
 
   // 현재 시간에서 가장 가까운 30분 단위 시간 계산
   const getNextTimeSlot = () => {
@@ -81,6 +84,29 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
     return `${now.getHours().toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`;
   };
 
+  // 기본 참여자 목록 생성 (작성자 본인 포함)
+  const getDefaultParticipants = () => {
+    if (isEditMode && initialData?.participants) {
+      // 편집 모드: 기존 참여자 목록 사용
+      return initialData.participants.map(p => ({
+        name: p.participantType === 'GUEST' ? (p.guestName || '') : (p.user?.name || ''),
+        userId: p.participantType === 'GUEST' ? '' : (p.user?.userId || ''),
+        note: p.participantType === 'GUEST' ? '게스트 참여자' : ''
+      }));
+    } else {
+      // 새 글 작성 모드: 작성자 본인을 참여자 목록에 추가
+      const defaultParticipants = [];
+      if (profile?.name) {
+        defaultParticipants.push({
+          name: profile.name,
+          userId: profile.userId,
+          note: '작성자'
+        });
+      }
+      return defaultParticipants;
+    }
+  };
+
   const form = useForm<GamePostFormData>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
@@ -90,15 +116,30 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
       startDate: initialData?.startTime ? new Date(initialData.startTime) : new Date(),
       startTime: initialData?.startTime ? new Date(initialData.startTime).toTimeString().slice(0, 5) : getNextTimeSlot(),
       content: initialData?.content || { type: 'doc', content: [{ type: 'paragraph' }] },
-      participants: initialData?.participants?.map(p => ({
-        name: p.participantType === 'GUEST' ? (p.guestName || '') : (p.user?.name || ''),
-        userId: p.participantType === 'GUEST' ? '' : (p.user?.userId || ''),
-        note: p.participantType === 'GUEST' ? '게스트 참여자' : ''
-      })) || [],
+      participants: getDefaultParticipants(),
     },
   });
 
-  const { handleSubmit, formState: { isSubmitting } } = form;
+  const { handleSubmit, formState: { isSubmitting }, setValue } = form;
+
+  // 프로필이 로드된 후 작성자 본인을 참여자 목록에 추가 (새 글 작성 시에만)
+  useEffect(() => {
+    if (!isEditMode && profile?.name) {
+      const currentParticipants = form.getValues('participants');
+      const hasAuthor = currentParticipants.some(p => p.userId === profile.userId);
+      
+      if (!hasAuthor) {
+        setValue('participants', [
+          {
+            name: profile.name,
+            userId: profile.userId,
+            note: '작성자'
+          },
+          ...currentParticipants
+        ]);
+      }
+    }
+  }, [profile, isEditMode, setValue, form]);
 
   const onSubmit = async (data: GamePostFormData) => {
     try {

@@ -155,8 +155,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           {/* 프로필 정보 */}
           <div className="flex-1">
             <div className="flex flex-col">
-              <h1 className="text-2xl font-bold">{targetProfile.name || '사용자'}</h1>
-              <p className="text-gray-500 text-sm mb-4">{formatUserId(targetProfile.userId)}</p>
+              <h1 className="text-2xl font-bold text-cyber-gray">{targetProfile.name || '사용자'}</h1>
+              <p className="text-cyber-darkgray text-sm mb-4">{formatUserId(targetProfile.userId)}</p>
               {isOwnProfile && (
                 <Link 
                   href="/profile/edit"
@@ -169,22 +169,22 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             
             <div className="mt-6 space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-gray-500">생년월일</h3>
-                <p className="mt-1 text-gray-800">
+                <h3 className="text-sm font-medium text-cyber-darkgray">생년월일</h3>
+                <p className="mt-1 text-cyber-gray">
                   {formattedBirthDate}
                 </p>
               </div>
               
               <div>
-                <h3 className="text-sm font-medium text-gray-500">가입일</h3>
-                <p className="mt-1 text-gray-800">
+                <h3 className="text-sm font-medium text-cyber-darkgray">가입일</h3>
+                <p className="mt-1 text-cyber-gray">
                   {formattedDate}
                 </p>
               </div>
               
               <div>
-                <h3 className="text-sm font-medium text-gray-500">권한</h3>
-                <p className="mt-1 text-gray-800">
+                <h3 className="text-sm font-medium text-cyber-darkgray">권한</h3>
+                <p className="mt-1 text-cyber-gray">
                   {getRoleLabel(targetProfile.role?.name)}
                 </p>
               </div>

@@ -1,11 +1,10 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useState, useEffect, Fragment, useCallback } from 'react';
+import React, { useState, useEffect, Fragment, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Menu, Transition } from '@headlessui/react';
 import { useProfile } from '@/contexts/ProfileProvider'; // 1. useProfile 훅 임포트
 
 // 프로필 데이터 타입 정의
@@ -64,8 +63,6 @@ export default function Header() {
     // 인증 상태 변경 감지
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('인증 상태 변경 감지:', event);
-        
         // 세션 상태 업데이트
         setSession(session);
         
@@ -102,6 +99,32 @@ export default function Header() {
   
   // 프로필 메뉴 열림 상태
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (isProfileMenuOpen && !target.closest('.profile-dropdown')) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isProfileMenuOpen) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    if (isProfileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isProfileMenuOpen]);
   
   // 클라이언트 사이드에서만 실행되는 NavLink 컴포넌트
   const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
@@ -300,65 +323,64 @@ export default function Header() {
                 ) : session ? (
                   <div className="flex items-center space-x-2">
                     {/* 로그아웃 드롭다운 */}
-                    <Menu as="div" className="relative">
-                      <div>
-                        <Menu.Button className="flex items-center justify-center rounded-full p-1 hover:bg-opacity-10 focus:outline-none">
-                          <span className="sr-only">로그아웃 메뉴 열기</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </Menu.Button>
-                      </div>
-                      <Transition
-                        as={Fragment}
-                        enter="transition ease-out duration-200"
-                        enterFrom="transform opacity-0 scale-95"
-                        enterTo="transform opacity-100 scale-100"
-                        leave="transition ease-in duration-75"
-                        leaveFrom="transform opacity-100 scale-100"
-                        leaveTo="transform opacity-0 scale-95"
+                    <div className="relative profile-dropdown">
+                      <button
+                        onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                        className="flex items-center justify-center rounded-full p-1 hover:bg-opacity-10 focus:outline-none focus:ring-2 focus:ring-cyber-blue focus:ring-offset-2 focus:ring-offset-transparent"
+                        aria-expanded={isProfileMenuOpen}
+                        aria-haspopup="true"
                       >
-                        <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md border border-cyber-black-300 bg-cyber-black-50 py-1 shadow-xl ring-1 ring-cyber-black-300 ring-opacity-20 focus:outline-none backdrop-blur-sm">
-                          <Menu.Item>
-                            {({ active }) => (
-                              <Link
-                                href={profile?.userId ? `/profile/${profile.userId}` : "/profile"}
-                                className={`block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 ${active ? 'bg-cyber-blue/20 text-cyber-gray' : 'hover:bg-cyber-black-100/50 hover:text-cyber-gray'}`}
-                              >
-                                내 프로필
-                              </Link>
-                            )}
-                          </Menu.Item>
-                          <Menu.Item>
-                            {({ active }) => (
-                              <button
-                                onClick={handleSignOut}
-                                className={`block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 ${active ? 'bg-cyber-orange/20 text-cyber-gray' : 'hover:bg-cyber-black-100/50 hover:text-cyber-gray'}`}
-                              >
-                                로그아웃
-                              </button>
-                            )}
-                          </Menu.Item>
-                        </Menu.Items>
-                      </Transition>
-                    </Menu>
+                        <span className="sr-only">로그아웃 메뉴 열기</span>
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          className={`h-5 w-5 transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      
+                      {/* 드롭다운 메뉴 */}
+                      {isProfileMenuOpen && (
+                        <div className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md border border-cyber-black-300 bg-cyber-black-50 py-1 shadow-xl ring-1 ring-cyber-black-300 ring-opacity-20 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 duration-200">
+                          <Link
+                            href={profile?.userId ? `/profile/${profile.userId}` : "/profile"}
+                            onClick={() => setIsProfileMenuOpen(false)}
+                            className="block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 hover:bg-cyber-black-100 hover:text-cyber-gray focus:bg-cyber-blue/20 focus:text-cyber-gray focus:outline-none"
+                          >
+                            내 프로필
+                          </Link>
+                          <button
+                            onClick={() => {
+                              setIsProfileMenuOpen(false);
+                              handleSignOut();
+                            }}
+                            className="block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 hover:bg-cyber-black-100 hover:text-cyber-gray focus:bg-cyber-orange/20 focus:text-cyber-gray focus:outline-none cursor-pointer"
+                          >
+                            로그아웃
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
                     {/* 프로필 사진 */}
                     <Link href={profile?.userId ? `/profile/${profile.userId}` : "/profile"} className="group relative flex rounded-full focus:outline-none">
                       <span className="sr-only">프로필 페이지로 이동</span>
                       {profileData?.image && !profileData.image.includes('k.kakaocdn.net') ? (
-                        <div className="relative h-8 w-8 rounded-full border-2 border-opacity-30 overflow-hidden transition-all duration-200 bg-white">
+                        <div className="relative h-10 w-10 rounded-full border-2 border-opacity-30 overflow-hidden transition-all duration-200 bg-white">
                           <Image
                             className="absolute inset-0 m-auto object-cover w-full h-full transition-transform duration-200 group-hover:scale-110"
                             src={profileData.image}
                             alt={profileData.fullName || '프로필 이미지'}
-                            width={32}
-                            height={32}
+                            width={40}
+                            height={40}
                             unoptimized={profileData.image.includes('127.0.0.1')}
                           />
                         </div>
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-cyber-gray/30 bg-cyber-gray/10 text-cyber-gray transition-all duration-200 group-hover:bg-cyber-blue/20 group-hover:text-cyber-blue">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-cyber-gray/30 bg-cyber-gray/10 text-cyber-gray transition-all duration-200 group-hover:bg-cyber-blue/20 group-hover:text-cyber-blue">
                           <span className="text-sm font-medium">
                             {profileData?.fullName?.[0] || '?'}
                           </span>
@@ -403,16 +425,7 @@ export default function Header() {
       </div>
 
       {/* Mobile menu, show/hide based on menu state. */}
-      <Transition
-        show={isMobileMenuOpen}
-        as={Fragment}
-        enter="transition ease-out duration-200"
-        enterFrom="transform opacity-0 scale-95"
-        enterTo="transform opacity-100 scale-100"
-        leave="transition ease-in duration-75"
-        leaveFrom="transform opacity-100 scale-100"
-        leaveTo="transform opacity-0 scale-95"
-      >
+        {isMobileMenuOpen && (
         <div className="sm:hidden" id="mobile-menu">
             <div className="pt-2 pb-3 space-y-1">
               {isMounted && (
@@ -432,7 +445,7 @@ export default function Header() {
                 <div className="space-y-1">
                   <Link
                     href="/auth/login"
-                    className="block w-full px-4 py-2 text-left text-base font-medium text-cyber-gray/70 hover:bg-cyber-gray/10 hover:text-cyber-gray transition-colors"
+                    className="block w-full px-4 py-2 text-left text-base font-medium text-cyber-gray/70 hover:bg-cyber-black-100 hover:text-cyber-gray transition-colors"
                   >
                     로그인
                   </Link>
@@ -448,14 +461,14 @@ export default function Header() {
                       <Image
                         src={profileData.image}
                         alt={profileData.fullName || '프로필 이미지'}
-                        width={40}
-                        height={40}
+                        width={48}
+                        height={48}
                         className="rounded-full object-cover"
                         unoptimized={profileData.image.includes('127.0.0.1')} // 로컬 이미지 최적화 비활성화
                       />
                       </div>
                     ) : (
-                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                      <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
                         <span className="text-gray-500">
                           {profileData?.fullName?.[0] || '?'}
                         </span>
@@ -482,7 +495,7 @@ export default function Header() {
               </div>
             )}
         </div>
-      </Transition>
+        )}
     </header>
   );
 }

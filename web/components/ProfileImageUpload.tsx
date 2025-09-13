@@ -36,13 +36,13 @@ export const ProfileImageUpload = ({
         {/* 기존 프로필 이미지 표시 (편집 페이지에서만) */}
         {showCurrentImage && currentImage && !image && (
           <div className="text-center">
-            <p className="text-sm text-cyber-darkgray mb-2">현재 프로필</p>
+            <p className="text-sm text-cyber-gray mb-2">현재 프로필</p>
             <Image 
               src={currentImage} 
               alt="현재 프로필" 
               width={96}
               height={96}
-              className="w-24 h-24 rounded-full object-cover border-2 border-cyber-black-300" 
+              className="w-24 h-24 rounded-full object-cover border-2 border-cyber-black-300 bg-white" 
             />
           </div>
         )}
@@ -50,7 +50,7 @@ export const ProfileImageUpload = ({
         {/* 크롭된 이미지 미리보기 */}
         {croppedImage && (
           <div className="text-center">
-            <p className="text-sm text-cyber-darkgray mb-2">새 프로필</p>
+            <p className="text-sm text-cyber-gray mb-2">새 프로필</p>
             <Image 
               src={URL.createObjectURL(croppedImage)} 
               alt="프로필 미리보기" 

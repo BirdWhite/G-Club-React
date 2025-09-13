@@ -35,7 +35,7 @@ export default function Home() {
 
   // 메인 페이지 렌더링
   return (
-    <div className="min-h-screen bg-cyber-black-200">
+    <div className="h-full bg-cyber-black-200">
       <HeroSection onStartClick={handleStartClick} onLearnMoreClick={handleLearnMoreClick} />
     </div>
   );

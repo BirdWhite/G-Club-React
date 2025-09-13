@@ -7,32 +7,49 @@ import GameFilter from './GameFilter';
 import { GamePost } from '@/types/models';
 import { PlusCircle } from 'lucide-react';
 import { useGamePostListSubscription } from '@/hooks/useRealtimeSubscription';
+import { useUrlState } from '@/hooks/useUrlState';
 
 interface GamePostListProps {
   userId?: string;
 }
 
-type StatusFilterType = 'all' | 'recruiting' | 'open' | 'full' | 'completed';
+type StatusFilterType = 'all' | 'recruiting' | 'open' | 'full' | 'completed_expired';
 
 export default function GamePostList({ userId }: GamePostListProps) {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
   
-  const { posts, loading, filters, setFilters } = useGamePostListSubscription({
+  // URL 상태 관리
+  const [urlState, updateUrlState] = useUrlState({
+    gameId: 'all',
     status: 'recruiting',
   });
 
+  // URL 상태를 API 상태로 매핑
+  const getApiStatus = (status: string) => {
+    if (status === 'all') return undefined;
+    if (status === 'recruiting') return 'recruiting';
+    if (status === 'open') return 'OPEN';
+    if (status === 'full') return 'FULL';
+    if (status === 'completed_expired') return 'completed_expired';
+    return undefined;
+  };
+
+  const { posts, loading, filters, setFilters } = useGamePostListSubscription({
+    status: getApiStatus(urlState.status),
+    gameId: urlState.gameId === 'all' ? undefined : urlState.gameId,
+  });
+
   const handleGameChange = (gameId: string) => {
+    updateUrlState({ gameId });
     setFilters(prev => ({ ...prev, gameId: gameId === 'all' ? undefined : gameId }));
   };
 
   const handleStatusChange = (status: StatusFilterType) => {
-    setFilters(prev => ({ ...prev, status: status === 'all' ? undefined : status }));
+    updateUrlState({ status });
+    setFilters(prev => ({ ...prev, status: getApiStatus(status) }));
   };
 
-  const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPosts = posts;
 
   const renderPosts = () => {
     if (loading) {
@@ -85,12 +102,10 @@ export default function GamePostList({ userId }: GamePostListProps) {
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
           <div className="flex-1">
             <GameFilter
-              selectedGame={filters.gameId || 'all'}
+              selectedGame={urlState.gameId}
               onGameChange={handleGameChange}
-              statusFilter={(filters.status as StatusFilterType) || 'all'}
+              statusFilter={urlState.status as StatusFilterType}
               onStatusChange={handleStatusChange}
-              searchTerm={searchTerm}
-              onSearch={setSearchTerm}
             />
           </div>
           <div className="lg:flex-shrink-0">

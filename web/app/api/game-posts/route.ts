@@ -34,9 +34,15 @@ export async function GET(request: Request) {
           { status: 'OPEN' },
           { status: 'FULL' },
         ];
-      } else if (['OPEN', 'FULL', 'COMPLETED'].includes(status)) {
+      } else if (status === 'completed_expired') {
+        // 완료&만료됨 (COMPLETED 또는 EXPIRED)
+        where.OR = [
+          { status: 'COMPLETED' },
+          { status: 'EXPIRED' },
+        ];
+      } else if (['OPEN', 'FULL', 'COMPLETED', 'EXPIRED'].includes(status)) {
         // 특정 상태로 필터링
-        where.status = status as 'OPEN' | 'FULL' | 'COMPLETED';
+        where.status = status as 'OPEN' | 'FULL' | 'COMPLETED' | 'EXPIRED';
       }
     }
 
@@ -130,42 +136,55 @@ export async function POST(request: Request) {
         },
       });
 
-      // 모집자 본인을 참여자로 추가
-      await prisma.gameParticipant.create({
-        data: {
-          gamePostId: post.id,
-          participantType: 'MEMBER',
-          userId: user.id,
-        },
-      });
-
-      // 추가 참여자들 추가
+      // 참여자들 추가 (작성자 본인 포함)
+      const addedUserIds = new Set<string>();
+      
       for (const participant of participants) {
         if (participant.userId && participant.userId.trim()) {
+          // 중복 체크
+          if (addedUserIds.has(participant.userId)) {
+            continue;
+          }
+          
           // 기존 사용자 확인
           const existingUser = await prisma.userProfile.findUnique({
             where: { userId: participant.userId }
           });
 
           if (existingUser) {
-            // 기존 사용자를 참여자로 추가
-            await prisma.gameParticipant.create({
-              data: {
-                gamePostId: post.id,
-                participantType: 'MEMBER',
-                userId: existingUser.userId,
-              },
-            });
+            try {
+              // 기존 사용자를 참여자로 추가
+              await prisma.gameParticipant.create({
+                data: {
+                  gamePostId: post.id,
+                  participantType: 'MEMBER',
+                  userId: existingUser.userId,
+                },
+              });
+              addedUserIds.add(participant.userId);
+            } catch (error: any) {
+              // 중복 오류는 무시 (이미 추가된 경우)
+              if (error.code !== 'P2002') {
+                throw error;
+              }
+            }
           }
         } else if (participant.name && participant.name.trim()) {
           // 게스트 참여자 추가
-          await prisma.gameParticipant.create({
-            data: {
-              gamePostId: post.id,
-              participantType: 'GUEST',
-              guestName: participant.name,
-            },
-          });
+          try {
+            await prisma.gameParticipant.create({
+              data: {
+                gamePostId: post.id,
+                participantType: 'GUEST',
+                guestName: participant.name,
+              },
+            });
+          } catch (error: any) {
+            // 중복 오류는 무시 (이미 추가된 경우)
+            if (error.code !== 'P2002') {
+              throw error;
+            }
+          }
         }
       }
 
