@@ -1,13 +1,11 @@
 'use client';
 
 import { useProfileEdit } from '@/hooks';
-import { 
-  LoadingSpinner, 
-  ProfileFormLayout, 
-  ProfileFormFields, 
-  ProfileImageUpload, 
-  ImageCropper 
-} from '@/components';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { ProfileFormLayout } from '@/components/ProfileFormLayout';
+import { ProfileFormFields } from '@/components/ProfileFormFields';
+import { ProfileImageUpload } from '@/components/ProfileImageUpload';
+import { ImageCropper } from '@/components/ImageCropper';
 
 export default function ProfileEditPage() {
   const {
@@ -82,14 +80,14 @@ export default function ProfileEditPage() {
           <button
             type="button"
             onClick={() => router.push('/')}
-            className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
+            className="flex-1 bg-cyber-black-100 text-cyber-gray py-2 px-4 rounded-md hover:bg-cyber-black-200 transition-colors border border-cyber-black-300"
           >
             취소
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? '저장 중...' : '저장'}
           </button>

@@ -26,6 +26,7 @@ export default function Header() {
   
   const { profile } = useProfile(); // 2. useProfile 훅 호출
   const isAdmin = profile?.role?.name === 'ADMIN' || profile?.role?.name === 'SUPER_ADMIN'; // 3. isAdmin 변수 생성
+  const isPendingMember = profile?.role?.name === 'NONE'; // 4. NONE 역할 사용자 확인
   
   useEffect(() => {
     setIsMounted(true);
@@ -274,12 +275,16 @@ export default function Header() {
               {isMounted && (
                 <>
                   <NavLink href="/">홈</NavLink>
-                  <NavLink href="/game-mate">게임메이트</NavLink>
-                  {/* 4. isAdmin일 때만 관리자 대시보드 링크 표시 */}
-                  {isAdmin && (
-                    <NavLink href="/admin/dashboard">
-                      관리자 대시보드
-                    </NavLink>
+                  {/* 로그인한 사용자만 게임메이트와 관리자 대시보드 접근 가능 */}
+                  {session && !isPendingMember && (
+                    <>
+                      <NavLink href="/game-mate">게임메이트</NavLink>
+                      {isAdmin && (
+                        <NavLink href="/admin/dashboard">
+                          관리자 대시보드
+                        </NavLink>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -313,12 +318,12 @@ export default function Header() {
                         leaveFrom="transform opacity-100 scale-100"
                         leaveTo="transform opacity-0 scale-95"
                       >
-                        <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md border py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none backdrop-blur-sm">
+                        <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md border border-cyber-black-300 bg-cyber-black-50 py-1 shadow-xl ring-1 ring-cyber-black-300 ring-opacity-20 focus:outline-none backdrop-blur-sm">
                           <Menu.Item>
                             {({ active }) => (
                               <Link
-                                href="/profile"
-                                className={`block w-full px-4 py-2 text-left text-sm ${active ? 'bg-opacity-10' : ''}`}
+                                href={profile?.userId ? `/profile/${profile.userId}` : "/profile"}
+                                className={`block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 ${active ? 'bg-cyber-blue/20 text-cyber-gray' : 'hover:bg-cyber-black-100/50 hover:text-cyber-gray'}`}
                               >
                                 내 프로필
                               </Link>
@@ -328,7 +333,7 @@ export default function Header() {
                             {({ active }) => (
                               <button
                                 onClick={handleSignOut}
-                                className={`block w-full px-4 py-2 text-left text-sm ${active ? 'bg-opacity-10' : ''}`}
+                                className={`block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 ${active ? 'bg-cyber-orange/20 text-cyber-gray' : 'hover:bg-cyber-black-100/50 hover:text-cyber-gray'}`}
                               >
                                 로그아웃
                               </button>
@@ -339,7 +344,7 @@ export default function Header() {
                     </Menu>
 
                     {/* 프로필 사진 */}
-                    <Link href="/profile" className="group relative flex rounded-full focus:outline-none">
+                    <Link href={profile?.userId ? `/profile/${profile.userId}` : "/profile"} className="group relative flex rounded-full focus:outline-none">
                       <span className="sr-only">프로필 페이지로 이동</span>
                       {profileData?.image && !profileData.image.includes('k.kakaocdn.net') ? (
                         <div className="relative h-8 w-8 rounded-full border-2 border-opacity-30 overflow-hidden transition-all duration-200 bg-white">
@@ -413,9 +418,11 @@ export default function Header() {
               {isMounted && (
                 <>
                   <Link href="/" className="nav-link-mobile">홈</Link>
-                  <Link href="/game-mate" className="nav-link-mobile">게임메이트</Link>
+                  {session && !isPendingMember && (
+                    <Link href="/game-mate" className="nav-link-mobile">게임메이트</Link>
+                  )}
                   {session && (
-                      <Link href="/profile" className="nav-link-mobile">마이페이지</Link>
+                      <Link href={profile?.userId ? `/profile/${profile.userId}` : "/profile"} className="nav-link-mobile">마이페이지</Link>
                   )}
                 </>
               )}
@@ -423,12 +430,12 @@ export default function Header() {
             {!session && (
               <div className="pt-4 pb-3 border-t border-cyber-gray/20">
                 <div className="space-y-1">
-                  <button
-                    onClick={handleSignOut}
+                  <Link
+                    href="/auth/login"
                     className="block w-full px-4 py-2 text-left text-base font-medium text-cyber-gray/70 hover:bg-cyber-gray/10 hover:text-cyber-gray transition-colors"
                   >
                     로그인
-                  </button>
+                  </Link>
                 </div>
               </div>
             )}

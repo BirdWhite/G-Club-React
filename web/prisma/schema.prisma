@@ -48,6 +48,7 @@ enum GamePostStatus {
   FULL // 인원 마감
   IN_PROGRESS // 게임 진행 중
   COMPLETED // 모집 완료 및 게임 종료
+  EXPIRED // 만료됨
   DELETED // 삭제됨
 }
 

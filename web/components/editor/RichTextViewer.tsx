@@ -6,6 +6,7 @@ import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Youtube from '@tiptap/extension-youtube';
 import { JsonValue } from '@prisma/client/runtime/library';
+import { useEffect, useState } from 'react';
 
 interface RichTextViewerProps {
   content: JsonValue;
@@ -17,7 +18,14 @@ function isValidTiptapJson(value: JsonValue): value is Content {
 }
 
 export const RichTextViewer = ({ content }: RichTextViewerProps) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const editor = useEditor({
+    immediatelyRender: false,
     editable: false,
     extensions: [
       StarterKit,
@@ -46,8 +54,9 @@ export const RichTextViewer = ({ content }: RichTextViewerProps) => {
     content: isValidTiptapJson(content) ? content : { type: 'doc', content: [] },
   });
 
-  if (!editor) {
-    return null;
+  // 클라이언트에서만 렌더링
+  if (!isMounted || !editor) {
+    return <div className="prose prose-sm sm:prose-base max-w-none">로딩 중...</div>;
   }
 
   return (

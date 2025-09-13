@@ -60,6 +60,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
     FULL: { text: '가득 참', className: 'bg-cyber-yellow/20 text-cyber-yellow group-hover:bg-cyber-yellow/30' },
     IN_PROGRESS: { text: '게임 중', className: 'bg-cyber-purple/20 text-cyber-purple group-hover:bg-cyber-purple/30' },
     COMPLETED: { text: '완료 됨', className: 'bg-cyber-gray/20 text-cyber-gray group-hover:bg-cyber-gray/30' },
+    EXPIRED: { text: '만료 됨', className: 'bg-cyber-red/20 text-cyber-red group-hover:bg-cyber-red/30' },
   };
   
   // 내가 참여중이면 상태를 "참여중"으로 표시 (완료 상태가 아닐 때만)
@@ -134,7 +135,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
                 post.status === 'COMPLETED' 
                   ? 'bg-cyber-gray/30' 
                   : (post._count?.participants || 0) >= post.maxParticipants
-                    ? 'bg-cyber-yellow/30'
+                    ? 'bg-cyber-green/70'
                     : 'bg-gradient-to-r from-cyber-blue/70 to-cyber-green/70'
               }`}
               style={{ 

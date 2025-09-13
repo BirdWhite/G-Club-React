@@ -134,9 +134,13 @@ export default function UserSearchSelect({
                   )}
                   <div className="flex flex-col">
                     <span className="text-gray-900">{user.name}</span>
-                    {user.isGuest && (
+                    {user.isGuest ? (
                       <span className="text-xs text-orange-600">게스트 참여자로 추가</span>
-                    )}
+                    ) : user.userId ? (
+                      <span className="text-xs text-gray-500 truncate max-w-[200px]" title={user.userId}>
+                        {user.userId.length > 20 ? `${user.userId.substring(0, 20)}...` : user.userId}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </button>

@@ -61,10 +61,28 @@ serve(async (req) => {
     const updatedToCompleted = completedData?.length || 0;
     console.log('Updated to COMPLETED:', updatedToCompleted);
     
+    // 24시간 후 만료 처리 (모집 기간이 지난 게시글들)
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: expiredData, error: expiredError } = await supabase
+      .from('GamePost')
+      .update({ status: 'EXPIRED' })
+      .in('status', ['OPEN', 'FULL'])
+      .lte('startTime', twentyFourHoursAgo)
+      .select('id');
+    
+    if (expiredError) {
+      console.error('Expired update error:', expiredError);
+      throw expiredError;
+    }
+    
+    const updatedToExpired = expiredData?.length || 0;
+    console.log('Updated to EXPIRED:', updatedToExpired);
+    
     const result = {
       message: 'Status update successful',
       updatedToInProgress: updatedToProgress,
-      updatedToCompleted: updatedToCompleted
+      updatedToCompleted: updatedToCompleted,
+      updatedToExpired: updatedToExpired
     };
     
     console.log('SQL execution result:', result);

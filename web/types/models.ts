@@ -39,7 +39,8 @@ export enum GamePostStatus {
   OPEN = 'OPEN',
   FULL = 'FULL',
   IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED'
+  COMPLETED = 'COMPLETED',
+  EXPIRED = 'EXPIRED'
 }
 
 // ========== Models ==========

@@ -19,7 +19,7 @@ max_rows = 1000
 
 [api.tls]
 # Enable HTTPS endpoints locally using a self-signed certificate.
-enabled = false
+enabled = true
 
 [db]
 # Port to use for the local database URL.

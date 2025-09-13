@@ -22,6 +22,7 @@ export default function GamePostHeader({
     FULL: { text: '가득 참', className: 'bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30' },
     IN_PROGRESS: { text: '게임 중', className: 'bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/30' },
     COMPLETED: { text: '모집 완료', className: 'bg-cyber-gray/20 text-cyber-gray border border-cyber-gray/30' },
+    EXPIRED: { text: '만료됨', className: 'bg-cyber-red/20 text-cyber-red border border-cyber-red/30' },
   };
   
   const currentStatus = statusInfo[post.status] || statusInfo.COMPLETED;

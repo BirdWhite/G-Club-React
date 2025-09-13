@@ -1,8 +1,38 @@
-import { getCurrentUser } from '@/lib/supabase/auth';
+'use client';
+
+import { useProfile } from '@/contexts/ProfileProvider';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import GamePostList from '@/app/game-mate/components/GamePostList';
 
-export default async function GameMatePage() {
-  const user = await getCurrentUser();
+export default function GameMatePage() {
+  const { profile, isLoading } = useProfile();
+  const router = useRouter();
+
+  useEffect(() => {
+    // 로딩이 완료된 후에만 역할 확인
+    if (!isLoading && profile) {
+      // NONE 역할 사용자는 프로필 등록 페이지로 리다이렉트
+      if (profile.role?.name === 'NONE') {
+        router.push('/');
+        return;
+      }
+    }
+  }, [profile, isLoading, router]);
+
+  // 로딩 중이거나 프로필이 없는 경우
+  if (isLoading || !profile) {
+    return (
+      <div className="min-h-screen bg-cyber-black-200 flex items-center justify-center">
+        <div className="text-cyber-gray">로딩 중...</div>
+      </div>
+    );
+  }
+
+  // NONE 역할 사용자는 리다이렉트되므로 여기까지 오지 않음
+  if (profile.role?.name === 'NONE') {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-cyber-black-200">
@@ -14,7 +44,7 @@ export default async function GameMatePage() {
       </div>
       
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <GamePostList userId={user?.id} />
+        <GamePostList userId={profile?.userId} />
       </main>
     </div>
   );

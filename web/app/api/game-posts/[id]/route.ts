@@ -145,6 +145,7 @@ export async function PATCH(
     const { id } = await params;
     const { title, content, maxParticipants, startTime, participants = [] } = await request.json();
 
+
     if (!title || !content || maxParticipants === undefined || !startTime) {
       return NextResponse.json({ error: '모든 필수 항목을 입력해주세요.' }, { status: 400 });
     }
@@ -176,6 +177,22 @@ export async function PATCH(
       return NextResponse.json({ error: `현재 참여자 수(${existingPost.participants.length}명)보다 적게 인원을 설정할 수 없습니다.` }, { status: 400 });
     }
 
+    // 추가하려는 참여자 수가 최대인원을 초과하는지 확인
+    const validParticipants = participants.filter((p: any) => {
+      const hasValidUserId = p.userId && p.userId.trim().length > 0;
+      const hasValidName = p.name && p.name.trim().length > 0;
+      return hasValidUserId || hasValidName;
+    });
+
+    // participants 배열에는 이미 작성자가 포함되어 있으므로, 
+    // validParticipants.length가 최대인원을 초과하는지 확인
+    const totalParticipantsAfterUpdate = validParticipants.length;
+    
+    
+    if (totalParticipantsAfterUpdate > maxParticipants) {
+      return NextResponse.json({ error: `최대 인원(${maxParticipants}명)을 초과하여 참여자를 추가할 수 없습니다. 현재 추가 가능한 인원: ${maxParticipants}명` }, { status: 400 });
+    }
+
     const updatedPost = await prisma.$transaction(async (prisma) => {
       // 게시글 업데이트
       const post = await prisma.gamePost.update({
@@ -199,12 +216,7 @@ export async function PATCH(
         },
       });
 
-      // 새로운 참여자들 추가 (빈 참여자 필터링)
-      const validParticipants = participants.filter((p: any) => {
-        const hasValidUserId = p.userId && p.userId.trim().length > 0;
-        const hasValidName = p.name && p.name.trim().length > 0;
-        return hasValidUserId || hasValidName;
-      });
+      // 새로운 참여자들 추가 (이미 위에서 필터링됨)
       
       for (const participant of validParticipants) {
         if (participant.userId && participant.userId.trim()) {
@@ -255,6 +267,27 @@ export async function PATCH(
         }
       }
 
+      // 참여자 추가 후 현재 참여자 수 확인
+      const currentParticipantsCount = await prisma.gameParticipant.count({
+        where: { gamePostId: id }
+      });
+
+      // 참여자 수가 최대인원에 도달했으면 상태를 FULL로 변경
+      let newStatus = post.status;
+      if (currentParticipantsCount >= maxParticipants) {
+        newStatus = 'FULL';
+      } else if (currentParticipantsCount < maxParticipants && post.status === 'FULL') {
+        newStatus = 'OPEN';
+      }
+
+      // 상태가 변경된 경우 업데이트
+      if (newStatus !== post.status) {
+        await prisma.gamePost.update({
+          where: { id },
+          data: { status: newStatus },
+        });
+      }
+
       return post;
     });
 
@@ -262,7 +295,7 @@ export async function PATCH(
   } catch (error) {
     console.error('모집글 수정 오류:', error);
     return NextResponse.json(
-      { error: '모집글 수정 중 오류가 발생했습니다.' },
+      { error: '모집글 수정 중 오류가 발생했습니다.', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

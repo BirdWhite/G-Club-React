@@ -36,6 +36,12 @@ export const useProfileCheck = () => {
         // 프로필 존재 여부 확인 API 호출
         const response = await fetch('/api/profile/check');
         
+        // 401 에러는 인증되지 않은 사용자이므로 로그인 페이지로 리다이렉트
+        if (response.status === 401) {
+          router.push('/auth/login');
+          return;
+        }
+        
         // 404 에러는 프로필이 없는 경우이므로 무시
         if (response.status === 404) {
           router.push('/profile/register');
@@ -52,7 +58,11 @@ export const useProfileCheck = () => {
         // 프로필이 없으면 프로필 등록 페이지로 이동
         if (!data.hasProfile) {
           router.push('/profile/register');
+          return;
         }
+
+        // NONE 역할 사용자는 홈 페이지에 머물도록 함 (홈 페이지에서 MembershipPendingPage 표시)
+        // 프로필 페이지 접근은 허용하되, 다른 기능은 제한
       } catch (error) {
         console.error('프로필 확인 중 오류:', error);
       } finally {

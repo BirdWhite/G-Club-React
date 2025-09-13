@@ -32,8 +32,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
     }
 
-    // 사용자 목록 조회
+    // 쿼리 파라미터 파싱
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const roleFilter = searchParams.get('role') || '';
+
+    // 검색 조건 구성
+    const where: any = {};
+    
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { userId: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    if (roleFilter) {
+      where.role = { name: roleFilter };
+    }
+
+    // 전체 개수 조회
+    const totalCount = await prisma.userProfile.count({ where });
+
+    // 사용자 목록 조회 (페이징 적용)
     const users = await prisma.userProfile.findMany({
+      where,
       include: {
         role: {
           include: {
@@ -43,10 +68,27 @@ export async function GET(request: NextRequest) {
       },
       orderBy: {
         createdAt: 'desc'
-      }
+      },
+      skip: (page - 1) * limit,
+      take: limit
     });
 
-    return NextResponse.json({ users });
+    // 페이징 정보 계산
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    return NextResponse.json({ 
+      users,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        limit,
+        hasNextPage,
+        hasPrevPage
+      }
+    });
 
   } catch (error) {
     console.error('사용자 목록 조회 오류:', error);

@@ -83,6 +83,14 @@ export default function ActionButtons({
     );
   }
 
+  if (postStatus === 'EXPIRED') {
+    return (
+      <button disabled className={`${commonButtonStyles} ${disabledButtonStyles}`}>
+        모집 기간이 만료되었습니다.
+      </button>
+    );
+  }
+
   if (isParticipating) {
     return (
       <button
@@ -113,7 +121,7 @@ export default function ActionButtons({
         className={`${commonButtonStyles} bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500`}
       >
         <PlusCircle className="mr-2 h-5 w-5" />
-        {loading ? '신청 중...' : '참여 신청하기'}
+        {loading ? '참여 중...' : '게임 참여하기'}
       </button>
     );
   }

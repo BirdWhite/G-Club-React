@@ -52,8 +52,8 @@ export default function GamePostDetailClient({ initialPost, userId }: GamePostDe
 
   const handleParticipate = () => handleAction(
     () => fetch(`/api/game-posts/${currentPost.id}/participate`, { method: 'POST' }),
-    '참여 신청이 완료되었습니다.',
-    '참여 신청 중 오류가 발생했습니다.'
+    '게임 참여가 완료되었습니다.',
+    '게임 참여 중 오류가 발생했습니다.'
   );
 
   const handleCancelParticipation = () => handleAction(

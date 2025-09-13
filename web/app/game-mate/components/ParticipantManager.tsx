@@ -111,21 +111,37 @@ export default function ParticipantManager({
                   key={index} 
                   className="flex items-center gap-2 p-3 bg-cyber-black-200 rounded-lg border border-cyber-black-300"
                 >
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <Input
-                      value={participant.name}
-                      onChange={(e) => updateParticipant(index, 'name', e.target.value)}
-                      placeholder="이름"
-                      className="bg-cyber-black-100 border-cyber-black-300 focus:bg-cyber-black-200"
-                      disabled={disabled}
-                    />
-                    <Input
-                      value={participant.note || ''}
-                      onChange={(e) => updateParticipant(index, 'note', e.target.value)}
-                      placeholder="메모"
-                      className="bg-cyber-black-100 border-cyber-black-300 focus:bg-cyber-black-200"
-                      disabled={disabled}
-                    />
+                  <div className="flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div>
+                        <Input
+                          value={participant.name}
+                          onChange={(e) => updateParticipant(index, 'name', e.target.value)}
+                          placeholder="이름"
+                          className="bg-cyber-black-100 border-cyber-black-300 focus:bg-cyber-black-200"
+                          disabled={disabled || true} // 모든 참여자의 이름 수정 불가
+                        />
+                        {/* 실존 유저의 경우 아이디 표시 */}
+                        {participant.userId && (
+                          <div className="mt-1 text-xs text-gray-500 truncate max-w-[200px]" title={participant.userId}>
+                            {participant.userId.length > 20 ? `${participant.userId.substring(0, 20)}...` : participant.userId}
+                          </div>
+                        )}
+                        {/* 게스트 유저의 경우 표시 */}
+                        {!participant.userId && participant.note === '게스트 참여자' && (
+                          <div className="mt-1 text-xs text-orange-600">
+                            게스트 참여자
+                          </div>
+                        )}
+                      </div>
+                      <Input
+                        value={participant.note || ''}
+                        onChange={(e) => updateParticipant(index, 'note', e.target.value)}
+                        placeholder="메모"
+                        className="bg-cyber-black-100 border-cyber-black-300 focus:bg-cyber-black-200"
+                        disabled={disabled}
+                      />
+                    </div>
                   </div>
                   <Button
                     type="button"
