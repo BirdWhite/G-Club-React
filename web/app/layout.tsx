@@ -30,9 +30,9 @@ export default function RootLayout({
     <html lang="ko">
       <body className={inter.className}>
         <ProfileProvider>
-          <div className="h-screen flex flex-col">
+          <div className="min-h-screen grid grid-rows-[auto_1fr]">
             <Header />
-            <main className="flex-1">
+            <main className="overflow-y-auto">
               {children}
             </main>
           </div>

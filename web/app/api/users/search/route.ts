@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
       select: {
         userId: true,
         name: true,
+        email: true,
         image: true,
       },
       take: 10, // 최대 10명까지만 반환

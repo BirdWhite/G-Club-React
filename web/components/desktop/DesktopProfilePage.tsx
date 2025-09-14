@@ -9,12 +9,6 @@ interface DesktopProfilePageProps {
 }
 
 export default function DesktopProfilePage({ targetProfile, isOwnProfile }: DesktopProfilePageProps) {
-  // 사용자 ID 표시
-  const formatUserId = (userId?: string) => {
-    if (!userId) return 'ID: 알 수 없음';
-    return `ID: ${userId}`;
-  };
-
   const displayName = targetProfile.name || '사용자';
   const createdAt = targetProfile.createdAt ? new Date(targetProfile.createdAt) : new Date();
   
@@ -75,11 +69,10 @@ export default function DesktopProfilePage({ targetProfile, isOwnProfile }: Desk
           <div className="flex-1">
             <div className="flex flex-col">
               <h1 className="text-2xl font-bold text-cyber-gray">{targetProfile.name || '사용자'}</h1>
-              <p className="text-cyber-darkgray text-sm mb-4">{formatUserId(targetProfile.userId)}</p>
               {isOwnProfile && (
                 <Link 
                   href="/profile/edit"
-                  className="inline-block px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm md:text-base w-fit"
+                  className="inline-block px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm md:text-base w-fit mt-4"
                 >
                   프로필 수정
                 </Link>

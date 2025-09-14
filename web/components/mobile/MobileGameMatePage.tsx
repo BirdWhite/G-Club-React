@@ -15,7 +15,7 @@ export default function MobileGameMatePage({ userId }: MobileGameMatePageProps) 
   };
 
   return (
-    <div className="h-full bg-cyber-black-200 overflow-y-auto scrollbar-visible relative">
+    <div className="h-full bg-cyber-black-200 overflow-y-auto scrollbar-visible relative mobile-overscroll">
       {/* 모바일용 콘텐츠 */}
       <main className="px-4 py-6">
         <MobileGamePostList userId={userId} />

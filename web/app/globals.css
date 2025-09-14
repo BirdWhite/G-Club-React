@@ -72,6 +72,12 @@
     }
   }
 
+  /* 모바일 오버스크롤 효과 - 간단한 버전 */
+  .mobile-overscroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
+  }
+
   /* 헤더 스타일 */
   .header-container {
     background-color: rgba(17, 17, 19, 0.95); /* 진한 제트블랙에 약간의 투명도 */

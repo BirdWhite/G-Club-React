@@ -13,6 +13,7 @@ export interface Participant {
   id?: string;
   name: string;
   userId?: string;
+  email?: string | null;
   note?: string;
 }
 
@@ -57,6 +58,7 @@ export default function ParticipantManager({
     const participant: Participant = {
       name: user.name,
       userId: user.isGuest ? undefined : (user.userId || undefined),
+      email: user.isGuest ? undefined : (user.email || undefined),
       note: user.isGuest ? '게스트 참여자' : ''
     };
 
@@ -115,10 +117,10 @@ export default function ParticipantManager({
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="font-medium text-cyber-gray">{participant.name}</div>
-                        {/* 실존 유저의 경우 아이디 표시 */}
-                        {participant.userId && (
-                          <div className="text-xs text-gray-500 truncate max-w-[200px]" title={participant.userId}>
-                            {participant.userId.length > 20 ? `${participant.userId.substring(0, 20)}...` : participant.userId}
+                        {/* 실존 유저의 경우 이메일 표시 */}
+                        {participant.email && (
+                          <div className="text-xs text-gray-500 truncate max-w-[200px]" title={participant.email}>
+                            {participant.email}
                           </div>
                         )}
                         {/* 게스트 유저의 경우 표시 */}

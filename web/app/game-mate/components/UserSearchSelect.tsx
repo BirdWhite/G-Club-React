@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast';
 export interface UserSearchResult {
   userId: string | null;
   name: string;
+  email?: string | null;
   image?: string | null;
   isGuest?: boolean;
 }
@@ -136,9 +137,9 @@ export default function UserSearchSelect({
                     <span className="text-gray-900">{user.name}</span>
                     {user.isGuest ? (
                       <span className="text-xs text-orange-600">게스트 참여자로 추가</span>
-                    ) : user.userId ? (
-                      <span className="text-xs text-gray-500 truncate max-w-[200px]" title={user.userId}>
-                        {user.userId.length > 20 ? `${user.userId.substring(0, 20)}...` : user.userId}
+                    ) : user.email ? (
+                      <span className="text-xs text-gray-500 truncate max-w-[200px]" title={user.email}>
+                        {user.email}
                       </span>
                     ) : null}
                   </div>
