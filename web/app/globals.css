@@ -62,6 +62,14 @@
   main {
     flex: 1;
     min-height: 0; /* flexbox에서 스크롤 문제 해결 */
+    padding-bottom: 4rem; /* 모바일 네비게이션바 공간 확보 */
+  }
+
+  /* 모바일 네비게이션바를 위한 패딩 조정 */
+  @media (min-width: 768px) {
+    main {
+      padding-bottom: 0; /* 데스크톱에서는 패딩 제거 */
+    }
   }
 
   /* 헤더 스타일 */
@@ -101,6 +109,21 @@
   .nav-link:not(.nav-link-active):hover {
     border-color: var(--color-cyber-gray-500);
     color: var(--color-cyber-gray-200);
+  }
+
+  /* 모바일 네비게이션 링크 스타일 */
+  .nav-link-mobile {
+    display: block;
+    padding: 0.75rem 1rem;
+    text-decoration: none;
+    color: var(--color-cyber-gray);
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+  }
+
+  .nav-link-mobile:hover {
+    background-color: var(--color-cyber-black-100);
+    color: var(--color-cyber-blue);
   }
 
   /* 카드 스타일 */
@@ -341,5 +364,51 @@
   .scrollbar-visible::-webkit-scrollbar-thumb:active {
     background: var(--color-cyber-gray);
     border-color: var(--color-cyber-black-300);
+  }
+
+  /* PWA 및 모바일 최적화 스타일 */
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: var(--color-cyber-gray);
+  }
+
+  .mobile-nav-item:hover {
+    color: var(--color-cyber-blue);
+  }
+
+  .mobile-nav-item.active {
+    color: var(--color-cyber-blue);
+  }
+
+  .mobile-nav-item.disabled {
+    color: var(--color-cyber-darkgray);
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* 모바일 터치 최적화 */
+  @media (max-width: 767px) {
+    .mobile-nav-item {
+      min-height: 44px; /* iOS 터치 타겟 최소 크기 */
+    }
+    
+    /* 모바일에서 터치 피드백 개선 */
+    .mobile-nav-item:active {
+      transform: scale(0.95);
+    }
+  }
+
+  /* PWA 안전 영역 지원 */
+  @supports (padding: max(0px)) {
+    .mobile-nav-container {
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
   }
 }

@@ -1,0 +1,22 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    // 브라우저 환경에서만 실행
+    if (typeof window === 'undefined') return;
+
+    const media = window.matchMedia(query);
+    setMatches(media.matches);
+
+    const listener = () => setMatches(media.matches);
+    window.addEventListener('resize', listener);
+    
+    return () => window.removeEventListener('resize', listener);
+  }, [query]);
+
+  return matches;
+}

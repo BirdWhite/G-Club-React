@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useProfile } from '@/contexts/ProfileProvider'; // 1. useProfile 훅 임포트
+import MobileNavigation from './MobileNavigation';
 
 // 프로필 데이터 타입 정의
 interface ProfileData {
@@ -26,6 +27,22 @@ export default function Header() {
   const { profile } = useProfile(); // 2. useProfile 훅 호출
   const isAdmin = profile?.role?.name === 'ADMIN' || profile?.role?.name === 'SUPER_ADMIN'; // 3. isAdmin 변수 생성
   const isPendingMember = profile?.role?.name === 'NONE'; // 4. NONE 역할 사용자 확인
+
+  // 현재 페이지 제목을 반환하는 함수
+  const getPageTitle = () => {
+    if (pathname === '/') return '홈';
+    if (pathname === '/game-mate') return '게임메이트';
+    if (pathname.startsWith('/profile/') && pathname !== '/profile/edit') return '프로필';
+    if (pathname === '/profile/edit') return '프로필 수정';
+    if (pathname === '/profile') return '프로필';
+    if (pathname === '/admin/dashboard') return '관리자 대시보드';
+    if (pathname === '/auth/login') return '로그인';
+    if (pathname.startsWith('/admin/')) return '관리자';
+    if (pathname.startsWith('/game-mate/')) return '게임메이트';
+    if (pathname.startsWith('/channels/')) return '채널';
+    if (pathname.startsWith('/notifications')) return '알림';
+    return 'G-Club';
+  };
   
   useEffect(() => {
     setIsMounted(true);
@@ -271,231 +288,190 @@ export default function Header() {
   };
   
   return (
-    <header className="header-container">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="flex items-center group">
-                <svg 
-                  version="1.2" 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  viewBox="0 0 250 250" 
-                  width="32" 
-                  height="32"
-                  className="header-logo transition-colors duration-200"
-                >
-                  <title>Ultimate</title>
-                  <g id="Layer 1">
-                    <path id="모양 3" fillRule="evenodd" className="fill-current" d="m125.3 178.4l17.7-15.4v-67.8l96.4-51.5 5.2-40.6-137 72.5v87.3z"/>
-                    <path id="모양 1" fillRule="evenodd" className="fill-current" d="m6 3l4.9 40.6 76.8 40.9v-38z"/>
-                    <path id="모양 2" fillRule="evenodd" className="fill-current" d="m14.3 70.7l4.9 40.5 33 17.6v55.7l73.2 61.8 72.9-61.4-0.2-56 32.8-17.5 5.3-40.7-73.5 39.1 0.1 60.4-37.5 31.7-37.4-31.4v-60.6z"/>
-                  </g>
-                </svg>
-              </Link>
-            </div>
-            <nav className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {isMounted && (
-                <>
-                  <NavLink href="/">홈</NavLink>
-                  {/* 로그인한 사용자만 게임메이트와 관리자 대시보드 접근 가능 */}
-                  {session && !isPendingMember && (
-                    <>
-                      <NavLink href="/game-mate">게임메이트</NavLink>
-                      {isAdmin && (
-                        <NavLink href="/admin/dashboard">
-                          관리자 대시보드
-                        </NavLink>
-                      )}
-                    </>
-                  )}
-                </>
-              )}
-            </nav>
-          </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            {isMounted && (
-              <>
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    {/* 로딩 스피너 */}
-                  </div>
-                ) : session ? (
-                  <div className="flex items-center space-x-2">
-                    {/* 로그아웃 드롭다운 */}
-                    <div className="relative profile-dropdown">
-                      <button
-                        onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                        className="flex items-center justify-center rounded-full p-1 hover:bg-opacity-10 focus:outline-none focus:ring-2 focus:ring-cyber-blue focus:ring-offset-2 focus:ring-offset-transparent"
-                        aria-expanded={isProfileMenuOpen}
-                        aria-haspopup="true"
-                      >
-                        <span className="sr-only">로그아웃 메뉴 열기</span>
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          className={`h-5 w-5 transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`} 
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      
-                      {/* 드롭다운 메뉴 */}
-                      {isProfileMenuOpen && (
-                        <div className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md border border-cyber-black-300 bg-cyber-black-50 py-1 shadow-xl ring-1 ring-cyber-black-300 ring-opacity-20 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 duration-200">
-                          <Link
-                            href={profile?.userId ? `/profile/${profile.userId}` : "/profile"}
-                            onClick={() => setIsProfileMenuOpen(false)}
-                            className="block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 hover:bg-cyber-black-100 hover:text-cyber-gray focus:bg-cyber-blue/20 focus:text-cyber-gray focus:outline-none"
-                          >
-                            내 프로필
-                          </Link>
-                          <button
-                            onClick={() => {
-                              setIsProfileMenuOpen(false);
-                              handleSignOut();
-                            }}
-                            className="block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 hover:bg-cyber-black-100 hover:text-cyber-gray focus:bg-cyber-orange/20 focus:text-cyber-gray focus:outline-none cursor-pointer"
-                          >
-                            로그아웃
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 프로필 사진 */}
-                    <Link href={profile?.userId ? `/profile/${profile.userId}` : "/profile"} className="group relative flex rounded-full focus:outline-none">
-                      <span className="sr-only">프로필 페이지로 이동</span>
-                      {profileData?.image && !profileData.image.includes('k.kakaocdn.net') ? (
-                        <div className="relative h-10 w-10 rounded-full border-2 border-opacity-30 overflow-hidden transition-all duration-200 bg-white">
-                          <Image
-                            className="absolute inset-0 m-auto object-cover w-full h-full transition-transform duration-200 group-hover:scale-110"
-                            src={profileData.image}
-                            alt={profileData.fullName || '프로필 이미지'}
-                            width={40}
-                            height={40}
-                            unoptimized={profileData.image.includes('127.0.0.1')}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-cyber-gray/30 bg-cyber-gray/10 text-cyber-gray transition-all duration-200 group-hover:bg-cyber-blue/20 group-hover:text-cyber-blue">
-                          <span className="text-sm font-medium">
-                            {profileData?.fullName?.[0] || '?'}
-                          </span>
-                        </div>
-                      )}
-                    </Link>
-                  </div>
-                ) : (
-                  <Link
-                    href="/auth/login"
-                    className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-cyber-black bg-cyber-blue hover:bg-cyber-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-blue focus:ring-offset-cyber-black transition-colors"
+    <>
+      <header className="header-container">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* 로고 영역 - 좌측 */}
+            <div className="flex items-center">
+              {/* 데스크톱 로고 */}
+              <div className="hidden md:flex items-center">
+                <Link href="/" className="flex items-center group">
+                  <svg 
+                    version="1.2" 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 250 250" 
+                    width="32" 
+                    height="32"
+                    className="header-logo transition-colors duration-200"
                   >
-                    로그인
-                  </Link>
-                )}
-              </>
-            )}
-          </div>
-          <div className="-mr-2 flex items-center sm:hidden">
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              type="button"
-              className="bg-white inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-              aria-controls="mobile-menu"
-              aria-expanded="false"
-            >
-              <span className="sr-only">Open main menu</span>
-              {/* Icon when menu is closed. */}
-              {!isMobileMenuOpen ? (
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              ) : (
-                <svg className="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile menu, show/hide based on menu state. */}
-        {isMobileMenuOpen && (
-        <div className="sm:hidden" id="mobile-menu">
-            <div className="pt-2 pb-3 space-y-1">
-              {isMounted && (
-                <>
-                  <Link href="/" className="nav-link-mobile">홈</Link>
-                  {session && !isPendingMember && (
-                    <Link href="/game-mate" className="nav-link-mobile">게임메이트</Link>
-                  )}
-                  {session && (
-                      <Link href={profile?.userId ? `/profile/${profile.userId}` : "/profile"} className="nav-link-mobile">마이페이지</Link>
-                  )}
-                </>
-              )}
-            </div>
-            {!session && (
-              <div className="pt-4 pb-3 border-t border-cyber-gray/20">
-                <div className="space-y-1">
-                  <Link
-                    href="/auth/login"
-                    className="block w-full px-4 py-2 text-left text-base font-medium text-cyber-gray/70 hover:bg-cyber-black-100 hover:text-cyber-gray transition-colors"
-                  >
-                    로그인
-                  </Link>
-                </div>
+                    <title>Ultimate</title>
+                    <g id="Layer 1">
+                      <path id="모양 3" fillRule="evenodd" className="fill-current" d="m125.3 178.4l17.7-15.4v-67.8l96.4-51.5 5.2-40.6-137 72.5v87.3z"/>
+                      <path id="모양 1" fillRule="evenodd" className="fill-current" d="m6 3l4.9 40.6 76.8 40.9v-38z"/>
+                      <path id="모양 2" fillRule="evenodd" className="fill-current" d="m14.3 70.7l4.9 40.5 33 17.6v55.7l73.2 61.8 72.9-61.4-0.2-56 32.8-17.5 5.3-40.7-73.5 39.1 0.1 60.4-37.5 31.7-37.4-31.4v-60.6z"/>
+                    </g>
+                  </svg>
+                </Link>
               </div>
-            )}
-            {session && (
-              <div className="pt-4 pb-3 border-t border-gray-200">
-                <div className="flex items-center px-4">
-                  <div className="flex-shrink-0">
-                    {profileData?.image && !profileData.image.includes('k.kakaocdn.net') ? (
-                      <div className="p-0.5 bg-white rounded-full">
-                      <Image
-                        src={profileData.image}
-                        alt={profileData.fullName || '프로필 이미지'}
-                        width={48}
-                        height={48}
-                        className="rounded-full object-cover"
-                        unoptimized={profileData.image.includes('127.0.0.1')} // 로컬 이미지 최적화 비활성화
-                      />
-                      </div>
-                    ) : (
-                      <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500">
-                          {profileData?.fullName?.[0] || '?'}
-                        </span>
-                      </div>
+              
+              {/* 모바일 로고 */}
+              <div className="flex md:hidden items-center">
+                <Link href="/" className="flex items-center group">
+                  <svg 
+                    version="1.2" 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 250 250" 
+                    width="28" 
+                    height="28"
+                    className="header-logo transition-colors duration-200"
+                  >
+                    <title>Ultimate</title>
+                    <g id="Layer 1">
+                      <path id="모양 3" fillRule="evenodd" className="fill-current" d="m125.3 178.4l17.7-15.4v-67.8l96.4-51.5 5.2-40.6-137 72.5v87.3z"/>
+                      <path id="모양 1" fillRule="evenodd" className="fill-current" d="m6 3l4.9 40.6 76.8 40.9v-38z"/>
+                      <path id="모양 2" fillRule="evenodd" className="fill-current" d="m14.3 70.7l4.9 40.5 33 17.6v55.7l73.2 61.8 72.9-61.4-0.2-56 32.8-17.5 5.3-40.7-73.5 39.1 0.1 60.4-37.5 31.7-37.4-31.4v-60.6z"/>
+                    </g>
+                  </svg>
+                </Link>
+              </div>
+
+              {/* 데스크톱 네비게이션 */}
+              <nav className="hidden lg:ml-6 lg:flex lg:space-x-8">
+                {isMounted && (
+                  <>
+                    <NavLink href="/">홈</NavLink>
+                    {/* 로그인한 사용자만 게임메이트와 관리자 대시보드 접근 가능 */}
+                    {session && !isPendingMember && (
+                      <>
+                        <NavLink href="/game-mate">게임메이트</NavLink>
+                        {isAdmin && (
+                          <NavLink href="/admin/dashboard">
+                            관리자 대시보드
+                          </NavLink>
+                        )}
+                      </>
                     )}
-                  </div>
-                  <div className="ml-3">
-                    <div className="text-base font-medium text-gray-800">
-                      {profileData?.fullName || '사용자'}
+                  </>
+                )}
+              </nav>
+            </div>
+
+            {/* 페이지 제목 - 모바일에서만 표시 */}
+            <div className="flex-1 flex items-center justify-center md:hidden">
+              <h1 className="text-lg font-semibold text-cyber-gray">
+                {isMounted && getPageTitle()}
+              </h1>
+            </div>
+
+            {/* 프로필 영역 - 우측 상단 */}
+            <div className="flex items-center">
+              {isMounted && (
+                <>
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      {/* 로딩 스피너 */}
                     </div>
-                    <div className="text-sm font-medium text-gray-500">
-                      {session.user?.email}
+                  ) : session ? (
+                    <div className="flex items-center space-x-2">
+                      {/* 프로필 사진 */}
+                      <Link href={profile?.userId ? `/profile/${profile.userId}` : "/profile"} className="group relative flex rounded-full focus:outline-none">
+                        <span className="sr-only">프로필 페이지로 이동</span>
+                        <div className="relative">
+                          {profileData?.image && !profileData.image.includes('k.kakaocdn.net') ? (
+                            <div className={`relative h-10 w-10 rounded-full border-2 overflow-hidden transition-all duration-200 bg-white ${
+                              pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit'
+                                ? 'border-cyber-blue shadow-lg shadow-cyber-blue/50 ring-2 ring-cyber-blue/30'
+                                : 'border-opacity-30'
+                            }`}>
+                              <Image
+                                className="absolute inset-0 m-auto object-cover w-full h-full transition-transform duration-200 group-hover:scale-110"
+                                src={profileData.image}
+                                alt={profileData.fullName || '프로필 이미지'}
+                                width={40}
+                                height={40}
+                                unoptimized={profileData.image.includes('127.0.0.1')}
+                              />
+                            </div>
+                          ) : (
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 bg-cyber-gray/10 text-cyber-gray transition-all duration-200 group-hover:bg-cyber-blue/20 group-hover:text-cyber-blue ${
+                              pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit'
+                                ? 'border-cyber-blue shadow-lg shadow-cyber-blue/50 ring-2 ring-cyber-blue/30'
+                                : 'border-cyber-gray/30'
+                            }`}>
+                              <span className="text-sm font-medium">
+                                {profileData?.fullName?.[0] || '?'}
+                              </span>
+                            </div>
+                          )}
+                          {/* 사이버 블루 원 효과 - 활성 상태일 때만 표시 */}
+                          {(pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit') && (
+                            <div className="absolute inset-0 rounded-full border border-cyber-blue animate-pulse"></div>
+                          )}
+                        </div>
+                      </Link>
+
+                      {/* 로그아웃 드롭다운 - 데스크톱에서만 표시 */}
+                      <div className="hidden md:block relative profile-dropdown">
+                        <button
+                          onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                          className="flex items-center justify-center rounded-full p-1 hover:bg-opacity-10 focus:outline-none focus:ring-2 focus:ring-cyber-blue focus:ring-offset-2 focus:ring-offset-transparent"
+                          aria-expanded={isProfileMenuOpen}
+                          aria-haspopup="true"
+                        >
+                          <span className="sr-only">로그아웃 메뉴 열기</span>
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className={`h-5 w-5 transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`} 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        
+                        {/* 드롭다운 메뉴 */}
+                        {isProfileMenuOpen && (
+                          <div className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md border border-cyber-black-300 bg-cyber-black-50 py-1 shadow-xl ring-1 ring-cyber-black-300 ring-opacity-20 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 duration-200">
+                            <Link
+                              href={profile?.userId ? `/profile/${profile.userId}` : "/profile"}
+                              onClick={() => setIsProfileMenuOpen(false)}
+                              className="block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 hover:bg-cyber-black-100 hover:text-cyber-gray focus:bg-cyber-blue/20 focus:text-cyber-gray focus:outline-none"
+                            >
+                              내 프로필
+                            </Link>
+                            <button
+                              onClick={() => {
+                                setIsProfileMenuOpen(false);
+                                handleSignOut();
+                              }}
+                              className="block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 hover:bg-cyber-black-100 hover:text-cyber-gray focus:bg-cyber-orange/20 focus:text-cyber-gray focus:outline-none cursor-pointer"
+                            >
+                              로그아웃
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
                     </div>
-                  </div>
-                </div>
-                <div className="mt-3 space-y-1">
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full text-left block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                  >
-                    로그아웃
-                  </button>
-                </div>
-              </div>
-            )}
+                  ) : (
+                    <Link
+                      href="/auth/login"
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-cyber-black bg-cyber-blue hover:bg-cyber-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-blue focus:ring-offset-cyber-black transition-colors"
+                    >
+                      로그인
+                    </Link>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         </div>
-        )}
-    </header>
+      </header>
+
+      {/* 모바일 네비게이션바 */}
+      <MobileNavigation session={session} isPendingMember={isPendingMember} />
+    </>
   );
 }

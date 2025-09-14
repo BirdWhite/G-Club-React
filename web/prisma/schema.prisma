@@ -92,6 +92,7 @@ model UserProfile {
   id                 String               @id @default(cuid())
   userId             String               @unique
   name               String
+  email              String?              // OAuth 이메일 정보
   birthDate          DateTime
   image              String?
   roleId             String?

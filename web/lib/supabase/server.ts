@@ -13,6 +13,14 @@ export async function createClient() {
     supabaseUrl,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      auth: {
+        // JWT 만료 시간을 1시간으로 제한
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        // 토큰 만료 시간 설정
+        flowType: 'pkce'
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll()

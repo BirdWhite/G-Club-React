@@ -30,6 +30,9 @@ async function handleProfileUpdate(req: NextRequest) {
     const requestBody = await req.json();
     const { name, birthDate, image } = requestBody;
     
+    // Supabase OAuth에서 이메일 정보 가져오기
+    const email = user.email || null;
+    
     if (!name || !birthDate) {
       return NextResponse.json(
         { error: '이름과 생년월일은 필수 항목입니다.' },
@@ -60,8 +63,9 @@ async function handleProfileUpdate(req: NextRequest) {
     }
     
     // 프로필 업데이트 또는 생성
-    const profileData = {
+    const profileData: any = {
       name,
+      email, // OAuth 이메일 정보 (항상 포함)
       birthDate: new Date(birthDate),
       ...(imageUrl && { image: imageUrl })
     };
@@ -123,6 +127,23 @@ export async function GET() {
       }
     });
     
+    
+    // OAuth 이메일 정보 가져오기
+    const oauthEmail = user.email || null;
+    
+    // 기존 프로필에 이메일이 없는 경우 업데이트
+    if (userProfile && oauthEmail && !userProfile.email) {
+      try {
+        userProfile = await prisma.userProfile.update({
+          where: { userId },
+          data: { email: oauthEmail },
+          include: { role: true }
+        });
+      } catch (error) {
+        console.error('이메일 필드 업데이트 실패:', error);
+      }
+    }
+    
     // 프로필이 없는 경우 기본 프로필 생성
     if (!userProfile) {
       // 기본 역할 조회 (NONE 권한)
@@ -131,14 +152,17 @@ export async function GET() {
       });
       
       // 기본 프로필 생성
+      const profileData: any = {
+        userId,
+        name: user.user_metadata?.full_name || `사용자_${userId.substring(0, 6)}`,
+        email: oauthEmail, // OAuth 이메일 정보 (항상 포함)
+        birthDate: new Date('2000-01-01'), // 기본 생년월일
+        image: '',
+        roleId: defaultRole?.id
+      };
+
       userProfile = await prisma.userProfile.create({
-        data: {
-          userId,
-          name: user.user_metadata?.full_name || `사용자_${userId.substring(0, 6)}`,
-          birthDate: new Date('2000-01-01'), // 기본 생년월일
-          image: '',
-          roleId: defaultRole?.id
-        },
+        data: profileData,
         include: {
           role: true, // 생성된 프로필에도 역할 정보를 포함합니다.
         }
@@ -150,8 +174,11 @@ export async function GET() {
       ...userProfile,
       image: userProfile.image 
         ? `${userProfile.image}?t=${Date.now()}` 
-        : null
+        : null,
+      // email 필드가 존재하지 않을 수 있으므로 안전하게 처리
+      email: userProfile.email || null
     };
+    
     
     return NextResponse.json({ 
       profile: profileData,

@@ -3,11 +3,14 @@
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import GamePostList from '@/app/game-mate/components/GamePostList';
+import { useMediaQuery } from '@/hooks';
+import MobileGameMatePage from '@/components/mobile/MobileGameMatePage';
+import DesktopGameMatePage from '@/components/desktop/DesktopGameMatePage';
 
 export default function GameMatePage() {
   const { profile, isLoading } = useProfile();
   const router = useRouter();
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   useEffect(() => {
     // 로딩이 완료된 후에만 역할 확인
@@ -35,17 +38,12 @@ export default function GameMatePage() {
   }
 
   return (
-    <div className="h-full bg-cyber-black-200 overflow-y-auto scrollbar-visible">
-      <div className="bg-cyber-black-100 border-b border-cyber-black-200">
-        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-cyber-gray">게임메이트 찾기</h1>
-          <p className="mt-1 text-sm text-cyber-gray/60">함께 게임을 즐길 파티원을 찾아보세요!</p>
-        </div>
-      </div>
-      
-      <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
-        <GamePostList userId={profile?.userId} />
-      </main>
-    </div>
+    <>
+      {isMobile ? (
+        <MobileGameMatePage userId={profile?.userId || ''} />
+      ) : (
+        <DesktopGameMatePage userId={profile?.userId || ''} />
+      )}
+    </>
   );
 }

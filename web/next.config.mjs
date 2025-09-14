@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 헤더 크기 최적화
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/ssr']
+  },
   images: {
     remotePatterns: [
       {
