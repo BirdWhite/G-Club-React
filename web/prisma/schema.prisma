@@ -109,6 +109,9 @@ model UserProfile {
   // 채팅 관련
   chatMessages       ChatMessage[]         @relation("UserProfileChatMessages")
   chatRooms          ChatParticipant[]     @relation("UserProfileChatRooms")
+  
+  // 푸시 알림 관련
+  pushSubscriptions  PushSubscription[]    @relation("UserProfilePushSubscriptions")
 }
 
 
@@ -246,4 +249,25 @@ model WaitingParticipant {
 
   @@unique([gamePostId, userId])
   @@index([gamePostId, requestedAt])
+}
+
+// 푸시 알림 구독 정보
+model PushSubscription {
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  user        UserProfile @relation("UserProfilePushSubscriptions", fields: [userId], references: [userId], onDelete: Cascade)
+  
+  // Web Push 구독 정보
+  endpoint    String      @unique
+  p256dh      String      // 공개 키
+  auth        String      // 인증 키
+  
+  // 알림 설정
+  isEnabled   Boolean     @default(true)
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  @@index([userId])
+  @@index([endpoint])
 }

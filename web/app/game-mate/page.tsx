@@ -21,7 +21,7 @@ export default function GameMatePage() {
         return;
       }
     }
-  }, [profile, isLoading, router]);
+  }, [profile, isLoading, router]); // router 의존성 복구
 
   // 로딩 중이거나 프로필이 없는 경우
   if (isLoading || !profile) {

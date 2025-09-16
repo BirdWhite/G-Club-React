@@ -33,6 +33,12 @@ export const useProfileCheck = () => {
           return;
         }
 
+        // PWA 관련 파일들은 프로필 체크에서 제외
+        if (currentPath === '/manifest.json' || currentPath === '/sw.js' || currentPath.startsWith('/icons/')) {
+          setIsLoading(false);
+          return;
+        }
+
         // 프로필 존재 여부 확인 API 호출
         const response = await fetch('/api/profile/check');
         
@@ -71,7 +77,7 @@ export const useProfileCheck = () => {
     };
 
     checkProfile();
-  }, [router]);
+  }, [router]); // router 의존성 복구
 
   return { isLoading };
 };

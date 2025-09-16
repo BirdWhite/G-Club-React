@@ -6,18 +6,18 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  // 디버깅을 위한 로깅 (프로덕션에서는 제거)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Middleware processing request:', {
-      url: request.url,
-      pathname: request.nextUrl.pathname,
-      host: request.headers.get('host'),
-      cookies: request.cookies.getAll().map(c => ({ 
-        name: c.name, 
-        size: c.value?.length || 0
-      }))
-    });
-  }
+  // 디버깅을 위한 로깅 (무한 루프 방지를 위해 비활성화)
+  // if (process.env.NODE_ENV === 'development') {
+  //   console.log('Middleware processing request:', {
+  //     url: request.url,
+  //     pathname: request.nextUrl.pathname,
+  //     host: request.headers.get('host'),
+  //     cookies: request.cookies.getAll().map(c => ({ 
+  //       name: c.name, 
+  //       size: c.value?.length || 0
+  //     }))
+  //   });
+  // }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,6 +55,10 @@ export async function updateSession(request: NextRequest) {
     
     const currentPath = request.nextUrl.pathname;
     
+    // 정적 파일 패턴 (확장자가 있는 파일들)
+    const PUBLIC_FILE = /\.(.*)$/;
+    const isPublicFiles = PUBLIC_FILE.test(currentPath);
+    
     // 허용된 경로들 (인증 없이 접근 가능)
     const publicPaths = [
       '/',
@@ -66,8 +70,8 @@ export async function updateSession(request: NextRequest) {
     // 사용자의 프로필 경로 패턴 (자신의 프로필만)
     const profilePathPattern = /^\/profile\/[^\/]+$/;
     
-    // 공개 경로이거나 자신의 프로필 페이지인 경우 통과
-    if (publicPaths.includes(currentPath) || profilePathPattern.test(currentPath)) {
+    // 정적 파일이거나 공개 경로이거나 자신의 프로필 페이지인 경우 통과
+    if (isPublicFiles || publicPaths.includes(currentPath) || profilePathPattern.test(currentPath)) {
       return supabaseResponse;
     }
     

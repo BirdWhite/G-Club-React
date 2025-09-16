@@ -31,7 +31,7 @@ export default function AdminDashboard() {
     if (!isLoading && !hasAdminAccess) {
       router.push('/');
     }
-  }, [profile, isLoading, hasAdminAccess, router]);
+  }, [profile, isLoading, hasAdminAccess, router]); // router 의존성 복구
 
   const handleTabChange = (newTab: string) => {
     setTab(newTab as any);

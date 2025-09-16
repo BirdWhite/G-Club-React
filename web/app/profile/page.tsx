@@ -19,7 +19,7 @@ export default function ProfilePage() {
 
     // 현재 사용자의 프로필 페이지로 리다이렉트
     router.push(`/profile/${profile.userId}`);
-  }, [profile, isLoading, error, router]);
+  }, [profile, isLoading, error, router]); // router 의존성 복구
 
   if (isLoading) {
     return (

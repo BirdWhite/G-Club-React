@@ -71,7 +71,7 @@ export default function Header() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase.auth]);
+  }, [supabase.auth]); // 의존성 복구
 
   useEffect(() => {
     // 초기 사용자 정보 로드
@@ -109,7 +109,7 @@ export default function Header() {
       subscription?.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchUser, router, supabase.auth, pathname]);
+  }, [fetchUser, router, supabase.auth, pathname]); // 의존성 복구
   
   // 프로필 데이터 상태
   const [profileData, setProfileData] = useState<ProfileData | null>(null);

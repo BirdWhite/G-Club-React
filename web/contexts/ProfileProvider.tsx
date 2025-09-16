@@ -58,7 +58,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase]); // supabase 의존성 복구
 
   return (
     <ProfileContext.Provider value={{ profile, isLoading, error, refetchProfile: fetchProfile }}>

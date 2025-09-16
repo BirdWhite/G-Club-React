@@ -28,7 +28,7 @@ export default function LoginForm() {
       }
     };
     checkUser();
-  }, [router, supabase]);
+  }, [router, supabase]); // 의존성 복구
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
