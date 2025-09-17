@@ -4,3 +4,5 @@ export { useProfileEdit } from './useProfileEdit';
 export { useProfileRegister } from './useProfileRegister';
 export { useUrlState } from './useUrlState';
 export { useMediaQuery } from './useMediaQuery';
+export { useFavoriteGames } from './useFavoriteGames';
+export { useNotificationSettings } from './useNotificationSettings';

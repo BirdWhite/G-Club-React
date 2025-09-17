@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, subscription } = await request.json();
+    const body = await request.json();
+    const { userId, subscription } = body;
     
     if (!userId || !subscription) {
       return NextResponse.json(
@@ -14,41 +16,36 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // 기존 구독 정보가 있는지 확인
-    const { data: existingSubscription } = await supabase
-      .from('PushSubscription')
-      .select('id')
-      .eq('userId', userId)
-      .single();
+    // 먼저 해당 사용자가 존재하는지 확인
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId },
+      select: { id: true, userId: true }
+    });
 
-    if (existingSubscription) {
-      // 기존 구독 정보 업데이트
-      const { error } = await supabase
-        .from('PushSubscription')
-        .update({
-          endpoint: subscription.endpoint,
-          p256dh: subscription.keys.p256dh,
-          auth: subscription.keys.auth,
-          isEnabled: true,
-          updatedAt: new Date().toISOString()
-        })
-        .eq('userId', userId);
-
-      if (error) throw error;
-    } else {
-      // 새 구독 정보 생성
-      const { error } = await supabase
-        .from('PushSubscription')
-        .insert({
-          userId,
-          endpoint: subscription.endpoint,
-          p256dh: subscription.keys.p256dh,
-          auth: subscription.keys.auth,
-          isEnabled: true
-        });
-
-      if (error) throw error;
+    if (!userProfile) {
+      return NextResponse.json(
+        { error: '사용자를 찾을 수 없습니다' },
+        { status: 404 }
+      );
     }
+
+    // Prisma upsert를 사용하여 구독 정보 생성/업데이트
+    await prisma.pushSubscription.upsert({
+      where: { userId },
+      update: {
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        isEnabled: true,
+      },
+      create: {
+        userId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        isEnabled: true,
+      }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

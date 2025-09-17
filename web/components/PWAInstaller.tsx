@@ -14,8 +14,18 @@ interface BeforeInstallPromptEvent extends Event {
 export default function PWAInstaller() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // PWA가 이미 설치되어 있는지 확인
+    const checkStandalone = () => {
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || 
+                              (window.navigator as any).standalone === true;
+      setIsStandalone(isStandaloneMode);
+    };
+
+    checkStandalone();
+
     // next-pwa가 자동으로 서비스 워커를 등록하므로 수동 등록 불필요
     // PWA 설치 프롬프트만 처리
 
@@ -23,12 +33,13 @@ export default function PWAInstaller() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowInstallButton(true);
+      if (!isStandalone) {
+        setShowInstallButton(true);
+      }
     };
 
     // PWA 설치 완료 이벤트 리스너
     const handleAppInstalled = () => {
-      console.log('PWA가 설치되었습니다');
       setShowInstallButton(false);
       setDeferredPrompt(null);
     };
@@ -40,19 +51,13 @@ export default function PWAInstaller() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [isStandalone]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
 
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('사용자가 PWA 설치를 수락했습니다');
-    } else {
-      console.log('사용자가 PWA 설치를 거부했습니다');
-    }
+    await deferredPrompt.userChoice;
     
     setDeferredPrompt(null);
     setShowInstallButton(false);

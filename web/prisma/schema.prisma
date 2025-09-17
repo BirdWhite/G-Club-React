@@ -112,6 +112,15 @@ model UserProfile {
   
   // 푸시 알림 관련
   pushSubscriptions  PushSubscription[]    @relation("UserProfilePushSubscriptions")
+  
+  // 좋아하는 게임 관련
+  favoriteGames      UserFavoriteGame[]    @relation("UserFavoriteGames")
+  
+  // 알림 관련
+  sentNotifications     Notification[]        @relation("SentNotifications")
+  receivedNotifications Notification[]        @relation("ReceivedNotifications")
+  notificationReceipts  NotificationReceipt[] @relation("NotificationReceipts")
+  notificationSettings NotificationSetting?  @relation("UserNotificationSettings")
 }
 
 
@@ -178,6 +187,9 @@ model Game {
   updatedAt   DateTime      @updatedAt
   aliases     String[]
   gamePosts   GamePost[]
+  
+  // 좋아하는 게임 관련
+  favoritedBy UserFavoriteGame[]    @relation("GameFavorites")
 }
 
 model GamePost {
@@ -201,6 +213,9 @@ model GamePost {
   participants      GameParticipant[]
   waitingList       WaitingParticipant[]
   chatRoom          ChatRoom?
+  
+  // 알림 관련
+  notifications     Notification[]    @relation("GamePostNotifications")
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -270,4 +285,165 @@ model PushSubscription {
   
   @@index([userId])
   @@index([endpoint])
+}
+
+// 사용자 좋아하는 게임
+model UserFavoriteGame {
+  id        String      @id @default(cuid())
+  userId    String
+  gameId    String
+  user      UserProfile @relation("UserFavoriteGames", fields: [userId], references: [userId], onDelete: Cascade)
+  game      Game        @relation("GameFavorites", fields: [gameId], references: [id], onDelete: Cascade)
+  addedAt   DateTime    @default(now())
+  order     Int?        // 사용자가 설정한 순서 (선택사항)
+  
+  @@unique([userId, gameId])
+  @@index([userId])
+  @@index([gameId])
+}
+
+// 알림 템플릿 (재사용 가능한 알림 타입 정의)
+model NotificationTemplate {
+  id          String        @id @default(cuid())
+  type        String        @unique // "GAME_POST_NEW", "GAME_POST_PARTICIPANT", "SYSTEM_NOTICE" 등
+  title       String        // 알림 제목 템플릿
+  body        String        // 알림 내용 템플릿
+  icon        String?       // 알림 아이콘 URL
+  actionUrl   String?       // 클릭 시 이동할 URL 템플릿
+  isEnabled   Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  notifications Notification[]
+  
+  @@index([type])
+}
+
+// 알림 내역
+model Notification {
+  id           String               @id @default(cuid())
+  
+  // 알림 기본 정보
+  templateId   String?
+  template     NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  type         String               // 알림 타입
+  title        String               // 실제 알림 제목
+  body         String               // 실제 알림 내용
+  icon         String?              // 알림 아이콘 URL
+  actionUrl    String?              // 클릭 시 이동할 URL
+  
+  // 발송 정보
+  senderId     String?              // 발송자 ID (시스템 알림인 경우 null)
+  sender       UserProfile?         @relation("SentNotifications", fields: [senderId], references: [userId], onDelete: SetNull)
+  
+  // 수신 정보 (개별 발송)
+  recipientId  String?              // 개별 수신자 ID
+  recipient    UserProfile?         @relation("ReceivedNotifications", fields: [recipientId], references: [userId], onDelete: Cascade)
+  
+  // 그룹 발송 정보
+  isGroupSend  Boolean              @default(false) // 그룹 발송 여부
+  groupType    String?              // "ALL_USERS", "ROLE_BASED", "GAME_PARTICIPANTS" 등
+  groupFilter  Json?                // 그룹 필터 조건 (JSON)
+  
+  // 관련 엔티티
+  gamePostId   String?              // 게임 포스트 관련 알림
+  gamePost     GamePost?            @relation("GamePostNotifications", fields: [gamePostId], references: [id], onDelete: Cascade)
+  
+  // 알림 상태
+  status       NotificationStatus   @default(PENDING)
+  scheduledAt  DateTime?            // 예약 발송 시간
+  sentAt       DateTime?            // 실제 발송 시간
+  
+  // 메타데이터
+  priority     NotificationPriority @default(NORMAL)
+  data         Json?                // 추가 데이터 (JSON)
+  
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  
+  // 수신 내역
+  receipts     NotificationReceipt[]
+  
+  @@index([recipientId, createdAt])
+  @@index([type, createdAt])
+  @@index([status, scheduledAt])
+  @@index([gamePostId])
+}
+
+// 알림 수신 내역 (개별 사용자별 읽음/안읽음 상태)
+model NotificationReceipt {
+  id             String       @id @default(cuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           UserProfile  @relation("NotificationReceipts", fields: [userId], references: [userId], onDelete: Cascade)
+  
+  // 수신 상태
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  isClicked      Boolean      @default(false)
+  clickedAt      DateTime?
+  
+  // 푸시 발송 상태
+  pushSent       Boolean      @default(false)
+  pushSentAt     DateTime?
+  pushError      String?      // 푸시 발송 실패 시 에러 메시지
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  @@unique([notificationId, userId])
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+// 알림 상태 enum
+enum NotificationStatus {
+  PENDING   // 발송 대기
+  SENDING   // 발송 중
+  SENT      // 발송 완료
+  FAILED    // 발송 실패
+  CANCELLED // 발송 취소
+}
+
+// 알림 우선순위 enum
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// 사용자별 알림 설정
+model NotificationSetting {
+  id                String      @id @default(cuid())
+  userId            String      @unique
+  user              UserProfile @relation("UserNotificationSettings", fields: [userId], references: [userId], onDelete: Cascade)
+  
+  // 방해 금지 시간 설정
+  doNotDisturbEnabled Boolean   @default(false)
+  doNotDisturbStart   String?   // "22:00" 형식
+  doNotDisturbEnd     String?   // "08:00" 형식
+  doNotDisturbDays    String[]  @default(["0", "1", "2", "3", "4", "5", "6"]) // 0=일요일, 6=토요일
+  
+  // 신규 게임메이트 글 알림 설정
+  newGamePostEnabled  Boolean   @default(true)
+  newGamePostSettings Json?     // 세부 설정을 JSON으로 저장
+  
+  // 참여중인 모임 알림 설정
+  participatingGameEnabled Boolean @default(true)
+  participatingGameSettings Json?  // 세부 설정을 JSON으로 저장
+  
+  // 내가 작성한 모임 알림 설정
+  myGamePostEnabled   Boolean   @default(true)
+  myGamePostSettings  Json?     // 세부 설정을 JSON으로 저장
+  
+  // 예비 참여 알림 설정
+  waitingListEnabled  Boolean   @default(true)
+  
+  // 메타데이터
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  @@index([userId])
 }

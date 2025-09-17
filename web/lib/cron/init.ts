@@ -1,5 +1,6 @@
 // 서버 사이드에서만 크론 작업을 시작하는 초기화 파일
 import { startGamePostCleanup } from './gamePostCleanup';
+import { startNotificationCleanup } from './notificationCleanup';
 
 // 전역 변수로 스케줄러 시작 상태 관리
 declare global {
@@ -20,6 +21,7 @@ if (typeof window === 'undefined') {
         console.log('개발 모드: 크론 작업을 시작합니다. (HMR로 인한 중복 시작 방지)');
       }
       startGamePostCleanup();
+      startNotificationCleanup();
     } else {
       console.log('크론 작업이 비활성화되어 있습니다. (ENABLE_CRON_JOBS=true로 설정하여 활성화)');
     }
