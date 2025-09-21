@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
 
 export function startNotificationCleanup() {
   console.log('알림 데이터 정리 스케줄러를 시작합니다...');
@@ -147,14 +147,20 @@ export function startNotificationCleanup() {
       // ===== 4단계: 고아 NotificationReceipt 정리 =====
       console.log('4단계: 고아 알림 수신 기록 정리 중...');
       
-      const orphanReceipts = await prisma.notificationReceipt.findMany({
-        where: {
-          notification: null // 연결된 알림이 없는 receipt
-        },
+      // 존재하지 않는 알림 ID를 참조하는 receipt 찾기
+      const allReceipts = await prisma.notificationReceipt.findMany({
         select: {
-          id: true
+          id: true,
+          notificationId: true
         }
       });
+      
+      const existingNotificationIds = await prisma.notification.findMany({
+        select: { id: true }
+      });
+      
+      const existingIds = new Set(existingNotificationIds.map(n => n.id));
+      const orphanReceipts = allReceipts.filter(r => !existingIds.has(r.notificationId));
       
       if (orphanReceipts.length > 0) {
         const { count: deletedReceiptsCount } = await prisma.notificationReceipt.deleteMany({

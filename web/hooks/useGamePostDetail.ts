@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { GamePost, Comment, GameParticipant } from '@/types/models';
-import { getCurrentUser } from '@/lib/supabase/auth';
+import { getCurrentUser } from '@/lib/database/supabase';
 
 interface UseGamePostDetailProps {
   postId: string;

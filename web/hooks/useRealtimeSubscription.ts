@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/database/supabase';
 
 // 게임메이트 목록을 위한 실시간 구독 훅
 export function useGamePostListSubscription(

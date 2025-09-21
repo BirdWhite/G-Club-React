@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { getCurrentUser } from '@/lib/supabase/auth';
-import prisma from '@/lib/prisma';
+import { createServerClient, getCurrentUser } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
 export async function GET(request: Request) {
   try {

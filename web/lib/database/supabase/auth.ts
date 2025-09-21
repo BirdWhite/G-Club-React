@@ -1,10 +1,10 @@
 'use server';
 
-import { createClient } from './server';
-import prisma from '@/lib/prisma';
+import { createServerClient } from './server';
+import prisma from '../prisma';
 
 export async function getCurrentUser() {
-  const supabase = await createClient();
+  const supabase = await createServerClient();
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -45,7 +45,7 @@ export async function getCurrentUser() {
 }
 
 export async function signOut() {
-  const supabase = await createClient();
+  const supabase = await createServerClient();
   await supabase.auth.signOut();
   return { redirect: { destination: '/login', permanent: false } };
 }

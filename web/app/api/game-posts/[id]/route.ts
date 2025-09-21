@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
-import { isAdmin } from '@/lib/auth/utils';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
+import { isAdmin } from '@/lib/database/auth';
 
 type RouteContext = {
   params: {
@@ -20,7 +20,7 @@ export async function GET(
     const isList = searchParams.get('list') === 'true';
     
     // 현재 사용자 정보 가져오기
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id;
 
@@ -134,7 +134,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<RouteContext['params']> }
 ) {
-  const supabase = await createClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
@@ -306,7 +306,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<RouteContext['params']> }
 ) {
-  const supabase = await createClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {

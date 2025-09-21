@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     // 먼저 해당 사용자가 존재하는지 확인
     const userProfile = await prisma.userProfile.findUnique({

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/supabase/auth';
+import prisma from '@/lib/database/prisma';
+import { getCurrentUser } from '@/lib/database/supabase';
 
 export async function GET(request: Request) {
   try {

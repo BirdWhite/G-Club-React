@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/database/supabase';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
@@ -7,7 +7,7 @@ import path from 'path';
 // 임시 이미지를 영구 저장소로 이동하는 API
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });

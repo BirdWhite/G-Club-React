@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 import { Game, GamePost } from '@/types/models';
 import MobileGamePostForm from '../../../components/mobile/MobileGamePostForm';
-import { getCurrentUser } from '@/lib/supabase/auth';
-import prisma from '@/lib/prisma';
+import { getCurrentUser } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
 async function getPost(id: string): Promise<GamePost | null> {
     try {

@@ -2,7 +2,7 @@
 
 // 푸시 이벤트 수신
 self.addEventListener('push', function(event) {
-  console.log('[sw.js] Push event received:', event);
+  console.log('[push-notification-sw.js] Push event received:', event);
   
   let notificationData = {
     title: '얼티메이트',
@@ -51,7 +51,7 @@ self.addEventListener('push', function(event) {
 
 // 알림 클릭 이벤트 처리
 self.addEventListener('notificationclick', function(event) {
-  console.log('[firebase-messaging-sw.js] Notification click received.');
+  console.log('[push-notification-sw.js] Notification click received.');
 
   event.notification.close();
 

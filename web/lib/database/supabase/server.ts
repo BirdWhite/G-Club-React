@@ -1,15 +1,15 @@
 'use server';
 
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export async function createClient() {
+export async function createServerClient() {
   const cookieStore = await cookies()
   
   // 스토리지 전용 URL이 설정되어 있으면 사용, 없으면 기본 URL 사용
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
-  return createServerClient(
+  return createSupabaseServerClient(
     supabaseUrl,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {

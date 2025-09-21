@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
 // 프로필 업데이트 공통 함수
 async function handleProfileUpdate(req: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // 사용자 인증 확인
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -98,7 +98,7 @@ async function handleProfileUpdate(req: NextRequest) {
 // 프로필 정보 가져오기
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // 사용자 인증 확인
     const { data: { user }, error: userError } = await supabase.auth.getUser();

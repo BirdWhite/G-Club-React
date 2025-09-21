@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
-import { isAdmin_Server, hasPermission_Server } from '@/lib/auth/serverAuth';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
+import { isAdmin_Server, hasPermission_Server } from '@/lib/database/auth';
 import { type Role } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
+  const supabase = await createServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  const supabase = await createServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

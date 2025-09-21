@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
-import { isSuperAdminServer } from '@/lib/auth/serverAuth';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
+import { isSuperAdmin_Server } from '@/lib/database/auth';
 
 type Params = {
   roleId: string;
@@ -9,7 +9,7 @@ type Params = {
 
 export async function PATCH(request: NextRequest, { params }: { params: Params }) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {

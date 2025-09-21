@@ -3,7 +3,7 @@
 import type { GamePost } from '@/types/models';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { formatRelativeTime } from '@/lib/dateUtils';
+import { formatRelativeTime } from '@/lib/utils/date';
 import RichTextViewer from '@/components/editor/RichTextViewer';
 import { useEffect, useState } from 'react';
 import ProfileAvatar from '@/components/common/ProfileAvatar';

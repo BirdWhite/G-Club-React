@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect, useState, use } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/database/supabase';
 import { useMediaQuery } from '@/hooks';
 import { MembershipPendingPage } from '@/components/MembershipPendingPage';
 import MobileProfileMenu from '@/components/MobileProfileMenu';

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
 // 알림 읽음 처리
 export async function PATCH(
@@ -8,7 +8,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // 사용자 인증 확인
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -95,7 +95,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // 사용자 인증 확인
     const { data: { user }, error: userError } = await supabase.auth.getUser();

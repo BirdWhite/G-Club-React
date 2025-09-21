@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/database/supabase';
 import type { FullUserProfile } from '@/lib/user'; // getUserProfile에서 정의한 타입을 재사용합니다.
 
 interface ProfileContextType {

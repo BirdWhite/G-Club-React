@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 import { GamePostStatus } from '@/types/models';
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {

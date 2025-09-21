@@ -1,6 +1,6 @@
 import MobileGamePostForm from '../../components/mobile/MobileGamePostForm';
 import { Game } from '@/types/models';
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
 
 async function getGames(): Promise<Game[]> {
   try {

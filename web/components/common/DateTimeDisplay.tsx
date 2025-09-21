@@ -1,4 +1,4 @@
-import { formatRelativeTime } from '@/lib/dateUtils';
+import { formatRelativeTime } from '@/lib/utils/date';
 
 interface DateTimeDisplayProps {
   date: Date | string;

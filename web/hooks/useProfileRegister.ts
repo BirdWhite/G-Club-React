@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getCroppedImg, resizeImage, CropArea, getImageDimensions } from '@/lib/cropImage';
+import { getCroppedImg, resizeImage, CropArea, getImageDimensions } from '@/lib/utils/image';
 import { useProfileForm, ProfileFormErrors } from './useProfileForm';
 
 export const useProfileRegister = () => {

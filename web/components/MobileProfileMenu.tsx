@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/database/supabase';
 import { useProfile } from '@/contexts/ProfileProvider';
 
 interface MobileProfileMenuProps {

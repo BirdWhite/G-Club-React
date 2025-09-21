@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
 // 채팅 메시지(댓글) 목록 조회
 export async function GET(
@@ -49,7 +49,7 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = await createClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {

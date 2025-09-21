@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // 사용자 인증 확인 (getUser() 사용)
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -166,7 +166,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // 인증 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser();

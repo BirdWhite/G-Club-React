@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 import { getUserProfile } from '@/lib/user';
-import { hasPermission_Server, isSuperAdmin_Server } from '@/lib/auth/serverAuth';
+import { hasPermission_Server, isSuperAdmin_Server } from '@/lib/database/auth';
 
 type RouteContext = {
     params: {
@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { userId: targetUserProfileId } = await params; // URL 파라미터는 UserProfile의 ID (CUID) 입니다.
 
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data: { user: adminUser }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !adminUser) {

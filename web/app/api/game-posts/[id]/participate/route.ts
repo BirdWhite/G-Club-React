@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/supabase/auth';
-import prisma from '@/lib/prisma';
+import { getCurrentUser } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
 type RouteContext = {
   params: {

@@ -1,5 +1,5 @@
 // 서버 내부 푸시 알림 발송 유틸리티 함수들
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/database/supabase';
 import webpush from 'web-push';
 
 // VAPID 설정
@@ -27,7 +27,7 @@ export async function sendPushNotificationInternal({
   tag = 'default'
 }: Omit<PushNotificationPayload, 'userIds'>) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     // 사용자의 구독 정보 가져오기
     const { data: subscription, error } = await supabase
@@ -75,7 +75,7 @@ export async function sendPushNotificationInternal({
     // 구독이 만료된 경우 DB에서 제거
     if (error.statusCode === 410) {
       try {
-        const supabase = await createClient();
+        const supabase = await createServerClient();
         await supabase
           .from('PushSubscription')
           .delete()
@@ -126,7 +126,7 @@ export async function sendBulkPushNotificationInternal({
 // 게임 선호도 기반 사용자 목록 가져오기 (나중에 구현 예정)
 export async function getUsersByGamePreference(gameId: string): Promise<string[]> {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // TODO: 게임 선호도 테이블이 생기면 실제 구현
     // 현재는 임시로 모든 활성 사용자 반환

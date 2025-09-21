@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
 import type { UserProfile, Role, Permission } from '@prisma/client';
 
 export type FullUserProfile = UserProfile & {

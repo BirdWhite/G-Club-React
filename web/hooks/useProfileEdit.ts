@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getCroppedImg, resizeImage, getImageDimensions } from '@/lib/cropImage';
+import { getCroppedImg, resizeImage, getImageDimensions } from '@/lib/utils/image';
 import { useProfileForm } from './useProfileForm';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/database/supabase';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider'; // 1. useProfile 훅 임포트
 

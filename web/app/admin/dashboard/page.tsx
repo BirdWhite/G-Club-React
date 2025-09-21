@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
-import { isAdmin } from '@/lib/auth/roles';
+import { isAdmin } from '@/lib/database/auth';
 import { useMediaQuery } from '@/hooks';
 import MobileAdminDashboard from '@/components/mobile/MobileAdminDashboard';
 import DesktopAdminDashboard from '@/components/desktop/DesktopAdminDashboard';

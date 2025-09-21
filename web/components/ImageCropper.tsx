@@ -1,5 +1,5 @@
 import Cropper from 'react-easy-crop';
-import { CropArea } from '@/lib/cropImage';
+import { CropArea } from '@/lib/utils/image';
 import { useEffect } from 'react';
 
 /**

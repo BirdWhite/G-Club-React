@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCroppedImg, CropArea } from '@/lib/cropImage';
+import { getCroppedImg, CropArea } from '@/lib/utils/image';
 
 /**
  * 프로필 폼 상태 관리 타입 정의

@@ -1,6 +1,6 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/database/supabase';
 
 /**
  * 프로필 체크 훅

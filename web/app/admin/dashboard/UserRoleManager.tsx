@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { UserProfile, Role } from '@prisma/client';
 import { useProfile } from '@/contexts/ProfileProvider';
-import { isSuperAdmin } from '@/lib/auth/roles';
+import { isSuperAdmin } from '@/lib/database/auth';
 
 type UserWithRole = UserProfile & { role: Role | null };
 

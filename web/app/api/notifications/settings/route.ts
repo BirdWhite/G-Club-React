@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
+import { createServerClient } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
 // 알림 설정 조회
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // 사용자 인증 확인
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 // 알림 설정 업데이트
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // 사용자 인증 확인
     const { data: { user }, error: userError } = await supabase.auth.getUser();

@@ -1,5 +1,5 @@
-import prisma from '@/lib/prisma';
-import { sendPushNotification } from './pushNotifications';
+import prisma from '@/lib/database/prisma';
+import { sendPushNotificationInternal } from './pushNotifications';
 
 export interface CreateNotificationData {
   type: string;
@@ -196,21 +196,12 @@ async function sendPushNotificationToUsers(
     // 각 구독에 대해 푸시 발송
     const pushPromises = subscriptions.map(async (sub) => {
       try {
-        await sendPushNotification({
-          subscription: {
-            endpoint: sub.endpoint,
-            keys: {
-              p256dh: sub.p256dh,
-              auth: sub.auth
-            }
-          },
-          payload: {
-            title: pushData.title,
-            body: pushData.body,
-            icon: pushData.icon,
-            badge: '/icons/icon-192x192.png',
-            data: pushData.data
-          }
+        await sendPushNotificationInternal({
+          userId: sub.userId,
+          title: pushData.title,
+          body: pushData.body,
+          url: pushData.data?.actionUrl || '/',
+          tag: 'notification'
         });
 
         // 푸시 발송 성공 기록
@@ -264,7 +255,7 @@ export const GamePostNotifications = {
       type: 'GAME_POST_NEW',
       title: `새로운 게임메이트 모집!`,
       body: `${gamePost.author.name}님이 ${gamePost.game?.name || gamePost.customGameName} 게임메이트를 모집합니다.`,
-      icon: gamePost.game?.iconUrl,
+      icon: gamePost.game?.iconUrl || undefined,
       actionUrl: `/game-mate/${gamePostId}`,
       priority: 'NORMAL',
       senderId: authorId,
@@ -295,7 +286,7 @@ export const GamePostNotifications = {
       type: 'GAME_POST_PARTICIPANT_JOINED',
       title: `게임메이트 참여 알림`,
       body: `${participant.user?.name || participant.guestName}님이 ${gamePost.game?.name || gamePost.customGameName} 게임에 참여했습니다.`,
-      icon: gamePost.game?.iconUrl,
+      icon: gamePost.game?.iconUrl || undefined,
       actionUrl: `/game-mate/${gamePostId}`,
       priority: 'NORMAL',
       recipientId: gamePost.authorId,
@@ -323,7 +314,7 @@ export const GamePostNotifications = {
       type: 'GAME_POST_STARTING_SOON',
       title: `게임 시작 임박!`,
       body: `${gamePost.game?.name || gamePost.customGameName} 게임이 곧 시작됩니다.`,
-      icon: gamePost.game?.iconUrl,
+      icon: gamePost.game?.iconUrl || undefined,
       actionUrl: `/game-mate/${gamePostId}`,
       priority: 'HIGH',
       senderId: gamePost.authorId,

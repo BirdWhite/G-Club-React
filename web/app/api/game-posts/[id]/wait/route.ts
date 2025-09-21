@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/supabase/auth';
-import prisma from '@/lib/prisma';
+import { getCurrentUser } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
 // 예비 명단 등록 (대기 신청)
 export async function POST(

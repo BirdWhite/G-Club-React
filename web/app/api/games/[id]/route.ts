@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/supabase/auth';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/database/prisma';
+import { getCurrentUser } from '@/lib/database/supabase';
+import { createServerClient } from '@/lib/database/supabase';
 
 // 올바른 타입 정의
 type RouteContext = {
@@ -78,7 +78,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     }
 
     if (gameToDelete.iconUrl) {
-      const supabase = await createClient();
+      const supabase = await createServerClient();
       const fileName = gameToDelete.iconUrl.split('/').pop();
 
       if (fileName) {

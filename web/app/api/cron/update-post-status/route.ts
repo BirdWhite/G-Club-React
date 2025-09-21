@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/database/supabase';
 
 export async function GET(request: NextRequest) {
   try {
     // Supabase 클라이언트 생성
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // Edge Function 호출
     const { data, error } = await supabase.functions.invoke('update-post-status', {
