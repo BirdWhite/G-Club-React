@@ -192,7 +192,7 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
               <FormControl>
                 <Input 
                   placeholder="파티원을 구하는 목적을 명확하게 보여주세요." 
-                  className="bg-cyber-black-100 border-cyber-black-300 focus:bg-cyber-black-200"
+                  className="bg-input border-border focus:bg-input"
                   {...field} 
                 />
               </FormControl>
@@ -243,7 +243,7 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
                       }}
                       min="2"
                       max="100"
-                      className="bg-cyber-black-100 border-cyber-black-300 focus:bg-cyber-black-200"
+                      className="bg-input border-border focus:bg-input"
                     />
                     
                     {/* 슬라이더 */}
@@ -288,7 +288,7 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
                     <FormControl>
                       <Button
                         variant="outline"
-                        className="w-full pl-3 text-left font-normal bg-cyber-black-100 border-cyber-black-300 hover:bg-cyber-black-200"
+                        className="w-full pl-3 text-left font-normal bg-input border-border hover:bg-accent"
                       >
                         {field.value ? (
                           format(field.value, "PPP", { locale: ko })
@@ -343,7 +343,12 @@ export default function GamePostForm({ games, initialData }: GamePostFormProps) 
             <FormItem>
               <FormLabel>내용</FormLabel>
               <FormControl>
-                <RichTextEditor content={field.value} onChange={field.onChange} />
+                <RichTextEditor 
+                  content={field.value} 
+                  onChange={field.onChange} 
+                  showToolbar={false}
+                  placeholder="내용을 입력하세요."
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

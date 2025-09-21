@@ -22,7 +22,7 @@ interface ProfileData {
 export const useProfileEdit = () => {
   const supabase = createClient();
   const router = useRouter();
-  const { refetchProfile } = useProfile(); // 2. refetchProfile 함수 가져오기
+  const { profile, isLoading: profileLoading, refetchProfile } = useProfile(); // ProfileProvider에서 프로필 데이터 가져오기
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [session, setSession] = useState<any>(null);
@@ -64,45 +64,28 @@ export const useProfileEdit = () => {
 
 
 
-  // 프로필 정보 불러오기
+  // 프로필 정보 불러오기 - ProfileProvider의 데이터 사용
   useEffect(() => {
-    if (session?.user) {
-      fetchProfileData();
-    }
-  }, [session]);
-
-  const fetchProfileData = async () => {
-    try {
-      setIsLoadingProfile(true);
-      const res = await fetch('/api/profile');
+    if (profile && !profileLoading) {
+      // ProfileProvider에서 가져온 프로필 데이터 사용
+      const userName = profile.name || '';
+      setName(userName);
       
-      if (res.ok) {
-        const data = await res.json();
-        
-        if (data.profile) {
-          // fullName이 없으면 name 필드 확인
-          const userName = data.profile.fullName || data.profile.name || '';
-          setName(userName);
-          
-          // 날짜 형식 변환 (YYYY-MM-DD)
-          if (data.profile.birthDate) {
-            const date = new Date(data.profile.birthDate);
-            const formattedDate = date.toISOString().split('T')[0];
-            setBirthDate(formattedDate);
-          }
-          
-          // 프로필 이미지 설정 (카카오 이미지가 아닌 경우에만 설정)
-          if (data.profile.image && !data.profile.image.includes('k.kakaocdn.net')) {
-            setCurrentImage(data.profile.image);
-          }
-        }
+      // 날짜 형식 변환 (YYYY-MM-DD)
+      if (profile.birthDate) {
+        const date = new Date(profile.birthDate);
+        const formattedDate = date.toISOString().split('T')[0];
+        setBirthDate(formattedDate);
       }
-    } catch (error) {
-      console.error('프로필 정보 불러오기 실패:', error);
-    } finally {
+      
+      // 프로필 이미지 설정 (카카오 이미지가 아닌 경우에만 설정)
+      if (profile.image && !profile.image.includes('k.kakaocdn.net')) {
+        setCurrentImage(profile.image);
+      }
+      
       setIsLoadingProfile(false);
     }
-  };
+  }, [profile, profileLoading, setName, setBirthDate]);
 
   const showCroppedImage = async () => {
     if (!image || !croppedAreaPixels) return;

@@ -2,12 +2,11 @@
 
 import * as React from 'react';
 import { Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
-interface TimePickerProps {
+interface MobileTimePickerProps {
   value?: string;
   onChange?: (time: string) => void;
   placeholder?: string;
@@ -15,13 +14,13 @@ interface TimePickerProps {
   disabled?: boolean;
 }
 
-export function TimePicker({
+export function MobileTimePicker({
   value,
   onChange,
-  placeholder = "시간을 선택하세요",
+  placeholder = "시간 선택",
   className,
   disabled = false
-}: TimePickerProps) {
+}: MobileTimePickerProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isMounted, setIsMounted] = React.useState(false);
 
@@ -68,23 +67,19 @@ export function TimePicker({
   };
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={className}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={isOpen}
-            className="w-full justify-between bg-input border-border hover:bg-accent"
+          <button
+            type="button"
+            className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
             disabled={disabled}
           >
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 opacity-50" />
-              <span className={cn(!value && "text-muted-foreground")}>
-                {isMounted ? (value || placeholder) : placeholder}
-              </span>
-            </div>
-          </Button>
+            <span className="truncate">
+              {isMounted ? (value || placeholder) : placeholder}
+            </span>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-4" align="start">
           <div className="space-y-4">
@@ -92,16 +87,16 @@ export function TimePicker({
               <div className="space-y-2">
                 <label className="text-sm font-medium">시간</label>
                 <Select value={currentHour.toString()} onValueChange={handleHourChange}>
-                  <SelectTrigger className="w-20 bg-input border-border">
+                  <SelectTrigger className="w-20 bg-cyber-black-100 border-cyber-black-300">
                     <SelectValue />
                   </SelectTrigger>
-                                     <SelectContent className="max-h-80">
-                     {[0, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((hour) => (
-                       <SelectItem key={hour} value={hour.toString()}>
-                         {hour.toString().padStart(2, '0')}
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
+                  <SelectContent className="max-h-80">
+                    {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                      <SelectItem key={hour} value={hour.toString()}>
+                        {hour.toString().padStart(2, '0')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               
@@ -110,7 +105,7 @@ export function TimePicker({
               <div className="space-y-2">
                 <label className="text-sm font-medium">분</label>
                 <Select value={currentMinute.toString()} onValueChange={handleMinuteChange}>
-                  <SelectTrigger className="w-20 bg-input border-border">
+                  <SelectTrigger className="w-20 bg-cyber-black-100 border-cyber-black-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -139,4 +134,4 @@ export function TimePicker({
       </Popover>
     </div>
   );
-} 
+}

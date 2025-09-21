@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronDownIcon, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -78,14 +78,18 @@ export function GameSearchSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          data-state={open ? "open" : "closed"}
           className={cn(
-            "w-full justify-between",
+            "w-full justify-between bg-popover text-popover-foreground border-border hover:bg-popover/80",
             !value && "text-muted-foreground",
             className
           )}
         >
           {value === 'all' ? (
-            '전체'
+            <div className="flex items-center gap-2">
+              <LayoutGrid className="h-4 w-4" />
+              <span>전체</span>
+            </div>
           ) : selectedGame ? (
             <div className="flex items-center gap-2">
               {selectedGame.iconUrl && (
@@ -100,11 +104,11 @@ export function GameSearchSelect({
           ) : (
             placeholder
           )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                 <Command>
+             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-popover text-popover-foreground border-border" align="start">
+                 <Command className="bg-popover text-popover-foreground">
            <CommandInput
              placeholder="게임 이름이나 별칭으로 검색..."
            />
@@ -122,6 +126,7 @@ export function GameSearchSelect({
                   }}
                 >
                   <div className="flex items-center gap-2 w-full">
+                    <LayoutGrid className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate">전체</span>
                   </div>
                   <Check

@@ -4,10 +4,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, X, Users } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import UserSearchSelect, { UserSearchResult } from './UserSearchSelect';
+import UserSearchSelect, { UserSearchResult } from '../UserSearchSelect';
 
 export interface Participant {
   id?: string;
@@ -17,19 +16,19 @@ export interface Participant {
   note?: string;
 }
 
-interface ParticipantManagerProps {
+interface MobileParticipantManagerProps {
   participants: Participant[];
   onChange: (participants: Participant[]) => void;
   maxParticipants: number;
   disabled?: boolean;
 }
 
-export default function ParticipantManager({ 
+export default function MobileParticipantManager({ 
   participants, 
   onChange, 
   maxParticipants,
   disabled = false 
-}: ParticipantManagerProps) {
+}: MobileParticipantManagerProps) {
   const [newParticipant, setNewParticipant] = useState<Participant>({
     name: '',
     userId: '',
@@ -80,19 +79,20 @@ export default function ParticipantManager({
   };
 
   return (
-    <Card className="bg-input border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center text-card-foreground">
+    <div className="bg-cyber-black-100 border border-cyber-black-300 rounded-lg">
+      <div className="p-4 border-b border-cyber-black-300">
+        <div className="flex items-center text-cyber-gray mb-1">
           <Users className="h-5 w-5 mr-2" />
-          참여자 관리
-        </CardTitle>
-        <CardDescription>
+          <h3 className="font-semibold">참여자 관리</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">
           미리 참여자를 추가하거나 수정할 수 있습니다. ({participants.length}/{maxParticipants}명)
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        </p>
+      </div>
+      
+      <div className="p-4 space-y-4">
         {/* 참여자 추가 폼 */}
-        <div className="space-y-4 p-4 bg-muted rounded-lg border border-border">
+        <div className="space-y-4 p-4 bg-cyber-black-200 rounded-lg border border-cyber-black-300">
           <div>
             <Label>사용자 검색</Label>
             <UserSearchSelect
@@ -111,12 +111,12 @@ export default function ParticipantManager({
               {participants.map((participant, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center gap-2 p-3 bg-muted rounded-lg border border-border"
+                  className="flex items-center gap-2 p-3 bg-cyber-black-200 rounded-lg border border-cyber-black-300"
                 >
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="font-medium text-foreground">{participant.name}</div>
+                        <div className="font-medium text-cyber-gray">{participant.name}</div>
                         {/* 실존 유저의 경우 이메일 표시 */}
                         {participant.email && (
                           <div className="text-xs text-gray-500 truncate max-w-[200px]" title={participant.email}>
@@ -125,13 +125,13 @@ export default function ParticipantManager({
                         )}
                         {/* 게스트 유저의 경우 표시 */}
                         {!participant.userId && participant.note === '게스트 참여자' && (
-                          <div className="text-xs text-cyber-orange">
+                          <div className="text-xs text-orange-600">
                             게스트 참여자
                           </div>
                         )}
                         {/* 작성자 표시 */}
                         {participant.note === '작성자' && (
-                          <div className="text-xs text-primary">
+                          <div className="text-xs text-cyber-blue">
                             작성자
                           </div>
                         )}
@@ -156,7 +156,7 @@ export default function ParticipantManager({
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -59,10 +59,10 @@ export default function DesktopProfilePage({ targetProfile, isOwnProfile }: Desk
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="profile-card p-6">
+      <div className="bg-card border border-border shadow-lg overflow-hidden p-6" style={{borderRadius: 'var(--radius)'}}>
         <div className="flex flex-col md:flex-row gap-6">
           {/* 프로필 이미지 */}
-          <div className="w-32 h-32 md:w-40 md:h-40 relative rounded-full overflow-hidden border-4 border-blue-100 bg-white">
+          <div className="w-32 h-32 md:w-40 md:h-40 relative rounded-full overflow-hidden border-4 border-border bg-white">
             {targetProfile.image ? (
               <Image
                 src={targetProfile.image}
@@ -84,7 +84,7 @@ export default function DesktopProfilePage({ targetProfile, isOwnProfile }: Desk
           {/* 프로필 정보 */}
           <div className="flex-1">
             <div className="flex flex-col">
-              <h1 className="text-2xl font-bold text-cyber-gray">{targetProfile.name || '사용자'}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{targetProfile.name || '사용자'}</h1>
               
               {/* 버튼들 - 자신의 프로필일 때만 표시 */}
               {isOwnProfile && (
@@ -92,7 +92,8 @@ export default function DesktopProfilePage({ targetProfile, isOwnProfile }: Desk
                   {/* 프로필 수정 */}
                   <Link 
                     href="/profile/edit"
-                    className="flex items-center gap-3 px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors w-fit"
+                    className="flex items-center gap-3 px-4 py-3 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors w-fit"
+                    style={{borderRadius: 'var(--radius)'}}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -103,7 +104,8 @@ export default function DesktopProfilePage({ targetProfile, isOwnProfile }: Desk
                   {/* 내 게임 내역 */}
                   <Link 
                     href="/my-games"
-                    className="flex items-center gap-3 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors w-fit"
+                    className="flex items-center gap-3 px-4 py-3 bg-popover text-popover-foreground hover:bg-popover/80 transition-colors w-fit"
+                    style={{borderRadius: 'var(--radius)'}}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                       <line x1="6" x2="10" y1="11" y2="11"/>
@@ -118,7 +120,8 @@ export default function DesktopProfilePage({ targetProfile, isOwnProfile }: Desk
                   {/* 알림 설정 */}
                   <Link 
                     href="/notifications/settings"
-                    className="flex items-center gap-3 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors w-fit"
+                    className="flex items-center gap-3 px-4 py-3 bg-popover text-popover-foreground hover:bg-popover/80 transition-colors w-fit"
+                    style={{borderRadius: 'var(--radius)'}}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -130,7 +133,8 @@ export default function DesktopProfilePage({ targetProfile, isOwnProfile }: Desk
                   {/* 로그아웃 */}
                   <button 
                     onClick={handleSignOut}
-                    className="flex items-center gap-3 px-4 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors w-fit"
+                    className="flex items-center gap-3 px-4 py-3 bg-danger text-white hover:bg-red-600 transition-colors w-fit cursor-pointer"
+                    style={{borderRadius: 'var(--radius)'}}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -143,29 +147,29 @@ export default function DesktopProfilePage({ targetProfile, isOwnProfile }: Desk
             
             <div className="mt-6 space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-cyber-darkgray">이메일</h3>
-                <p className="mt-1 text-cyber-gray">
+                <h3 className="text-sm font-medium text-muted-foreground">이메일</h3>
+                <p className="mt-1 text-foreground">
                   {targetProfile.email || '이메일 없음'}
                 </p>
               </div>
               
               <div>
-                <h3 className="text-sm font-medium text-cyber-darkgray">생년월일</h3>
-                <p className="mt-1 text-cyber-gray">
+                <h3 className="text-sm font-medium text-muted-foreground">생년월일</h3>
+                <p className="mt-1 text-foreground">
                   {formattedBirthDate}
                 </p>
               </div>
               
               <div>
-                <h3 className="text-sm font-medium text-cyber-darkgray">가입일</h3>
-                <p className="mt-1 text-cyber-gray">
+                <h3 className="text-sm font-medium text-muted-foreground">가입일</h3>
+                <p className="mt-1 text-foreground">
                   {formattedDate}
                 </p>
               </div>
               
               <div>
-                <h3 className="text-sm font-medium text-cyber-darkgray">권한</h3>
-                <p className="mt-1 text-cyber-gray">
+                <h3 className="text-sm font-medium text-muted-foreground">권한</h3>
+                <p className="mt-1 text-foreground">
                   {getRoleLabel(targetProfile.role?.name)}
                 </p>
               </div>

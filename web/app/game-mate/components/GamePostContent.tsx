@@ -1,12 +1,12 @@
 'use client';
 
 import type { GamePost } from '@/types/models';
-import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { formatRelativeTime } from '@/lib/dateUtils';
 import RichTextViewer from '@/components/editor/RichTextViewer';
 import { useEffect, useState } from 'react';
+import ProfileAvatar from '@/components/common/ProfileAvatar';
 
 interface GamePostContentProps {
   post: GamePost;
@@ -20,17 +20,16 @@ export default function GamePostContent({ post }: GamePostContentProps) {
   }, []);
   
   return (
-    <div className="bg-cyber-black-200 border border-cyber-black-300 shadow-lg overflow-hidden sm:rounded-lg">
+    <div className="bg-card border border-border shadow-lg overflow-hidden sm:rounded-lg">
       <div className="px-4 py-5 sm:p-6">
         <div className="flex items-center mb-6">
-          <div className="relative h-10 w-10 rounded-full overflow-hidden flex-shrink-0 bg-white p-0.5">
-              <Image
-                src={post.author.image || '/images/default-profile.png'}
-                alt={post.author.name || '프로필 이미지'}
-                fill
-                sizes="40px"
-                className="object-cover rounded-full"
-              />
+          <div className="flex-shrink-0">
+            <ProfileAvatar
+              name={post.author.name}
+              image={post.author.image}
+              size="md"
+              unoptimized={post.author.image?.includes('127.0.0.1')}
+            />
           </div>
           <div className="ml-3">
             <p className="text-sm font-medium text-cyber-gray">

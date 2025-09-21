@@ -55,8 +55,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // refreshProfile 이벤트 리스너 추가
+    const handleRefreshProfile = () => {
+      fetchProfile();
+    };
+
+    window.addEventListener('refreshProfile', handleRefreshProfile);
+
     return () => {
       authListener.subscription.unsubscribe();
+      window.removeEventListener('refreshProfile', handleRefreshProfile);
     };
   }, [supabase]); // supabase 의존성 복구
 

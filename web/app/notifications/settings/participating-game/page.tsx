@@ -9,6 +9,7 @@ interface ParticipatingGameSettings {
   fullMeeting: boolean; // 다 모였을때 알람
   memberJoin: boolean; // 모임 참여 알람
   memberLeave: boolean; // 모임 참여 취소 알람
+  timeChange: boolean; // 모임 시간 변경시 알람
   beforeMeeting: {
     enabled: boolean; // 모임 전 알람
     minutes: number; // 몇 분 전 (기본 30분)
@@ -26,16 +27,17 @@ export default function ParticipatingGameNotificationSettings() {
   
   const [gameSettings, setGameSettings] = useState<ParticipatingGameSettings>({
     fullMeeting: true,
-    memberJoin: true,
-    memberLeave: true,
+    memberJoin: false,
+    memberLeave: false,
+    timeChange: true,
     beforeMeeting: {
       enabled: true,
-      minutes: 30,
-      onlyFullMeeting: false
+      minutes: 10,
+      onlyFullMeeting: true
     },
     meetingStart: {
       enabled: true,
-      onlyFullMeeting: false
+      onlyFullMeeting: true
     }
   });
 
@@ -154,7 +156,7 @@ export default function ParticipatingGameNotificationSettings() {
           {/* 모임 참여 취소 알람 */}
           <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">👋</span>
+              <span className="text-2xl">💔</span>
               <div>
                 <h3 className="font-semibold text-gray-900">모임 참여 취소 알람</h3>
                 <p className="text-sm text-gray-600">누군가가 모임 참여를 취소할 때마다 알림을 받습니다</p>
@@ -165,6 +167,26 @@ export default function ParticipatingGameNotificationSettings() {
                 type="checkbox"
                 checked={gameSettings.memberLeave}
                 onChange={(e) => updateSetting('memberLeave', e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+
+          {/* 모임 시간 변경시 알람 */}
+          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🕐</span>
+              <div>
+                <h3 className="font-semibold text-gray-900">모임 시간 변경시 알람</h3>
+                <p className="text-sm text-gray-600">모임 시간이 변경될 때마다 알림을 받습니다</p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={gameSettings.timeChange}
+                onChange={(e) => updateSetting('timeChange', e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>

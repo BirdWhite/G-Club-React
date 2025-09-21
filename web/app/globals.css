@@ -26,6 +26,137 @@
   --color-cyber-black-800: #06080d;
   --color-cyber-black-900: #030306;
   --color-cyber-black: var(--color-cyber-black-500);
+
+  /* OKLCH 색상 - 기존 HEX 색상을 OKLCH로 변환 */
+  /* oklch - (밝기, 채도, 휘도) */
+  --color-cyber-black-50-oklch:  oklch(0.35 0.035 260);  /* #283245 → hover 색상 */
+  --color-cyber-black-100-oklch: oklch(0.315 0.035 260);  /* #232b3b → 기본 색상 */
+  --color-cyber-black-150-oklch: oklch(0.28 0.03 265);  /* #181c25 → 배경 색상 */
+  --color-cyber-black-200-oklch: oklch(0.255 0.025 265);  /* #1d2330 → 배경 색상 */
+  --color-cyber-red-hover:       oklch(0.58 0.2078 25.33);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: var(--color-neutral-900);
+  --foreground: var(--color-neutral-50);
+  --card: var(--color-neutral-800);
+  --card-foreground: var(--color-neutral-50);
+  --popover: var(--color-neutral-700);
+  --popover-foreground: var(--color-neutral-50);
+  --primary: var(--color-cyber-blue);
+  --primary-foreground: var(--color-neutral-900);
+  --secondary: var(--color-cyber-black-100);
+  --secondary-foreground: var(--color-cyber-gray);
+  --muted: var(--color-neutral-800);
+  --muted-foreground: var(--color-neutral-50);
+  --accent: var(--color-neutral-500);
+  --accent-foreground: var(--color-neutral-50);
+  --destructive: var(--color-cyber-orange);
+  --border: var(--color-neutral-800);
+  --input: var(--color-neutral-700);
+  --ring: var(--color-cyber-blue);
+  --chart-1: var(--color-cyber-blue);
+  --chart-2: var(--color-cyber-purple);
+  --chart-3: var(--color-cyber-green);
+  --chart-4: var(--color-cyber-orange);
+  --chart-5: var(--color-cyber-pink);
+  --sidebar: var(--color-cyber-black-200);
+  --sidebar-foreground: var(--color-cyber-gray);
+  --sidebar-primary: var(--color-cyber-blue);
+  --sidebar-primary-foreground: var(--color-cyber-black-900);
+  --sidebar-accent: var(--color-cyber-black-300);
+  --sidebar-accent-foreground: var(--color-cyber-gray);
+  --sidebar-border: var(--color-cyber-black-300);
+  --sidebar-ring: var(--color-cyber-blue);
+
+  --header-background: var(--color-neutral-950);
+  --header-foreground: var(--color-neutral-50);
+  --danger: var(--color-cyber-red);
+  --danger-hover: var(--color-cyber-red-hover);
+}
+
+.dark {
+  --radius: 0.625rem;
+  --background: var(--color-neutral-900);
+  --foreground: var(--color-neutral-50);
+  --card: var(--color-neutral-800);
+  --card-foreground: var(--color-neutral-50);
+  --popover: var(--color-neutral-700);
+  --popover-foreground: var(--color-neutral-50);
+  --primary: var(--color-cyber-blue);
+  --primary-foreground: var(--color-neutral-900);
+  --secondary: var(--color-cyber-black-100);
+  --secondary-foreground: var(--color-cyber-gray);
+  --muted: var(--color-cyber-black-100);
+  --muted-foreground: var(--color-cyber-darkgray);
+  --accent: var(--color-neutral-500);
+  --accent-foreground: var(--color-neutral-50);
+  --destructive: var(--color-cyber-orange);
+  --border: var(--color-neutral-800);
+  --input: var(--color-neutral-800);
+  --ring: var(--color-cyber-blue);
+  --chart-1: var(--color-cyber-blue);
+  --chart-2: var(--color-cyber-purple);
+  --chart-3: var(--color-cyber-green);
+  --chart-4: var(--color-cyber-orange);
+  --chart-5: var(--color-cyber-pink);
+  --sidebar: var(--color-cyber-black-200);
+  --sidebar-foreground: var(--color-cyber-gray);
+  --sidebar-primary: var(--color-cyber-blue);
+  --sidebar-primary-foreground: var(--color-cyber-black-900);
+  --sidebar-accent: var(--color-cyber-black-300);
+  --sidebar-accent-foreground: var(--color-cyber-gray);
+  --sidebar-border: var(--color-cyber-black-300);
+  --sidebar-ring: var(--color-cyber-blue);
+
+  --header-background: var(--color-neutral-950);
+  --header-foreground: var(--color-neutral-50);
+  --danger: var(--color-cyber-red);
+  --danger-hover: var(--color-cyber-red-hover);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-header-background: var(--header-background);
+  --color-header-foreground: var(--header-foreground);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
 }
 
 @font-face {
@@ -80,7 +211,7 @@
 
   /* 헤더 스타일 */
   .header-container {
-    background-color: rgba(17, 17, 19, 0.95); /* 진한 제트블랙에 약간의 투명도 */
+    background-color: var(--header-background);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(8px);
     position: sticky;
@@ -90,12 +221,12 @@
 
   /* 로고 스타일 */
   .header-logo {
-    color: white;
+    color: var(--header-foreground);
     transition: all 0.2s ease;
   }
 
   .header-logo:hover {
-    color: var(--color-cyber-blue);
+    color: var(--color-primary);
   }
 
   /* 네비게이션 링크 기본 스타일 */
@@ -175,116 +306,6 @@
     background-color: #0ea5e9;
     transform: translateY(-1px);
   }
-}
-
-@theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-
-}
-
-:root {
-  --radius: 0.625rem;
-  --background: var(--color-cyber-black-100);
-  --foreground: var(--color-cyber-gray);
-  --card: var(--color-cyber-black-50);
-  --card-foreground: var(--color-cyber-gray);
-  --popover: var(--color-cyber-black-50);
-  --popover-foreground: var(--color-cyber-gray);
-  --primary: var(--color-cyber-blue);
-  --primary-foreground: var(--color-cyber-black-900);
-  --secondary: var(--color-cyber-black-100);
-  --secondary-foreground: var(--color-cyber-gray);
-  --muted: var(--color-cyber-black-100);
-  --muted-foreground: var(--color-cyber-darkgray);
-  --accent: var(--color-cyber-black-100);
-  --accent-foreground: var(--color-cyber-gray);
-  --destructive: var(--color-cyber-orange);
-  --border: var(--color-cyber-black-200);
-  --input: var(--color-cyber-black-100);
-  --ring: var(--color-cyber-blue);
-  --chart-1: var(--color-cyber-blue);
-  --chart-2: var(--color-cyber-purple);
-  --chart-3: var(--color-cyber-green);
-  --chart-4: var(--color-cyber-orange);
-  --chart-5: var(--color-cyber-pink);
-  --sidebar: var(--color-cyber-black-200);
-  --sidebar-foreground: var(--color-cyber-gray);
-  --sidebar-primary: var(--color-cyber-blue);
-  --sidebar-primary-foreground: var(--color-cyber-black-900);
-  --sidebar-accent: var(--color-cyber-black-300);
-  --sidebar-accent-foreground: var(--color-cyber-gray);
-  --sidebar-border: var(--color-cyber-black-300);
-  --sidebar-ring: var(--color-cyber-blue);
-
-}
-
-.dark {
-  --background: var(--color-cyber-black-100);
-  --foreground: var(--color-cyber-gray);
-  --card: var(--color-cyber-black-50);
-  --card-foreground: var(--color-cyber-gray);
-  --popover: var(--color-cyber-black-50);
-  --popover-foreground: var(--color-cyber-gray);
-  --primary: var(--color-cyber-blue);
-  --primary-foreground: var(--color-cyber-black-900);
-  --secondary: var(--color-cyber-black-100);
-  --secondary-foreground: var(--color-cyber-gray);
-  --muted: var(--color-cyber-black-100);
-  --muted-foreground: var(--color-cyber-darkgray);
-  --accent: var(--color-cyber-black-100);
-  --accent-foreground: var(--color-cyber-gray);
-  --destructive: var(--color-cyber-orange);
-  --border: var(--color-cyber-black-200);
-  --input: var(--color-cyber-black-100);
-  --ring: var(--color-cyber-blue);
-  --chart-1: var(--color-cyber-blue);
-  --chart-2: var(--color-cyber-purple);
-  --chart-3: var(--color-cyber-green);
-  --chart-4: var(--color-cyber-orange);
-  --chart-5: var(--color-cyber-pink);
-  --sidebar: var(--color-cyber-black-200);
-  --sidebar-foreground: var(--color-cyber-gray);
-  --sidebar-primary: var(--color-cyber-blue);
-  --sidebar-primary-foreground: var(--color-cyber-black-900);
-  --sidebar-accent: var(--color-cyber-black-300);
-  --sidebar-accent-foreground: var(--color-cyber-gray);
-  --sidebar-border: var(--color-cyber-black-300);
-  --sidebar-ring: var(--color-cyber-blue);
-
 }
 
 @layer base {
@@ -407,6 +428,7 @@
     
     /* 모바일에서 터치 피드백 개선 */
     .mobile-nav-item:active {
+      color: var(--color-cyber-blue) !important;
       transform: scale(0.95);
     }
   }
@@ -417,4 +439,69 @@
       padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
   }
+
+  /* 모바일 게임 작성 페이지에서 네비게이션과 헤더 숨김 */
+  .mobile-game-form-active .mobile-nav-container {
+    display: none !important;
+  }
+  
+  .mobile-game-form-active header {
+    display: none !important;
+  }
+
+  /* Select 드롭다운 화살표 스타일 */
+  [data-slot="select-trigger"] svg {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  [data-slot="select-trigger"][data-state="open"] svg {
+    transform: rotate(180deg);
+  }
+
+  /* GameSearchSelect 화살표 스타일 - ChevronDownIcon만 선택 */
+  [role="combobox"] svg:last-child {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  [role="combobox"][data-state="open"] svg:last-child {
+    transform: rotate(180deg);
+  }
+
 }
+
+
+
+
+/* 모바일 친화적 슬라이더 스타일 */
+@media (max-width: 767px) {
+  [data-radix-slider-root] {
+    height: 44px !important;
+    position: relative !important;
+  }
+  
+  [data-radix-slider-track] {
+    height: 12px !important;
+    background-color: #e5e7eb !important;
+    border-radius: 6px !important;
+  }
+  
+  [data-radix-slider-range] {
+    height: 12px !important;
+    background-color: #3b82f6 !important;
+    border-radius: 6px !important;
+  }
+  
+  [data-radix-slider-thumb] {
+    width: 28px !important;
+    height: 28px !important;
+    border-width: 4px !important;
+    border-color: #ffffff !important;
+    background-color: #3b82f6 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  [data-radix-slider-thumb]:focus {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2) !important;
+  }
+}
+

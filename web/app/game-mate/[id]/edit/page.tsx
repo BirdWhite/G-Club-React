@@ -1,8 +1,9 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Game, GamePost } from '@/types/models';
 import GamePostForm from '../../components/GamePostForm';
 import { getCurrentUser } from '@/lib/supabase/auth';
 import prisma from '@/lib/prisma';
+import { headers } from 'next/headers';
 
 async function getPost(id: string): Promise<GamePost | null> {
     try {
@@ -88,6 +89,12 @@ async function getGames(): Promise<Game[]> {
 
 export default async function EditGamePostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const headersList = await headers();
+  const userAgent = headersList.get('user-agent') || '';
+  
+  // 모바일 기기 감지
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  
   const [post, games, user] = await Promise.all([
     getPost(id),
     getGames(),
@@ -96,6 +103,11 @@ export default async function EditGamePostPage({ params }: { params: Promise<{ i
 
   if (!post || post.author.userId !== user?.id) {
     notFound();
+  }
+
+  // 모바일인 경우 모바일 페이지로 리다이렉트
+  if (isMobile) {
+    redirect(`/game-mate/${id}/edit/mobile`);
   }
 
   return (

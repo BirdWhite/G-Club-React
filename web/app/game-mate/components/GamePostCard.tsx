@@ -56,17 +56,17 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
 
   const { dateStr, timeStr } = formatGameTime(post.startTime);
   const statusInfo = {
-    OPEN: { text: '모집 중', className: 'bg-cyber-green/20 text-cyber-green group-hover:bg-cyber-green/30' },
-    FULL: { text: '가득 참', className: 'bg-cyber-yellow/20 text-cyber-yellow group-hover:bg-cyber-yellow/30' },
-    IN_PROGRESS: { text: '게임 중', className: 'bg-cyber-purple/20 text-cyber-purple group-hover:bg-cyber-purple/30' },
-    COMPLETED: { text: '완료 됨', className: 'bg-cyber-gray/20 text-cyber-gray group-hover:bg-cyber-gray/30' },
-    EXPIRED: { text: '만료 됨', className: 'bg-cyber-red/20 text-cyber-red group-hover:bg-cyber-red/30' },
+    OPEN: { text: '모집 중', className: 'bg-chart-3/20 text-chart-3 group-hover:bg-chart-3/30' },
+    FULL: { text: '가득 참', className: 'bg-chart-4/20 text-chart-4 group-hover:bg-chart-4/30' },
+    IN_PROGRESS: { text: '게임 중', className: 'bg-chart-2/20 text-chart-2 group-hover:bg-chart-2/30' },
+    COMPLETED: { text: '완료 됨', className: 'bg-card-foreground/20 text-card-foreground group-hover:bg-card-foreground/30' },
+    EXPIRED: { text: '만료 됨', className: 'bg-destructive/20 text-destructive group-hover:bg-destructive/30' },
   };
   
   // 내가 참여중이면 상태를 "참여중"으로 표시 (완료/만료 상태가 아닐 때만)
   const getDisplayStatus = () => {
     if (!isOwner && isParticipating && post.status !== 'COMPLETED' && post.status !== 'EXPIRED') {
-      return { text: '참여 중', className: 'bg-cyber-blue/20 text-cyber-blue group-hover:bg-cyber-blue/30' };
+      return { text: '참여 중', className: 'bg-primary/20 text-primary group-hover:bg-primary/30' };
     }
     return statusInfo[post.status] || statusInfo.COMPLETED;
   };
@@ -75,12 +75,12 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   const plainContent = extractTextFromContent(post.content);
 
   return (
-    <div className="group bg-cyber-black-50 overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-cyber-black-200">
+    <div className="group bg-card overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-border">
       <Link href={`/game-mate/${post.id}`} className="flex-1 flex flex-col p-4">
         {/* 상단: 시간 및 상태 */}
         <div className="flex items-center justify-between mb-3 text-xs">
-          <div className="flex items-center text-cyber-purple">
-            <Clock className="h-4 w-4 mr-1 text-cyber-purple" />
+          <div className="flex items-center text-chart-2">
+            <Clock className="h-4 w-4 mr-1 text-chart-2" />
             <time dateTime={typeof post.startTime === 'string' ? post.startTime : post.startTime.toISOString()}>
               {isToday(new Date(post.startTime)) ? timeStr : `${dateStr} ${timeStr}`}
             </time>
@@ -102,41 +102,41 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
               </div>
             ) : (
               <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-2 flex-shrink-0">
-                <span className="text-cyber-blue font-medium text-xs">
+                <span className="text-primary font-medium text-xs">
                   {post.game?.name?.[0] || 'G'}
                 </span>
               </div>
             )}
-            <span className="text-sm font-medium text-cyber-gray group-hover:text-cyber-blue transition-colors duration-300 truncate">
+            <span className="text-sm font-medium text-foreground transition-colors duration-300 truncate">
               {post.game?.name || '게임'}
             </span>
         </div>
         
         <div className="flex justify-between items-start gap-2 mb-1">
-            <h3 className="text-lg font-bold text-cyber-gray group-hover:text-white transition-colors duration-300 line-clamp-2">
+            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
               {post.title}
             </h3>
-            <div className="text-sm text-cyber-gray/60 group-hover:text-cyber-gray transition-colors duration-300 flex-shrink-0 mt-1">
+            <div className="text-sm text-card-foreground/70 group-hover:text-card-foreground transition-colors duration-300 flex-shrink-0 mt-1">
               {post.author?.name || '익명'}
             </div>
         </div>
 
-        <p className="text-sm text-cyber-gray/70 group-hover:text-cyber-gray transition-colors duration-300 line-clamp-2 mb-4 flex-grow">
+        <p className="text-sm text-card-foreground/80 group-hover:text-card-foreground transition-colors duration-300 line-clamp-2 mb-4 flex-grow">
           {plainContent}
         </p>
 
         {/* 하단: 참여 인원 진행바 */}
-        <div className="mt-auto pt-2 border-t border-cyber-black-200">
+          <div className="mt-auto pt-2 border-t border-border">
           {/* 진행바 (내부에 아이콘과 텍스트) */}
-          <div className="relative w-full bg-cyber-black-200 rounded-full h-6 overflow-hidden">
+          <div className="relative w-full bg-card-foreground/10 rounded-full h-6 overflow-hidden">
             {/* 진행바 배경 */}
             <div 
               className={`h-full transition-all duration-300 ease-out ${
                 post.status === 'COMPLETED' || post.status === 'EXPIRED'
-                  ? 'bg-cyber-gray/30' 
+                  ? 'bg-card-foreground/30' 
                   : (post._count?.participants || 0) >= post.maxParticipants
-                    ? 'bg-cyber-green/70'
-                    : 'bg-gradient-to-r from-cyber-blue/70 to-cyber-green/70'
+                    ? 'bg-chart-3/70'
+                    : 'bg-gradient-to-r from-primary/70 to-chart-3/70'
               }`}
               style={{ 
                 width: `${Math.min(((post._count?.participants || 0) / post.maxParticipants) * 100, 100)}%` 
@@ -157,12 +157,12 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
         {!isOwner && post.status !== 'COMPLETED' && post.status !== 'EXPIRED' && (
           <div className="absolute bottom-3 right-4">
             {isWaiting ? (
-              <span className="px-3 py-1.5 text-sm font-semibold text-cyber-black bg-cyber-blue rounded-full shadow-md">
+              <span className="px-3 py-1.5 text-sm font-semibold text-primary-foreground bg-primary rounded-full shadow-md">
                 대기중
               </span>
             ) : (
                post.status === 'OPEN' && !isParticipating && (
-                <span className="px-3 py-1.5 text-sm font-semibold text-cyber-black bg-cyber-blue rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="px-3 py-1.5 text-sm font-semibold text-primary-foreground bg-primary rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
                   참여 가능
                 </span>
                )

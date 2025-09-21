@@ -21,7 +21,7 @@ export default function NewGamePostNotificationSettings() {
   const { favoriteGames } = useFavoriteGames();
   
   const [gameFilter, setGameFilter] = useState<GameFilter>({
-    mode: 'all',
+    mode: 'favorites',
     selectedGames: []
   });
   

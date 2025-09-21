@@ -9,7 +9,7 @@ interface DesktopHomePageProps {
 
 export default function DesktopHomePage({ onStartClick, onLearnMoreClick }: DesktopHomePageProps) {
   return (
-    <div className="h-full bg-cyber-black-200">
+    <div className="h-full bg-background">
       <HeroSection onStartClick={onStartClick} onLearnMoreClick={onLearnMoreClick} />
     </div>
   );

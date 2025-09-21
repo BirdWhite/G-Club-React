@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Youtube from '@tiptap/extension-youtube';
+import Placeholder from '@tiptap/extension-placeholder';
 import { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { YoutubeMenu } from './YoutubeMenu';
@@ -25,9 +26,12 @@ interface RichTextEditorProps {
   postId?: string;
   onImageUpload?: (tempImages: string[]) => void;
   disabled?: boolean;
+  showToolbar?: boolean;
+  placeholder?: string;
+  mobileStyle?: boolean;
 }
 
-export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disabled = false }: RichTextEditorProps) => {
+export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disabled = false, showToolbar = true, placeholder, mobileStyle = false }: RichTextEditorProps) => {
   // 에디터 상태 관리
   const [editorReady, setEditorReady] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -47,6 +51,14 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
     editable: !disabled,
     extensions: [
       StarterKit,
+      Placeholder.configure({
+        placeholder: placeholder || '내용을 입력하세요...',
+        emptyEditorClass: 'is-editor-empty',
+        emptyNodeClass: 'is-empty',
+        showOnlyWhenEditable: true,
+        showOnlyCurrent: false,
+        includeChildren: true,
+      }),
       Image.configure({
         HTMLAttributes: {
           class: 'max-w-full h-auto',
@@ -200,32 +212,41 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
 
   // 로딩 처리
   if (!editorReady) {
+    if (mobileStyle) {
+      return (
+        <div className="flex items-center justify-center min-h-[120px] bg-transparent">
+          <p className="text-muted-foreground text-base">로딩 중...</p>
+        </div>
+      );
+    }
+    
     return (
-      <div className="border border-cyber-black-300 bg-cyber-black-100 rounded-md overflow-hidden p-4 min-h-[300px] flex items-center justify-center">
-        <p className="text-cyber-gray">에디터 로딩중...</p>
+      <div className="border border-border bg-input rounded-md overflow-hidden p-4 min-h-[300px] flex items-center justify-center">
+        <p className="text-muted-foreground">에디터 로딩중...</p>
       </div>
     );
   }
 
   return (
-    <div className="border border-cyber-black-300 rounded-md overflow-hidden bg-cyber-black-100">
+    <div className={mobileStyle ? "bg-transparent" : "border border-border rounded-md overflow-hidden bg-input"}>
+      
       {editor && (
         <BubbleMenu
           editor={editor}
           tippyOptions={{ duration: 100 }}
-          className="bg-cyber-black-400 border border-cyber-black-300 rounded-md shadow-lg"
+          className="bg-popover border border-border rounded-md shadow-lg"
         >
           <div className="flex p-1">
             <button
               onClick={() => editor.chain().focus().toggleBold().run()}
-              className={`p-1 rounded-sm ${editor.isActive('bold') ? 'bg-cyber-blue text-white' : 'text-cyber-gray hover:bg-cyber-black-300'}`}
+              className={`p-1 rounded-sm ${editor.isActive('bold') ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}
               title="굵게"
             >
               <span className="material-icons" style={{fontSize: '18px'}}>format_bold</span>
             </button>
             <button
               onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={`p-1 rounded-sm ${editor.isActive('italic') ? 'bg-cyber-blue text-white' : 'text-cyber-gray hover:bg-cyber-black-300'}`}
+              className={`p-1 rounded-sm ${editor.isActive('italic') ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}
               title="기울임"
             >
               <span className="material-icons" style={{fontSize: '18px'}}>format_italic</span>
@@ -237,7 +258,7 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
                   editor.chain().focus().setLink({ href: url }).run();
                 }
               }}
-              className={`p-1 rounded-sm ${editor.isActive('link') ? 'bg-cyber-blue text-white' : 'text-cyber-gray hover:bg-cyber-black-300'}`}
+              className={`p-1 rounded-sm ${editor.isActive('link') ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}
               title="링크"
             >
               <span className="material-icons" style={{fontSize: '18px'}}>link</span>
@@ -246,16 +267,18 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
         </BubbleMenu>
       )}
       
-      <EditorButtons 
-        editor={editor}
-        isUploading={isUploading}
-        handleImageUpload={handleImageUpload}
-        setShowLinkMenu={setShowLinkMenu}
-        setShowYoutubeMenu={setShowYoutubeMenu}
-        setYoutubeUrl={setYoutubeUrl}
-        setLinkUrl={setLinkUrl}
-        disabled={disabled}
-      />
+      {showToolbar && (
+        <EditorButtons 
+          editor={editor}
+          isUploading={isUploading}
+          handleImageUpload={handleImageUpload}
+          setShowLinkMenu={setShowLinkMenu}
+          setShowYoutubeMenu={setShowYoutubeMenu}
+          setYoutubeUrl={setYoutubeUrl}
+          setLinkUrl={setLinkUrl}
+          disabled={disabled}
+        />
+      )}
       
       {showLinkMenu && (
         <LinkMenu
@@ -277,6 +300,16 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
       )}
       
       <style jsx global>{`
+        /* Tiptap Placeholder 스타일 */
+        .ProseMirror p.is-empty.is-editor-empty::before {
+          content: attr(data-placeholder);
+          float: left;
+          height: 0;
+          pointer-events: none;
+          color: #6B7280;
+          opacity: 0.6;
+        }
+        
         .image-resizer-container {
           position: relative;
           display: inline-block;
@@ -321,6 +354,11 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
         .ProseMirror {
           outline: none !important;
           border: none !important;
+          color: var(--foreground);
+        }
+        
+        .ProseMirror p {
+          color: var(--foreground);
         }
         .ProseMirror:focus {
           outline: none !important;
@@ -434,7 +472,9 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
       >
         <EditorContent
           editor={editor}
-          className="prose prose-invert max-w-none p-4 min-h-[300px] focus:outline-none"
+          className={`tiptap prose prose-invert max-w-none focus:outline-none ${
+            mobileStyle ? 'p-0 min-h-[120px] text-foreground' : 'p-4 min-h-[300px]'
+          }`}
         />
       </div>
     </div>

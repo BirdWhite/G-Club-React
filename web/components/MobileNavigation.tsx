@@ -50,10 +50,10 @@ export default function MobileNavigation({ session, isPendingMember }: MobileNav
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-cyber-black-100 border-t border-cyber-black-300 z-50 md:hidden mobile-nav-container">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 md:hidden mobile-nav-container">
       <div className="flex justify-around items-center h-16 px-2">
         {navItems.map((item) => {
-          const isActive = item.href === '/' ? pathname === item.href : pathname?.startsWith(item.href);
+          const isActive = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);
           const isDisabled = item.disabled;
           
           return (

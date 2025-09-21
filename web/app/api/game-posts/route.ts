@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from '@/lib/supabase/auth';
 import prisma from '@/lib/prisma';
-import { sendBulkPushNotificationInternal, GameMateNotifications } from '@/lib/notifications/pushNotifications';
 
 export async function GET(request: Request) {
   try {
@@ -30,10 +29,11 @@ export async function GET(request: Request) {
     // 상태 필터링
     if (status) {
       if (status === 'recruiting') {
-        // 모집 중 (OPEN 또는 FULL)
+        // 모집 중 (OPEN, FULL, IN_PROGRESS)
         where.OR = [
           { status: 'OPEN' },
           { status: 'FULL' },
+          { status: 'IN_PROGRESS' },
         ];
       } else if (status === 'completed_expired') {
         // 완료&만료됨 (COMPLETED 또는 EXPIRED)

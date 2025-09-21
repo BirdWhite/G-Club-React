@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import PWAInstaller from "@/components/PWAInstaller";
+import ClientLayout from "@/components/ClientLayout";
 
 // 전역 변수 선언
 declare global {
@@ -68,12 +68,9 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ProfileProvider>
-          <div className="min-h-screen grid grid-rows-[auto_1fr]">
-            <Header />
-            <main className="overflow-y-auto">
-              {children}
-            </main>
-          </div>
+          <ClientLayout>
+            {children}
+          </ClientLayout>
           <PWAInstaller />
         </ProfileProvider>
       </body>

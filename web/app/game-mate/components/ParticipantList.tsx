@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import { GameParticipant } from '@/types/models';
 import { Crown } from 'lucide-react';
+import ProfileAvatar from '@/components/common/ProfileAvatar';
 
 interface ParticipantListProps {
   participants: GameParticipant[];
@@ -18,10 +18,10 @@ export default function ParticipantList({
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex items-center p-3 bg-cyber-black-200 border border-cyber-black-300 rounded-lg animate-pulse">
-            <div className="h-10 w-10 rounded-full bg-cyber-black-300"></div>
+          <div key={i} className="flex items-center p-3 bg-card border border-border rounded-lg animate-pulse">
+            <div className="h-10 w-10 rounded-full bg-muted"></div>
                           <div className="ml-3 space-y-2">
-                <div className="h-4 w-24 bg-cyber-black-300 rounded"></div>
+                <div className="h-4 w-24 bg-muted rounded"></div>
               </div>
           </div>
         ))}
@@ -31,7 +31,7 @@ export default function ParticipantList({
 
   if (!participants || participants.length === 0) {
     return (
-      <div className="py-6 text-center text-cyber-gray/60 bg-cyber-black-200 border border-cyber-black-300 rounded-lg">
+      <div className="py-6 text-center text-muted-foreground bg-card border border-border rounded-lg">
         <p>아직 참여자가 없습니다.</p>
       </div>
     );
@@ -53,33 +53,18 @@ export default function ParticipantList({
         const displayImage = isGuest ? null : participant.user?.image;
         
         return (
-          <div key={participant.id} className="flex items-center p-3 bg-cyber-black-200 border border-cyber-black-300 rounded-lg shadow-lg">
+          <div key={participant.id} className="flex items-center p-3 bg-card border border-border rounded-lg shadow-lg">
             <div className="flex-shrink-0">
-              {displayImage ? (
-                <div className="relative h-12 w-12 rounded-full overflow-hidden bg-white p-0.5">
-                  <Image
-                    src={displayImage}
-                    alt={displayName || '프로필'}
-                    fill
-                    sizes="48px"
-                    className="object-cover rounded-full"
-                  />
-                </div>
-              ) : (
-                <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                  isGuest ? 'bg-orange-500' : 'bg-cyber-black-300'
-                }`}>
-                  <span className={`text-xl font-bold ${
-                    isGuest ? 'text-white' : 'text-cyber-gray/60'
-                  }`}>
-                    {displayName ? displayName.charAt(0).toUpperCase() : '?'}
-                  </span>
-                </div>
-              )}
+              <ProfileAvatar
+                name={displayName}
+                image={displayImage}
+                size="lg"
+                isGuest={isGuest}
+              />
             </div>
             <div className="ml-4">
               <div className="flex items-center">
-                <p className="text-sm font-bold text-cyber-gray">
+                <p className="text-sm font-bold text-foreground">
                   {displayName}
                 </p>
                 {isGuest && (

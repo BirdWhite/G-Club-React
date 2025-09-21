@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, User, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import ProfileAvatar from '@/components/common/ProfileAvatar';
 
 export interface UserSearchResult {
   userId: string | null;
@@ -92,53 +93,46 @@ export default function UserSearchSelect({
   return (
     <div className="relative">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-cyber-gray/40" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
         <Input
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => searchResults.length > 0 && setShowResults(true)}
           onBlur={handleBlur}
           placeholder={placeholder}
-          className="pl-10 bg-cyber-black-100 border-cyber-black-300 focus:bg-cyber-black-200"
+          className="pl-10 bg-input border-border focus:bg-input"
           disabled={disabled}
         />
         {isSearching && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyber-blue"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
           </div>
         )}
       </div>
 
       {/* 검색 결과 */}
       {showResults && searchResults.length > 0 && (
-        <div className="absolute top-full left-0 right-0 z-[9999] mt-1 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg">
+        <div className="absolute top-full left-0 right-0 z-[9999] mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg">
           <div className="p-2">
             {searchResults.map((user) => (
               <button
                 key={user.userId}
-                className="w-full text-left p-3 hover:bg-gray-100 rounded-md transition-colors"
+                className="w-full text-left p-3 hover:bg-accent rounded-md transition-colors"
                 onClick={() => handleUserSelect(user)}
               >
                 <div className="flex items-center space-x-3">
-                  {user.image ? (
-                    <img
-                      src={user.image}
-                      alt={user.name}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      user.isGuest ? 'bg-orange-500' : 'bg-blue-500'
-                    }`}>
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                  )}
+                  <ProfileAvatar
+                    name={user.name}
+                    image={user.image}
+                    size="sm"
+                    isGuest={user.isGuest}
+                  />
                   <div className="flex flex-col">
-                    <span className="text-gray-900">{user.name}</span>
+                    <span className="text-popover-foreground">{user.name}</span>
                     {user.isGuest ? (
-                      <span className="text-xs text-orange-600">게스트 참여자로 추가</span>
+                      <span className="text-xs text-cyber-orange">게스트 참여자로 추가</span>
                     ) : user.email ? (
-                      <span className="text-xs text-gray-500 truncate max-w-[200px]" title={user.email}>
+                      <span className="text-xs text-muted-foreground truncate max-w-[200px]" title={user.email}>
                         {user.email}
                       </span>
                     ) : null}
@@ -152,8 +146,8 @@ export default function UserSearchSelect({
 
       {/* 검색 결과 없음 */}
       {showResults && searchResults.length === 0 && searchTerm.length >= 2 && !isSearching && (
-        <div className="absolute top-full left-0 right-0 z-[9999] mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-          <div className="p-4 text-center text-gray-500">
+        <div className="absolute top-full left-0 right-0 z-[9999] mt-1 bg-popover border border-border rounded-lg shadow-lg">
+          <div className="p-4 text-center text-muted-foreground">
             검색 결과가 없습니다.
           </div>
         </div>
