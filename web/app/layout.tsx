@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
-import PWAInstaller from "@/components/PWAInstaller";
-import ClientLayout from "@/components/ClientLayout";
+import { PWAInstaller } from "@/components/common/PWAInstaller";
+import { ClientLayout } from "@/components/layout/ClientLayout";
 
 // 전역 변수 선언
 declare global {

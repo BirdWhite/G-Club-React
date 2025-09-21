@@ -1,4 +1,4 @@
-import MobileGamePostForm from '../../components/mobile/MobileGamePostForm';
+import { MobileGamePostForm } from '@/components/game-mate/mobile/MobileGamePostForm';
 import { Game } from '@/types/models';
 import prisma from '@/lib/database/prisma';
 

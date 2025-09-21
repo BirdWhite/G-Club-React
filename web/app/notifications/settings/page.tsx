@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 export default function NotificationSettingsPage() {
   const {

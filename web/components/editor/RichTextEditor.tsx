@@ -31,7 +31,7 @@ interface RichTextEditorProps {
   mobileStyle?: boolean;
 }
 
-export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disabled = false, showToolbar = true, placeholder, mobileStyle = false }: RichTextEditorProps) => {
+export function RichTextEditor({ content, onChange, postId, onImageUpload, disabled = false, showToolbar = true, placeholder, mobileStyle = false }: RichTextEditorProps) {
   // 에디터 상태 관리
   const [editorReady, setEditorReady] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -481,4 +481,3 @@ export const RichTextEditor = ({ content, onChange, postId, onImageUpload, disab
   );
 };
 
-export default RichTextEditor;

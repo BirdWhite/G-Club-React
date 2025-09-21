@@ -1,12 +1,10 @@
 'use client';
 
-import { useProfileRegister } from '@/hooks';
-import { 
-  ProfileFormLayout, 
-  ProfileFormFields, 
-  ProfileImageUpload, 
-  ImageCropper 
-} from '@/components';
+import { useProfileRegister } from '@/hooks/useProfileRegister';
+import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
+import { ProfileFormFields } from '@/components/profile/ProfileFormFields';
+import { ProfileImageUpload } from '@/components/profile/ProfileImageUpload';
+import { ImageCropper } from '@/components/common/ImageCropper';
 
 export default function ProfileRegisterPage() {
   const {

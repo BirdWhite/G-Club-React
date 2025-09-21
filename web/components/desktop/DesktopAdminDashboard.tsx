@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import UserRoleManager from '@/app/admin/dashboard/UserRoleManager';
-import PermissionManager from '@/app/admin/dashboard/PermissionManager';
-import GameManager from '@/app/admin/dashboard/GameManager';
+import { UserRoleManager } from '@/components/admin/UserRoleManager';
+import { PermissionManager } from '@/components/admin/PermissionManager';
+import { GameManager } from '@/components/admin/GameManager';
 
 interface DesktopAdminDashboardProps {
   initialTab: 'user' | 'permission' | 'games';
   onTabChange: (newTab: string) => void;
 }
 
-export default function DesktopAdminDashboard({ initialTab, onTabChange }: DesktopAdminDashboardProps) {
+export function DesktopAdminDashboard({ initialTab, onTabChange }: DesktopAdminDashboardProps) {
   const [tab, setTab] = useState<'user' | 'permission' | 'games'>(initialTab);
 
   const handleTabChange = (newTab: string) => {

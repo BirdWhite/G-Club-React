@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { Game, GamePost } from '@/types/models';
-import GamePostForm from '../../components/GamePostForm';
+import { GamePostForm } from '@/components/game-mate/GamePostForm';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 import { headers } from 'next/headers';

@@ -1,13 +1,13 @@
 'use client';
 
-import { useProfileEdit } from '@/hooks';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { ProfileFormLayout } from '@/components/ProfileFormLayout';
-import { ProfileFormFields } from '@/components/ProfileFormFields';
-import { ProfileImageUpload } from '@/components/ProfileImageUpload';
-import { ImageCropper } from '@/components/ImageCropper';
+import { useProfileEdit } from '@/hooks/useProfileEdit';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
+import { ProfileFormFields } from '@/components/profile/ProfileFormFields';
+import { ProfileImageUpload } from '@/components/profile/ProfileImageUpload';
+import { ImageCropper } from '@/components/common/ImageCropper';
 
-export default function DesktopProfileEditPage() {
+export function DesktopProfileEditPage() {
   const {
     name,
     setName,

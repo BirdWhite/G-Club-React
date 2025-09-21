@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { isAdmin } from '@/lib/database/auth';
-import { useMediaQuery } from '@/hooks';
-import MobileAdminDashboard from '@/components/mobile/MobileAdminDashboard';
-import DesktopAdminDashboard from '@/components/desktop/DesktopAdminDashboard';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { MobileAdminDashboard } from '@/components/mobile/MobileAdminDashboard';
+import { DesktopAdminDashboard } from '@/components/desktop/DesktopAdminDashboard';
 
 export default function AdminDashboard() {
   const { profile, isLoading } = useProfile();

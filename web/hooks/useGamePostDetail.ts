@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { GamePost, Comment, GameParticipant } from '@/types/models';
+import { GamePost, GameParticipant } from '@/types/models';
 import { getCurrentUser } from '@/lib/database/supabase';
 
 interface UseGamePostDetailProps {
@@ -221,11 +221,8 @@ export function useGamePostDetail({ postId }: UseGamePostDetailProps) {
 
   // 파생 상태
   const isAuthor = post?.author.id === user?.id;
-  const isParticipating = post?.participants.some(p => p.user.id === user?.id) || false;
-  const isFull = post ? post.participants.length >= post.maxPlayers : false;
-  const isReserved = post?.participants?.some(
-    p => p.user.id === user?.id && p.isReserve
-  ) || false;
+  const isParticipating = post?.participants.some(p => p.user?.id === user?.id) || false;
+  const isFull = post ? post.participants.length >= post.maxParticipants : false;
 
   return {
     // 상태
@@ -240,7 +237,6 @@ export function useGamePostDetail({ postId }: UseGamePostDetailProps) {
     isAuthor,
     isParticipating,
     isFull,
-    isReserved,
     
     // 핸들러
     handleDelete,

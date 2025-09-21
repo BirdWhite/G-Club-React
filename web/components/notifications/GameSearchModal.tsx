@@ -10,7 +10,7 @@ interface GameSearchModalProps {
   excludeGameIds?: string[];
 }
 
-export default function GameSearchModal({ 
+export function GameSearchModal({ 
   isOpen, 
   onClose, 
   onGameSelect, 
@@ -68,7 +68,7 @@ export default function GameSearchModal({
     onGameSelect({
       id: game.id,
       name: game.name,
-      iconUrl: game.iconUrl
+      iconUrl: game.iconUrl || undefined
     });
     setQuery('');
     setGames([]);

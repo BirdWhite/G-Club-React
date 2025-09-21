@@ -4,10 +4,10 @@ import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect, useState, use } from 'react';
 import { createClient } from '@/lib/database/supabase';
-import { useMediaQuery } from '@/hooks';
-import { MembershipPendingPage } from '@/components/MembershipPendingPage';
-import MobileProfileMenu from '@/components/MobileProfileMenu';
-import DesktopProfilePage from '@/components/desktop/DesktopProfilePage';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { redirect } from 'next/navigation';
+import { MobileProfileMenu } from '@/components/mobile/MobileProfileMenu';
+import { DesktopProfilePage } from '@/components/desktop/DesktopProfilePage';
 
 interface ProfilePageProps {
   params: Promise<{
@@ -89,7 +89,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
   // NONE 역할 사용자는 자신의 프로필이 아닌 경우에만 대기 페이지 표시
   if (targetProfile.role?.name === 'NONE' && !isOwnProfile) {
-    return <MembershipPendingPage />;
+    redirect('/auth/pending');
   }
 
 

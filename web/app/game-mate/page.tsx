@@ -3,12 +3,12 @@
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useMediaQuery } from '@/hooks';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useGamePostListSubscription } from '@/hooks/useRealtimeSubscription';
 import { useUrlState } from '@/hooks/useUrlState';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
-import MobileGamePostList from './components/mobile/MobileGamePostList';
-import DesktopGamePostList from './components/desktop/DesktopGamePostList';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { MobileGamePostList } from '@/components/game-mate/mobile/MobileGamePostList';
+import { DesktopGamePostList } from '@/components/game-mate/desktop/DesktopGamePostList';
 
 export default function GameMatePage() {
   const { profile, isLoading } = useProfile();

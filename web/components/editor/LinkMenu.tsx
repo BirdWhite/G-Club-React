@@ -50,4 +50,3 @@ const LinkMenu = ({
 };
 
 export { LinkMenu };
-export default LinkMenu;

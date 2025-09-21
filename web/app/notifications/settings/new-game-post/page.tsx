@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useNotificationSettings, useFavoriteGames } from '@/hooks';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
-import GameSearchModal from '@/components/notifications/GameSearchModal';
+import { useNotificationSettings } from '@/hooks/useNotificationSettings';
+import { useFavoriteGames } from '@/hooks/useFavoriteGames';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { GameSearchModal } from '@/components/notifications/GameSearchModal';
 
 interface GameFilter {
   mode: 'all' | 'favorites' | 'selected';

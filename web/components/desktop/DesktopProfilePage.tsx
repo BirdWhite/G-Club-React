@@ -10,7 +10,7 @@ interface DesktopProfilePageProps {
   isOwnProfile: boolean;
 }
 
-export default function DesktopProfilePage({ targetProfile, isOwnProfile }: DesktopProfilePageProps) {
+export function DesktopProfilePage({ targetProfile, isOwnProfile }: DesktopProfilePageProps) {
   const router = useRouter();
   const supabase = createClient();
   const displayName = targetProfile.name || '사용자';

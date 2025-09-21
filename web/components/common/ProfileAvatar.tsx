@@ -12,7 +12,7 @@ interface ProfileAvatarProps {
   unoptimized?: boolean;
 }
 
-export default function ProfileAvatar({
+export function ProfileAvatar({
   name,
   image,
   size = 'md',

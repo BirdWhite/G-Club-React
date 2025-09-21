@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useNotificationSettings } from '@/hooks';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { useNotificationSettings } from '@/hooks/useNotificationSettings';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 interface MyGamePostSettings {
   fullMeeting: boolean; // 다 모였을때 알람

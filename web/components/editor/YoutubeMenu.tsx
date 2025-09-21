@@ -135,4 +135,3 @@ const YoutubeMenu = ({ editor, youtubeUrl, setYoutubeUrl, setShowYoutubeMenu }: 
 };
 
 export { YoutubeMenu };
-export default YoutubeMenu;

@@ -17,7 +17,7 @@ function isValidTiptapJson(value: JsonValue): value is Content {
     return value !== null && typeof value === 'object' && !Array.isArray(value) && 'type' in value && value.type === 'doc';
 }
 
-export const RichTextViewer = ({ content }: RichTextViewerProps) => {
+export function RichTextViewer({ content }: RichTextViewerProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -64,4 +64,3 @@ export const RichTextViewer = ({ content }: RichTextViewerProps) => {
   );
 };
 
-export default RichTextViewer; 

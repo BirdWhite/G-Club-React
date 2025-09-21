@@ -14,7 +14,7 @@ export interface EditorButtonsProps {
   disabled?: boolean;
 }
 
-export const EditorButtons = ({
+export function EditorButtons({
   editor,
   isUploading,
   handleImageUpload,
@@ -23,7 +23,7 @@ export const EditorButtons = ({
   setYoutubeUrl,
   setLinkUrl,
   disabled = false
-}: EditorButtonsProps) => {
+}: EditorButtonsProps): any {
 
   const buttonClass = (isActive?: boolean) => 
     `p-2 rounded-sm transition-colors ${
@@ -52,4 +52,3 @@ export const EditorButtons = ({
   );
 };
 
-export default EditorButtons;

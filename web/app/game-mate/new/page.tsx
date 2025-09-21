@@ -1,4 +1,4 @@
-import GamePostForm from '../components/GamePostForm';
+import { GamePostForm } from '@/components/game-mate/GamePostForm';
 import { Game } from '@/types/models';
 import prisma from '@/lib/database/prisma';
 import { redirect } from 'next/navigation';
