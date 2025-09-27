@@ -10,6 +10,7 @@ interface ParticipatingGameSettings {
   memberJoin: boolean; // 모임 참여 알람
   memberLeave: boolean; // 모임 참여 취소 알람
   timeChange: boolean; // 모임 시간 변경시 알람
+  gameCancelled: boolean; // 게임메이트 취소 알람
   beforeMeeting: {
     enabled: boolean; // 모임 전 알람
     minutes: number; // 몇 분 전 (기본 30분)
@@ -30,6 +31,7 @@ export default function ParticipatingGameNotificationSettings() {
     memberJoin: false,
     memberLeave: false,
     timeChange: true,
+    gameCancelled: true,
     beforeMeeting: {
       enabled: true,
       minutes: 10,
@@ -53,19 +55,19 @@ export default function ParticipatingGameNotificationSettings() {
 
   // 설정 저장
   const saveSettings = async () => {
-    await updateParticipatingGame(settings.participatingGame.enabled, gameSettings);
+    await updateParticipatingGame(settings.participatingGame.enabled, gameSettings as unknown as Record<string, unknown>);
     router.back();
   };
 
   // 설정 업데이트 헬퍼
-  const updateSetting = (key: keyof ParticipatingGameSettings, value: any) => {
+  const updateSetting = (key: keyof ParticipatingGameSettings, value: boolean) => {
     setGameSettings(prev => ({
       ...prev,
       [key]: value
     }));
   };
 
-  const updateBeforeMeeting = (key: keyof ParticipatingGameSettings['beforeMeeting'], value: any) => {
+  const updateBeforeMeeting = (key: keyof ParticipatingGameSettings['beforeMeeting'], value: boolean | number) => {
     setGameSettings(prev => ({
       ...prev,
       beforeMeeting: {
@@ -75,7 +77,7 @@ export default function ParticipatingGameNotificationSettings() {
     }));
   };
 
-  const updateMeetingStart = (key: keyof ParticipatingGameSettings['meetingStart'], value: any) => {
+  const updateMeetingStart = (key: keyof ParticipatingGameSettings['meetingStart'], value: boolean) => {
     setGameSettings(prev => ({
       ...prev,
       meetingStart: {
@@ -187,6 +189,26 @@ export default function ParticipatingGameNotificationSettings() {
                 type="checkbox"
                 checked={gameSettings.timeChange}
                 onChange={(e) => updateSetting('timeChange', e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+
+          {/* 게임메이트 취소 알람 */}
+          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">❌</span>
+              <div>
+                <h3 className="font-semibold text-gray-900">게임메이트 취소 알람</h3>
+                <p className="text-sm text-gray-600">참여한 게임메이트가 취소될 때 알림을 받습니다</p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={gameSettings.gameCancelled}
+                onChange={(e) => updateSetting('gameCancelled', e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>

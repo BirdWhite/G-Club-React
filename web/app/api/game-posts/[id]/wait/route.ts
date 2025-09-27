@@ -5,7 +5,7 @@ import prisma from '@/lib/database/prisma';
 // 예비 명단 등록 (대기 신청)
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getCurrentUser();
   if (!user) {
@@ -15,7 +15,7 @@ export async function POST(
   const userId = user.id;
 
   try {
-    const { id: gamePostId } = params;
+    const { id: gamePostId } = await params;
     const { availableTime } = (await request.json()) as { availableTime?: string };
 
     const post = await prisma.gamePost.findUnique({

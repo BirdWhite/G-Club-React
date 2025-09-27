@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 
 // 좋아하는 게임 목록 조회
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServerClient();
     

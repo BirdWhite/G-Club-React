@@ -1,13 +1,12 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { GamePostCard } from '../GamePostCard';
 import { GameFilter } from '../GameFilter';
 import { GamePost } from '@/types/models';
 
 interface MobileGamePostListProps {
   userId?: string;
-  posts: any[];
+  posts: GamePost[];
   loading: boolean;
   urlState: {
     gameId: string;
@@ -27,7 +26,6 @@ export function MobileGamePostList({
   onGameChange, 
   onStatusChange 
 }: MobileGamePostListProps) {
-  const router = useRouter();
   
   const filteredPosts = posts;
 

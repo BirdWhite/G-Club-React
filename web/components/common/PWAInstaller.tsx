@@ -20,7 +20,7 @@ export function PWAInstaller() {
     // PWA가 이미 설치되어 있는지 확인
     const checkStandalone = () => {
       const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || 
-                              (window.navigator as any).standalone === true;
+                              (window.navigator as { standalone?: boolean }).standalone === true;
       setIsStandalone(isStandaloneMode);
     };
 

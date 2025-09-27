@@ -29,7 +29,7 @@ interface ImageCropperProps {
   /**
    * 크롭이 완료되었을 때 호출되는 함수
    */
-  onCropComplete: (croppedArea: unknown, croppedAreaPixels: CropArea) => void;
+  onCropComplete: (croppedArea: { x: number; y: number; width: number; height: number }, croppedAreaPixels: CropArea) => void;
   /**
    * 이미지 자르기 버튼을 클릭했을 때 호출되는 함수
    */
@@ -43,7 +43,7 @@ interface ImageCropperProps {
 /**
  * 이미지 크롭 컴포넌트
  */
-export function ImageCropper({
+export const ImageCropper = ({
   image,
   crop,
   setCrop,
@@ -65,7 +65,7 @@ export function ImageCropper({
 
   useEffect(() => {
     console.log('ImageCropper mounted with image:', !!image);
-  }, []);
+  }, [image]);
 
   useEffect(() => {
     console.log('ImageCropper image changed:', !!image);

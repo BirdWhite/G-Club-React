@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Search, User, Check } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 

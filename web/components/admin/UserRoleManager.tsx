@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { UserProfile, Role } from '@prisma/client';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { isSuperAdmin } from '@/lib/database/auth';
@@ -35,7 +35,7 @@ export function UserRoleManager() {
   const isSuperAdminUser = isSuperAdmin(profile?.role);
 
   // Fetch users and roles from the server
-  const fetchData = async (page: number = currentPage, search: string = searchTerm, role: string = roleFilter, isInitialLoad: boolean = false) => {
+  const fetchData = useCallback(async (page: number = currentPage, search: string = searchTerm, role: string = roleFilter, isInitialLoad: boolean = false) => {
     if (isInitialLoad) {
       setIsLoading(true);
     } else {
@@ -81,12 +81,12 @@ export function UserRoleManager() {
         setIsSearching(false);
       }
     }
-  };
+  }, [currentPage, searchTerm, roleFilter, pageSize]);
 
   // 초기 데이터 로드
   useEffect(() => {
     fetchData(1, '', '', true);
-  }, []);
+  }, [fetchData]);
 
   // 검색어나 필터가 변경될 때 데이터 다시 로드
   useEffect(() => {
@@ -99,14 +99,14 @@ export function UserRoleManager() {
     }, 500); // 500ms 디바운스
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, roleFilter]);
+  }, [searchTerm, roleFilter, fetchData]);
 
   // 페이지 변경 시 데이터 로드
   useEffect(() => {
     if (currentPage > 1) {
       fetchData(currentPage, searchTerm, roleFilter, false);
     }
-  }, [currentPage]);
+  }, [currentPage, fetchData, searchTerm, roleFilter]);
 
   const handleRoleChange = async (userId: string, newRoleId: string) => {
     try {

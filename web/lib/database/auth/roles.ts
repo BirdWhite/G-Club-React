@@ -1,6 +1,6 @@
 'use client';
 
-import type { Role as PrismaRole, Permission as PrismaPermission, UserProfile } from '@prisma/client';
+import type { Role as PrismaRole, Permission as PrismaPermission } from '@prisma/client';
 
 // DB 스키마와 일치하는 타입 정의
 export type RoleWithPermissions = PrismaRole & {

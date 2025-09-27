@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 
 // 알림 설정 조회
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServerClient();
     
@@ -100,7 +100,7 @@ export async function PUT(request: NextRequest) {
     } = await request.json();
 
     // 업데이트할 데이터 구성
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     if (doNotDisturb !== undefined) {
       updateData.doNotDisturbEnabled = doNotDisturb.enabled;

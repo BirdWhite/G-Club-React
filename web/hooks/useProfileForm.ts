@@ -119,7 +119,7 @@ export const useProfileForm = () => {
    * @param croppedAreaPixels 실제 픽셀 크롭 영역
    */
   const onCropComplete = (
-    croppedArea: any,
+    croppedArea: { x: number; y: number; width: number; height: number },
     croppedAreaPixels: CropArea
   ) => {
     console.log('크롭 완료:', { croppedArea, croppedAreaPixels });

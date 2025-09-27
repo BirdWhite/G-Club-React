@@ -85,6 +85,7 @@ const nextConfig = {
 const withPWAConfig = withPWA({
   dest: 'public',
   disable: false, // PWA 활성화
+  customWorkerDir: 'worker', // 커스텀 워커 디렉토리
   workboxOptions: {
     disableDevLogs: true,
     // 개발 환경에서 HMR 충돌 방지 설정

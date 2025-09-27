@@ -2,9 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 import { isAdmin_Server, hasPermission_Server } from '@/lib/database/auth';
-import { type Role } from '@prisma/client';
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -34,9 +32,9 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ permissions });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching permissions:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }
 
@@ -89,8 +87,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ message: 'Permission updated successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating permission:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }

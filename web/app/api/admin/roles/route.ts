@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 import { getUserProfile } from '@/lib/user';
 import { isAdmin_Server } from '@/lib/database/auth';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServerClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();

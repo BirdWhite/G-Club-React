@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
+import { notificationService } from '@/lib/notifications/notificationService';
+import { GamePost } from '@prisma/client';
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 // 참여 신청
@@ -29,6 +31,12 @@ export async function POST(
         participants: {
           select: { userId: true }
         },
+        game: {
+          select: { name: true }
+        },
+        author: {
+          select: { name: true }
+        }
       },
     });
 
@@ -68,6 +76,51 @@ export async function POST(
         });
       }
     });
+
+    // 개인화된 알림 발송
+    try {
+      const user = await prisma.userProfile.findUnique({
+        where: { userId },
+        select: { name: true }
+      });
+      const participantName = user?.name || '알 수 없는 사용자';
+
+      // 참여자 추가 알림 (작성자에게)
+      if (post.authorId !== userId) {
+        await notificationService.notifyParticipantJoinedToAuthor(
+          gamePostId,
+          userId,
+          participantName
+        );
+      }
+
+      // 참여자 추가 알림 (다른 참여자들에게)
+      const otherParticipants = post.participants
+        .filter(p => p.userId !== userId && p.userId !== post.authorId)
+        .map(p => p.userId)
+        .filter((id): id is string => id !== null);
+
+      if (otherParticipants.length > 0) {
+        await notificationService.notifyParticipantJoinedToOthers(
+          gamePostId,
+          userId,
+          participantName,
+          otherParticipants
+        );
+      }
+
+      // 모임이 가득 찼을 때 알림
+      if (currentParticipantsCount + 1 === post.maxParticipants) {
+        const allParticipants = [
+          ...post.participants.map(p => p.userId).filter((id): id is string => id !== null), 
+          userId
+        ];
+        await notificationService.notifyGameFull(gamePostId, allParticipants);
+      }
+    } catch (notificationError) {
+      console.error('알림 발송 중 오류:', notificationError);
+      // 알림 발송 실패는 메인 로직에 영향을 주지 않음
+    }
     
     return NextResponse.json({ message: '참여가 완료되었습니다.' });
   } catch (error) {
@@ -99,7 +152,16 @@ export async function DELETE(
         },
       },
       include: {
-        gamePost: true,
+        gamePost: {
+          include: {
+            game: {
+              select: { name: true }
+            },
+            author: {
+              select: { name: true }
+            }
+          }
+        },
       },
     });
 
@@ -112,6 +174,9 @@ export async function DELETE(
         return NextResponse.json({ error: '방장은 참여를 취소할 수 없습니다. 게시글을 삭제해주세요.' }, { status: 403 });
     }
 
+    let promotedUserId: string | null = null;
+    let newStatus = participation.gamePost.status;
+
     await prisma.$transaction(async (tx) => {
       // 1. 참여자 목록에서 삭제
       await tx.gameParticipant.delete({
@@ -123,8 +188,6 @@ export async function DELETE(
         where: { gamePostId },
         orderBy: { requestedAt: 'asc' },
       });
-
-      let newStatus = participation.gamePost.status;
 
       if (firstInWaiting) {
         // 3. 대기자를 참여자로 이동
@@ -139,6 +202,7 @@ export async function DELETE(
         });
         // 대기자가 들어와도 자리가 그대로 꽉 차 있으므로 상태는 FULL 유지
         newStatus = 'FULL';
+        promotedUserId = firstInWaiting.userId;
       } else {
         // 대기자가 없으면 빈자리가 생겼으므로 OPEN으로 변경
         newStatus = 'OPEN';
@@ -152,6 +216,55 @@ export async function DELETE(
         });
       }
     });
+
+    // 개인화된 알림 발송
+    try {
+      const user = await prisma.userProfile.findUnique({
+        where: { userId },
+        select: { name: true }
+      });
+      const participantName = user?.name || '알 수 없는 사용자';
+
+      // 참여자 탈퇴 알림 (작성자에게)
+      if (participation.gamePost.authorId !== userId) {
+        await notificationService.notifyParticipantLeftToAuthor(
+          gamePostId,
+          userId,
+          participantName
+        );
+      }
+
+      // 참여자 탈퇴 알림 (다른 참여자들에게)
+      const currentParticipants = await prisma.gameParticipant.findMany({
+        where: { gamePostId },
+        select: { userId: true }
+      });
+
+      const otherParticipants = currentParticipants
+        .filter(p => p.userId !== userId && p.userId !== participation.gamePost.authorId)
+        .map(p => p.userId)
+        .filter((id): id is string => id !== null);
+
+      if (otherParticipants.length > 0) {
+        await notificationService.notifyParticipantLeftToOthers(
+          gamePostId,
+          userId,
+          participantName,
+          otherParticipants
+        );
+      }
+
+      // 대기자 승격 알림
+      if (promotedUserId) {
+        await notificationService.notifyPromotedFromWaiting(
+          gamePostId,
+          promotedUserId
+        );
+      }
+    } catch (notificationError) {
+      console.error('알림 발송 중 오류:', notificationError);
+      // 알림 발송 실패는 메인 로직에 영향을 주지 않음
+    }
 
     return NextResponse.json({ message: '참여가 취소되었습니다.' });
   } catch (error) {

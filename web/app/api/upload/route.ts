@@ -71,13 +71,13 @@ export async function POST(request: NextRequest) {
         .eq('userId', user.id)
         .single();
 
-      if (!userProfile?.role || !['ADMIN', 'SUPER_ADMIN'].includes((userProfile.role as any).name)) {
+      if (!userProfile?.role || !['ADMIN', 'SUPER_ADMIN'].includes((userProfile.role as unknown as { name: string }).name)) {
         return NextResponse.json({ 
           error: '게임 아이콘 업로드는 관리자만 가능합니다.' 
         }, { status: 403 });
       }
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('game-icons')
         .upload(fileName, finalBuffer, {
           contentType: 'image/webp',

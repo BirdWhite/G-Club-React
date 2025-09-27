@@ -44,7 +44,7 @@ export const useProfileRegister = () => {
     }
   };
 
-  const handleCropComplete = (croppedArea: any, croppedAreaPixels: CropArea) => {
+  const handleCropComplete = (croppedArea: { x: number; y: number; width: number; height: number }, croppedAreaPixels: CropArea) => {
     profileForm.onCropComplete(croppedArea, croppedAreaPixels);
   };
 

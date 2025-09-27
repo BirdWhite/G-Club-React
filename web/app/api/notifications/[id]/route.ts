@@ -5,7 +5,7 @@ import prisma from '@/lib/database/prisma';
 // 알림 읽음 처리
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createServerClient();
@@ -20,7 +20,7 @@ export async function PATCH(
       );
     }
 
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
     const { action, isRead, isClicked } = await request.json();
 
     // 알림이 존재하고 사용자가 접근 가능한지 확인
@@ -47,7 +47,7 @@ export async function PATCH(
     }
 
     // 알림 수신 상태 업데이트
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (action === 'mark_read' || isRead !== undefined) {
       updateData.isRead = isRead ?? true;
@@ -92,7 +92,7 @@ export async function PATCH(
 // 알림 삭제 (관리자용)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createServerClient();
@@ -130,7 +130,7 @@ export async function DELETE(
       );
     }
 
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
 
     // 알림 삭제 (연관된 receipts도 자동 삭제됨)
     await prisma.notification.delete({

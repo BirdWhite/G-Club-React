@@ -1,6 +1,6 @@
 'use client';
 
-import { Extension } from '@tiptap/core';
+import { Extension, Editor } from '@tiptap/core';
 
 // 이미지 크기 조절을 위한 커스텀 확장 기능
 export const ResizableImage = Extension.create({
@@ -10,7 +10,7 @@ export const ResizableImage = Extension.create({
     return {
       width: {
         default: '100%',
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, unknown>) => {
           return {
             width: attributes.width,
             style: `width: ${attributes.width}`,
@@ -21,14 +21,14 @@ export const ResizableImage = Extension.create({
   },
   
   addNodeView() {
-    return ({ node, editor, getPos }: { node: any; editor: any; getPos: any }) => {
+    return ({ node, editor, getPos }: { node: { attrs: { src: string } }; editor: Editor; getPos: () => number }) => {
       const dom = document.createElement('div');
       dom.classList.add('image-resizer-container');
       
       const img = document.createElement('img');
       img.src = node.attrs.src;
-      img.alt = node.attrs.alt || '';
-      img.style.width = node.attrs.width;
+      img.alt = (node.attrs as { alt?: string }).alt || '';
+      img.style.width = (node.attrs as { width?: string }).width || '';
       
       const resizeHandle = document.createElement('div');
       resizeHandle.classList.add('resize-handle');

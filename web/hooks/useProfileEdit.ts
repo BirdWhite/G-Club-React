@@ -92,7 +92,7 @@ export const useProfileEdit = () => {
     
     try {
       // 1. 이미지 크롭
-      const onCropComplete = (croppedArea: any, croppedAreaPixels: CropArea) => {
+      const onCropComplete = (croppedArea: { x: number; y: number; width: number; height: number }, croppedAreaPixels: CropArea) => {
         setCroppedAreaPixels(croppedAreaPixels);
       };
       

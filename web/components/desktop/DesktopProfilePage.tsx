@@ -4,9 +4,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/database/supabase';
+import type { FullUserProfile } from '@/lib/user';
 
 interface DesktopProfilePageProps {
-  targetProfile: any;
+  targetProfile: FullUserProfile;
   isOwnProfile: boolean;
 }
 

@@ -1,18 +1,16 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import toast from 'react-hot-toast';
-import { Game, GamePost } from '@/types/models';
+import { GamePost } from '@/types/models';
 import { GameSearchSelect } from '@/components/ui/game-search-select';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { JsonValue } from '@prisma/client/runtime/library';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Calendar } from '@/components/ui/calendar';
@@ -22,7 +20,6 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { TimePicker } from '@/components/ui/time-picker';
 import { ParticipantManager } from '@/components/game-mate/ParticipantManager';
-import type { Participant } from './ParticipantManager';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect } from 'react';
 
@@ -36,7 +33,7 @@ const formSchema = z.object({
     if (!value || typeof value !== 'object' || !('content' in value)) {
         return false;
     }
-    const contentArray = (value as { content: any[] }).content;
+    const contentArray = (value as { content: Array<{ type: string; content?: unknown }> }).content;
     if (!contentArray || contentArray.length === 0) return false;
     if (contentArray.length === 1 && contentArray[0].type === 'paragraph' && !contentArray[0].content) {
         return false;
@@ -47,17 +44,16 @@ const formSchema = z.object({
     name: z.string().min(1, '이름은 필수입니다.'),
     userId: z.string().optional(),
     note: z.string().optional(),
-  })).default([]),
+  })),
 });
 
 type GamePostFormData = z.infer<typeof formSchema>;
 
 interface GamePostFormProps {
-  games: Game[];
   initialData?: GamePost;
 }
 
-export function GamePostForm({ games, initialData }: GamePostFormProps) {
+export function GamePostForm({ initialData }: GamePostFormProps) {
   const router = useRouter();
   const isEditMode = !!initialData;
   const { profile } = useProfile();
@@ -109,7 +105,7 @@ export function GamePostForm({ games, initialData }: GamePostFormProps) {
   };
 
   const form = useForm<GamePostFormData>({
-    resolver: zodResolver(formSchema) as any,
+    resolver: zodResolver(formSchema),
     defaultValues: {
       title: initialData?.title || '',
       gameId: initialData?.gameId || '',
@@ -173,8 +169,8 @@ export function GamePostForm({ games, initialData }: GamePostFormProps) {
       toast.success(isEditMode ? '게시글이 수정되었습니다.' : '게시글이 작성되었습니다.');
       router.push(`/game-mate/${isEditMode ? initialData.id : result.id}`);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
     }
   };
 
@@ -183,9 +179,9 @@ export function GamePostForm({ games, initialData }: GamePostFormProps) {
 
     return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         <FormField
-          control={form.control as any}
+          control={form.control}
           name="title"
           render={({ field }) => (
             <FormItem>
@@ -204,7 +200,7 @@ export function GamePostForm({ games, initialData }: GamePostFormProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FormField
-            control={form.control as any}
+            control={form.control}
             name="gameId"
             render={({ field }) => (
               <FormItem>
@@ -221,7 +217,7 @@ export function GamePostForm({ games, initialData }: GamePostFormProps) {
           />
 
           <FormField
-            control={form.control as any}
+            control={form.control}
             name="maxParticipants"
             render={({ field }) => (
               <FormItem>
@@ -279,7 +275,7 @@ export function GamePostForm({ games, initialData }: GamePostFormProps) {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FormField
-            control={form.control as any}
+            control={form.control}
             name="startDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
@@ -319,7 +315,7 @@ export function GamePostForm({ games, initialData }: GamePostFormProps) {
           />
 
           <FormField
-            control={form.control as any}
+            control={form.control}
             name="startTime"
             render={({ field }) => (
               <FormItem>
@@ -338,7 +334,7 @@ export function GamePostForm({ games, initialData }: GamePostFormProps) {
         </div>
 
         <FormField
-          control={form.control as any}
+          control={form.control}
           name="content"
           render={({ field }) => (
             <FormItem>
@@ -357,7 +353,7 @@ export function GamePostForm({ games, initialData }: GamePostFormProps) {
         />
 
         <FormField
-          control={form.control as any}
+          control={form.control}
           name="participants"
           render={({ field }) => (
             <FormItem>

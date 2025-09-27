@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const roleFilter = searchParams.get('role') || '';
 
     // 검색 조건 구성
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     
     if (search) {
       where.OR = [

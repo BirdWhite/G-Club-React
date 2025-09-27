@@ -50,11 +50,12 @@ export function ProfileAvatar({
   // 프로필 이미지가 없는 경우 - 기본 아바타
   return (
     <div className={cn(
-      'rounded-full flex items-center justify-center bg-background border border-border',
+      'rounded-full flex items-center justify-center border border-border',
+      isGuest ? 'bg-orange-100 text-orange-800' : 'bg-background text-foreground',
       sizeClasses[size],
       className
     )}>
-      <span className="font-bold text-foreground">
+      <span className="font-bold">
         {name ? name.charAt(0).toUpperCase() : '?'}
       </span>
     </div>

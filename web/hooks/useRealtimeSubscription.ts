@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/database/supabase';
+import type { GamePost, GameParticipant, WaitingParticipant } from '@/types/models';
 
 // 게임메이트 목록을 위한 실시간 구독 훅
 export function useGamePostListSubscription(
   initialFilters: { status?: string; gameId?: string } = {}
 ) {
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<GamePost[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState(initialFilters);
   const supabase = useMemo(() => createClient(), []);
@@ -14,7 +15,7 @@ export function useGamePostListSubscription(
   const participantCache = useMemo(() => new Map<string, string>(), []);
 
   // API를 통해 게시글 목록을 가져오는 함수
-  const fetchPosts = useCallback(async (currentFilters: any) => {
+  const fetchPosts = useCallback(async (currentFilters: { status?: string; gameId?: string }) => {
     setLoading(true);
     try {
       const query = new URLSearchParams();
@@ -28,13 +29,13 @@ export function useGamePostListSubscription(
       setPosts(data);
       
       // 참여자 정보 캐시 업데이트
-      data.forEach((post: any) => {
-        post.participants?.forEach((participant: any) => {
+      data.forEach((post: GamePost) => {
+        post.participants?.forEach((participant) => {
           if (participant.userId) {
             participantCache.set(participant.userId, post.id);
           }
         });
-        post.waitingList?.forEach((waiting: any) => {
+        post.waitingList?.forEach((waiting) => {
           if (waiting.userId) {
             participantCache.set(waiting.userId, post.id);
           }
@@ -133,42 +134,48 @@ export function useGamePostListSubscription(
         event: 'INSERT', 
         schema: 'public', 
         table: 'GamePost' 
-      }, (payload: any) => {
+      }, (payload) => {
         // 새 게시글 추가 - 목록 맨 앞에 추가
-        addNewPost(payload.new.id);
+        if (payload.new) {
+          addNewPost(payload.new.id);
+        }
       })
       .on('postgres_changes', { 
         event: 'UPDATE', 
         schema: 'public', 
         table: 'GamePost' 
-      }, (payload: any) => {
+      }, (payload) => {
         // 게시글 업데이트 (참여자 수 변경 포함)
-        fetchSinglePost(payload.new.id);
+        if (payload.new) {
+          fetchSinglePost(payload.new.id);
+        }
       })
       .on('postgres_changes', { 
         event: 'DELETE', 
         schema: 'public', 
         table: 'GamePost' 
-      }, (payload: any) => {
+      }, (payload) => {
         // 게시글 삭제
-        setPosts(prevPosts => 
-          prevPosts.filter(post => post.id !== payload.old.id)
-        );
+        if (payload.old) {
+          setPosts(prevPosts => 
+            prevPosts.filter(post => post.id !== payload.old!.id)
+          );
+        }
       })
       // 참여자 수 변경을 위해 다시 추가
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'GameParticipant' 
-      }, (payload: any) => {
-        let postId = payload.new?.gamePostId || payload.old?.gamePostId;
+      }, (payload) => {
+        let postId = (payload.new as any)?.gamePostId || (payload.old as any)?.gamePostId;
         
         // DELETE 이벤트 시 캐시에서 postId 찾기
-        if (!postId && payload.eventType === 'DELETE' && payload.old?.userId) {
-          postId = participantCache.get(payload.old.userId);
+        if (!postId && payload.eventType === 'DELETE' && (payload.old as any)?.userId) {
+          postId = participantCache.get((payload.old as any).userId);
           if (postId) {
             // 캐시에서 제거
-            participantCache.delete(payload.old.userId);
+            participantCache.delete((payload.old as any).userId);
           } else {
             // 캐시에 없으면 전체 목록 새로고침
             fetchPosts(filters);
@@ -177,8 +184,8 @@ export function useGamePostListSubscription(
         }
         
         // INSERT 이벤트 시 캐시에 추가
-        if (payload.eventType === 'INSERT' && payload.new?.userId && payload.new?.gamePostId) {
-          participantCache.set(payload.new.userId, payload.new.gamePostId);
+        if (payload.eventType === 'INSERT' && (payload.new as any)?.userId && (payload.new as any)?.gamePostId) {
+          participantCache.set((payload.new as any).userId, (payload.new as any).gamePostId);
         }
         
         if (postId) {
@@ -196,15 +203,15 @@ export function useGamePostListSubscription(
         event: '*', 
         schema: 'public', 
         table: 'WaitingParticipant' 
-      }, (payload: any) => {
-        let postId = payload.new?.gamePostId || payload.old?.gamePostId;
+      }, (payload) => {
+        let postId = (payload.new as any)?.gamePostId || (payload.old as any)?.gamePostId;
         
         // DELETE 이벤트 시 캐시에서 postId 찾기
-        if (!postId && payload.eventType === 'DELETE' && payload.old?.userId) {
-          postId = participantCache.get(payload.old.userId);
+        if (!postId && payload.eventType === 'DELETE' && (payload.old as any)?.userId) {
+          postId = participantCache.get((payload.old as any).userId);
           if (postId) {
             // 캐시에서 제거
-            participantCache.delete(payload.old.userId);
+            participantCache.delete((payload.old as any).userId);
           } else {
             // 캐시에 없으면 전체 목록 새로고침
             fetchPosts(filters);
@@ -213,8 +220,8 @@ export function useGamePostListSubscription(
         }
         
         // INSERT 이벤트 시 캐시에 추가
-        if (payload.eventType === 'INSERT' && payload.new?.userId && payload.new?.gamePostId) {
-          participantCache.set(payload.new.userId, payload.new.gamePostId);
+        if (payload.eventType === 'INSERT' && (payload.new as any)?.userId && (payload.new as any)?.gamePostId) {
+          participantCache.set((payload.new as any).userId, (payload.new as any).gamePostId);
         }
         
         if (postId) {
@@ -241,8 +248,8 @@ export function useGamePostListSubscription(
 }
 
 // 게임메이트 상세 페이지를 위한 실시간 구독 훅 (기존 로직 유지)
-export function useGamePostDetailSubscription(postId: string, initialPost: any = null) {
-  const [post, setPost] = useState<any>(initialPost);
+export function useGamePostDetailSubscription(postId: string, initialPost: GamePost | null = null) {
+  const [post, setPost] = useState<GamePost | null>(initialPost);
   const [loading, setLoading] = useState(!initialPost);
   const supabase = useMemo(() => createClient(), []);
   
@@ -265,7 +272,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
       
       // 참여자 캐시 업데이트
       if (data.participants) {
-        data.participants.forEach((participant: any) => {
+        data.participants.forEach((participant: { userId?: string }) => {
           if (participant.userId) {
             participantCache.set(participant.userId, postId);
           }
@@ -287,7 +294,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
     } else {
       // initialPost가 있을 때도 캐시 초기화
       if (initialPost.participants) {
-        initialPost.participants.forEach((participant: any) => {
+        initialPost.participants.forEach((participant) => {
           if (participant.userId) {
             participantCache.set(participant.userId, postId);
           }
@@ -303,7 +310,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
         config: { broadcast: { self: false } },
       })
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: 'INSERT',
           schema: 'public',
@@ -320,7 +327,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
         }
       )
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: 'DELETE',
           schema: 'public',
@@ -344,7 +351,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
         }
       )
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: 'INSERT',
           schema: 'public',
@@ -357,7 +364,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
         }
       )
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: 'DELETE',
           schema: 'public',
@@ -370,7 +377,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
         }
       )
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: 'UPDATE',
           schema: 'public',
@@ -385,7 +392,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: any =
       )
       // 백업: 모든 GameParticipant 이벤트 감지 (필터 없이)
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: '*',
           schema: 'public',

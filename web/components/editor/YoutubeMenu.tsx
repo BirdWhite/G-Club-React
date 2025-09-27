@@ -59,7 +59,7 @@ const YoutubeMenu = ({ editor, youtubeUrl, setYoutubeUrl, setShowYoutubeMenu }: 
       }
       
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   };
@@ -83,7 +83,7 @@ const YoutubeMenu = ({ editor, youtubeUrl, setYoutubeUrl, setShowYoutubeMenu }: 
         
         setShowYoutubeMenu(false);
         setYoutubeUrl('');
-      } catch (error) {
+      } catch {
         alert('유튜브 비디오 삽입 중 오류가 발생했습니다.');
       }
     } else {

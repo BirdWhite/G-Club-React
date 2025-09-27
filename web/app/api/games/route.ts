@@ -137,8 +137,7 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
   const user = await getCurrentUser();
   
@@ -224,8 +223,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
   const user = await getCurrentUser();
   

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createServerClient, getCurrentUser } from '@/lib/database/supabase';
+import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
+import { notificationService } from '@/lib/notifications/notificationService';
+import { GamePost } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
@@ -18,7 +20,7 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
 
     // 게시글 조회 조건 설정
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     // 게임 ID 필터링
     if (gameId && gameId !== 'all') {
@@ -162,9 +164,9 @@ export async function POST(request: Request) {
                 },
               });
               addedUserIds.add(participant.userId);
-            } catch (error: any) {
+            } catch (error: unknown) {
               // 중복 오류는 무시 (이미 추가된 경우)
-              if (error.code !== 'P2002') {
+              if (error instanceof Error && 'code' in error && error.code !== 'P2002') {
                 throw error;
               }
             }
@@ -179,9 +181,9 @@ export async function POST(request: Request) {
                 guestName: participant.name,
               },
             });
-          } catch (error: any) {
+          } catch (error: unknown) {
             // 중복 오류는 무시 (이미 추가된 경우)
-            if (error.code !== 'P2002') {
+            if (error instanceof Error && 'code' in error && error.code !== 'P2002') {
               throw error;
             }
           }
@@ -190,6 +192,14 @@ export async function POST(request: Request) {
 
       return post;
     });
+
+    // 새 게임 포스트 알림 발송
+    try {
+      await notificationService.notifyNewGamePost(gamePost.id, user.id);
+    } catch (notificationError) {
+      console.error('새 게임 포스트 알림 발송 중 오류:', notificationError);
+      // 알림 발송 실패는 메인 로직에 영향을 주지 않음
+    }
 
     return NextResponse.json(gamePost, { status: 201 });
   } catch (error) {

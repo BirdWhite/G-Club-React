@@ -1,113 +1,66 @@
-import { notFound, redirect } from 'next/navigation';
-import { Game, GamePost } from '@/types/models';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { GamePostForm } from '@/components/game-mate/GamePostForm';
-import { getCurrentUser } from '@/lib/database/supabase';
-import prisma from '@/lib/database/prisma';
-import { headers } from 'next/headers';
+import { MobileGamePostForm } from '@/components/game-mate/mobile/MobileGamePostForm';
+import { GamePost } from '@/types/models';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
-async function getPost(id: string): Promise<GamePost | null> {
-    try {
-      const post = await prisma.gamePost.findUnique({
-        where: { id },
-        include: {
-            game: true,
-            author: {
-                select: {
-                    id: true,
-                    userId: true,
-                    name: true,
-                    image: true,
-                }
-            },
-            participants: {
-                orderBy: { joinedAt: 'asc' },
-            },
-            waitingList: {
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            name: true,
-                            image: true,
-                        }
-                    }
-                }
-            },
-            _count: {
-                select: {
-                    participants: true,
-                    waitingList: true,
-                }
-            }
+export default function EditGamePostPage() {
+  const params = useParams();
+  const router = useRouter();
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const [post, setPost] = useState<GamePost | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const id = params.id as string;
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        const response = await fetch(`/api/game-posts/${id}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            router.push('/404');
+            return;
+          }
+          throw new Error('게시글을 불러오는데 실패했습니다.');
         }
-      });
-      if (!post) return null;
+        
+        const data = await response.json();
+        setPost(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-      // 참여자 정보를 별도로 조회 (게스트 참여자 포함)
-      const participants = await prisma.gameParticipant.findMany({
-        where: { gamePostId: id },
-        include: {
-          user: {
-            select: {
-              id: true,
-              userId: true,
-              name: true,
-              image: true,
-            },
-          },
-        },
-        orderBy: { joinedAt: 'asc' },
-      });
-
-      // Prisma의 Decimal 타입을 JsonValue로 캐스팅해야 할 수 있음.
-      // 현재 스키마에서는 content가 Json이므로 괜찮을 것으로 예상.
-      // 관계 필드 타입들도 호환되는지 확인 필요.
-      // Prisma가 반환하는 타입과 우리 모델 타입이 다를 경우 mapping 필요.
-      // 지금은 일단 타입이 호환된다고 가정.
-      return {
-        ...post,
-        participants: participants,
-      } as any as GamePost;
-
-    } catch (error) {
-      console.error(`Failed to fetch post ${id} from DB:`, error);
-      return null;
+    if (id) {
+      fetchPost();
     }
-}
-  
-async function getGames(): Promise<Game[]> {
-    try {
-        const games = await prisma.game.findMany({
-          orderBy: { name: 'asc' }
-        });
-        return games;
-    } catch (error) {
-        console.error('Failed to fetch games from DB:', error);
-        return [];
-    }
-}
+  }, [id, router]);
 
-export default async function EditGamePostPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const headersList = await headers();
-  const userAgent = headersList.get('user-agent') || '';
-  
-  // 모바일 기기 감지
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  
-  const [post, games, user] = await Promise.all([
-    getPost(id),
-    getGames(),
-    getCurrentUser()
-  ]);
-
-  if (!post || post.author.userId !== user?.id) {
-    notFound();
+  if (isLoading) {
+    return <LoadingSpinner />;
   }
 
-  // 모바일인 경우 모바일 페이지로 리다이렉트
+  if (error || !post) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-4">오류 발생</h1>
+          <p className="text-muted-foreground">{error || '게시글을 찾을 수 없습니다.'}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (isMobile) {
-    redirect(`/game-mate/${id}/edit/mobile`);
+    return <MobileGamePostForm initialData={post} />;
   }
 
   return (
@@ -117,7 +70,7 @@ export default async function EditGamePostPage({ params }: { params: Promise<{ i
         <p className="mt-2 text-sm text-cyber-gray/60">게시글 내용을 수정하고 다시 파티원을 모집해보세요.</p>
       </div>
       <div className="bg-cyber-black-200-200 border border-cyber-black-300 shadow-lg rounded-lg p-6 sm:p-8">
-        <GamePostForm games={games} initialData={post} />
+        <GamePostForm initialData={post} />
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
     }
 
-    const { tempImages, postId } = await request.json();
+    const { tempImages } = await request.json();
     
     if (!Array.isArray(tempImages) || !tempImages.length) {
       return NextResponse.json({ success: true, images: [] });

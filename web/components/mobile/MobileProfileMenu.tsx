@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/database/supabase';
-import { useProfile } from '@/contexts/ProfileProvider';
+import type { FullUserProfile } from '@/lib/user';
 
 interface MobileProfileMenuProps {
-  profile: any;
+  profile: FullUserProfile;
 }
 
 interface MenuItem {

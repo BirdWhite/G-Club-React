@@ -16,6 +16,10 @@ interface GameFilter {
   }>;
 }
 
+interface NewGamePostSettings {
+  gameFilters?: GameFilter;
+}
+
 export default function NewGamePostNotificationSettings() {
   const router = useRouter();
   const { settings, updateNewGamePost, isLoading } = useNotificationSettings();
@@ -31,7 +35,8 @@ export default function NewGamePostNotificationSettings() {
   // 초기 설정 로드
   useEffect(() => {
     if (settings.newGamePost.settings) {
-      const savedFilter = settings.newGamePost.settings.gameFilters;
+      const savedSettings = settings.newGamePost.settings as NewGamePostSettings | undefined;
+      const savedFilter = savedSettings?.gameFilters;
       if (savedFilter) {
         setGameFilter({
           mode: savedFilter.mode || 'all',
@@ -125,7 +130,7 @@ export default function NewGamePostNotificationSettings() {
                   name="gameFilter"
                   value="all"
                   checked={gameFilter.mode === 'all'}
-                  onChange={(e) => setGameFilter(prev => ({ ...prev, mode: 'all' }))}
+                  onChange={() => setGameFilter(prev => ({ ...prev, mode: 'all' }))}
                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                 />
                 <div className="ml-3">
@@ -141,7 +146,7 @@ export default function NewGamePostNotificationSettings() {
                   name="gameFilter"
                   value="favorites"
                   checked={gameFilter.mode === 'favorites'}
-                  onChange={(e) => {
+                  onChange={() => {
                     setGameFilter(prev => ({ ...prev, mode: 'favorites' }));
                     setFavoriteGames();
                   }}
@@ -162,7 +167,7 @@ export default function NewGamePostNotificationSettings() {
                   name="gameFilter"
                   value="selected"
                   checked={gameFilter.mode === 'selected'}
-                  onChange={(e) => setGameFilter(prev => ({ ...prev, mode: 'selected' }))}
+                  onChange={() => setGameFilter(prev => ({ ...prev, mode: 'selected' }))}
                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                 />
                 <div className="ml-3">

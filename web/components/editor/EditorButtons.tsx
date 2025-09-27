@@ -4,7 +4,7 @@ import { Editor } from '@tiptap/react';
 import React from 'react';
 
 export interface EditorButtonsProps {
-  editor: any;
+  editor: Editor;
   isUploading: boolean;
   handleImageUpload: () => void;
   setShowLinkMenu: (show: boolean) => void;
@@ -20,10 +20,8 @@ export function EditorButtons({
   handleImageUpload,
   setShowLinkMenu,
   setShowYoutubeMenu,
-  setYoutubeUrl,
-  setLinkUrl,
   disabled = false
-}: EditorButtonsProps): any {
+}: EditorButtonsProps): React.JSX.Element {
 
   const buttonClass = (isActive?: boolean) => 
     `p-2 rounded-sm transition-colors ${

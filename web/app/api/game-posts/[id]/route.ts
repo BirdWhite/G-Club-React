@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
-import { isAdmin } from '@/lib/database/auth';
+import { isAdmin_Server } from '@/lib/database/auth';
+import { notificationService } from '@/lib/notifications/notificationService';
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 // 모집글 상세 조회
@@ -97,8 +98,8 @@ export async function GET(
         updatedAt: post.updatedAt.toISOString(),
         // 사용자 상태 정보 추가
         isOwner: userId === post.author.userId,
-        isParticipating: userId ? participants.some((p: any) => p.userId === userId) : false,
-        isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w: any) => w.userId === userId) : false,
+        isParticipating: userId ? participants.some((p) => p.userId === userId) : false,
+        isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w) => w.userId === userId) : false,
       };
       return NextResponse.json(responseData);
     }
@@ -116,8 +117,8 @@ export async function GET(
       updatedAt: post.updatedAt.toISOString(),
       // 사용자 상태 정보 추가
       isOwner: userId === post.author.userId,
-      isParticipating: userId ? participants.some((p: any) => p.userId === userId) : false,
-      isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w: any) => w.userId === userId) : false,
+      isParticipating: userId ? participants.some((p) => p.userId === userId) : false,
+      isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w) => w.userId === userId) : false,
     };
     return NextResponse.json(responseData);
   } catch (error) {
@@ -178,7 +179,7 @@ export async function PATCH(
     }
 
     // 추가하려는 참여자 수가 최대인원을 초과하는지 확인
-    const validParticipants = participants.filter((p: any) => {
+    const validParticipants = participants.filter((p: { userId?: string; name?: string }) => {
       const hasValidUserId = p.userId && p.userId.trim().length > 0;
       const hasValidName = p.name && p.name.trim().length > 0;
       return hasValidUserId || hasValidName;
@@ -318,7 +319,10 @@ export async function DELETE(
 
     const post = await prisma.gamePost.findUnique({
       where: { id },
-      include: { author: { include: { role: true } } },
+      include: { 
+        author: { include: { role: true } },
+        game: true
+      },
     });
 
     if (!post) {
@@ -335,13 +339,52 @@ export async function DELETE(
     }
 
     const userRole = userProfile.role;
-    const userIsAdmin = isAdmin(userRole);
+    const userIsAdmin = isAdmin_Server(userRole);
 
+    // 작성자이거나 관리자인 경우에만 삭제 가능
     if (post.authorId !== user.id && !userIsAdmin) {
       return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
     }
 
+    // 삭제 전에 참여자 정보 조회 (알림 발송용)
+    const participants = await prisma.gameParticipant.findMany({
+      where: { gamePostId: id },
+      include: {
+        user: {
+          select: {
+            userId: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // 게시글 삭제
     await prisma.gamePost.delete({ where: { id } });
+
+    // 참여자들에게 게임메이트 취소 알림 발송
+    if (participants.length > 0) {
+      try {
+        const participantUserIds = participants
+          .filter(p => p.userId) // 게스트 제외
+          .map(p => p.userId!);
+
+        if (participantUserIds.length > 0) {
+          await notificationService.sendGamePostCancelledNotification(
+            participantUserIds,
+            {
+              gamePostId: id,
+              gameName: post.game?.name || '게임',
+              authorName: post.author?.name || '작성자',
+              title: post.title,
+            }
+          );
+        }
+      } catch (notificationError) {
+        console.error('게임메이트 취소 알림 발송 실패:', notificationError);
+        // 알림 실패해도 삭제는 성공으로 처리
+      }
+    }
 
     return NextResponse.json({ message: '게시글이 삭제되었습니다.' });
   } catch (error) {

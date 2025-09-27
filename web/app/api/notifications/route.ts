@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // 알림 조회 조건 구성
-    const whereCondition: any = {
+    const whereCondition: Record<string, unknown> = {
       OR: [
         // 개별 수신 알림
         { recipientId: user.id },

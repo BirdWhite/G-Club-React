@@ -1,12 +1,11 @@
 'use client';
 
-import { useEditor, EditorContent, BubbleMenu, Content } from '@tiptap/react';
+import { useEditor, EditorContent, BubbleMenu, Content, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Youtube from '@tiptap/extension-youtube';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { YoutubeMenu } from './YoutubeMenu';
 import { LinkMenu } from './LinkMenu';
@@ -16,8 +15,8 @@ import 'material-icons/iconfont/material-icons.css';
 import { JsonValue } from '@prisma/client/runtime/library';
 
 // content가 Tiptap이 이해할 수 있는 유효한 객체인지 확인하는 타입 가드
-function isValidTiptapJson(value: any): value is Content {
-  return value !== null && typeof value === 'object' && !Array.isArray(value) && 'type' in value && value.type === 'doc';
+function isValidTiptapJson(value: unknown): value is Content {
+  return value !== null && typeof value === 'object' && !Array.isArray(value) && 'type' in value && (value as { type: string }).type === 'doc';
 }
 
 interface RichTextEditorProps {
@@ -269,7 +268,7 @@ export function RichTextEditor({ content, onChange, postId, onImageUpload, disab
       
       {showToolbar && (
         <EditorButtons 
-          editor={editor}
+          editor={editor as Editor}
           isUploading={isUploading}
           handleImageUpload={handleImageUpload}
           setShowLinkMenu={setShowLinkMenu}

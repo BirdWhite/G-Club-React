@@ -14,7 +14,7 @@ export function DesktopAdminDashboard({ initialTab, onTabChange }: DesktopAdminD
   const [tab, setTab] = useState<'user' | 'permission' | 'games'>(initialTab);
 
   const handleTabChange = (newTab: string) => {
-    setTab(newTab as any);
+    setTab(newTab as 'user' | 'permission' | 'games');
     onTabChange(newTab);
   };
 

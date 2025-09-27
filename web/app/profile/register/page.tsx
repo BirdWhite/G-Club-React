@@ -17,7 +17,6 @@ export default function ProfileRegisterPage() {
     setCrop,
     zoom,
     setZoom,
-    croppedAreaPixels,
     croppedImage,
     isLoading,
     handleImageUpload,

@@ -62,22 +62,22 @@ async function handleProfileUpdate(req: NextRequest) {
       );
     }
     
-    // 프로필 업데이트 또는 생성
-    const profileData: any = {
-      name,
-      email, // OAuth 이메일 정보 (항상 포함)
-      birthDate: new Date(birthDate),
-      ...(imageUrl && { image: imageUrl })
-    };
-    
     // 트랜잭션으로 프로필 업데이트
     const updatedProfile = await prisma.userProfile.upsert({
       where: { userId },
-      update: profileData,
+      update: {
+        name,
+        email, // OAuth 이메일 정보 (항상 포함)
+        birthDate: new Date(birthDate),
+        ...(imageUrl && { image: imageUrl })
+      },
       create: {
         userId,
+        name,
+        email, // OAuth 이메일 정보 (항상 포함)
+        birthDate: new Date(birthDate),
+        ...(imageUrl && { image: imageUrl }),
         roleId: noneRole.id, // 신규 생성 시 'NONE' 역할 할당
-        ...profileData
       }
     });
     
@@ -152,17 +152,15 @@ export async function GET() {
       });
       
       // 기본 프로필 생성
-      const profileData: any = {
-        userId,
-        name: user.user_metadata?.full_name || `사용자_${userId.substring(0, 6)}`,
-        email: oauthEmail, // OAuth 이메일 정보 (항상 포함)
-        birthDate: new Date('2000-01-01'), // 기본 생년월일
-        image: '',
-        roleId: defaultRole?.id
-      };
-
       userProfile = await prisma.userProfile.create({
-        data: profileData,
+        data: {
+          userId,
+          name: user.user_metadata?.full_name || `사용자_${userId.substring(0, 6)}`,
+          email: oauthEmail, // OAuth 이메일 정보 (항상 포함)
+          birthDate: new Date('2000-01-01'), // 기본 생년월일
+          image: '',
+          roleId: defaultRole?.id
+        },
         include: {
           role: true, // 생성된 프로필에도 역할 정보를 포함합니다.
         }
@@ -172,20 +170,20 @@ export async function GET() {
     // 프로필 이미지 URL에 타임스탬프 추가하여 캐시 무효화
     const profileData = {
       ...userProfile,
-      image: userProfile.image 
+      image: userProfile?.image 
         ? `${userProfile.image}?t=${Date.now()}` 
         : null,
       // email 필드가 존재하지 않을 수 있으므로 안전하게 처리
-      email: userProfile.email || null
+      email: userProfile?.email || null
     };
     
     
     return NextResponse.json({ 
       profile: profileData,
       user: {
-        id: userProfile.userId,
-        name: userProfile.name,
-        image: userProfile.image
+        id: userProfile?.userId,
+        name: userProfile?.name,
+        image: userProfile?.image
       }
     });
   } catch (error) {

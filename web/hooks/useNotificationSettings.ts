@@ -9,7 +9,7 @@ interface DoNotDisturbSettings {
 
 interface CategorySettings {
   enabled: boolean;
-  settings?: any; // 세부 설정은 나중에 타입 정의
+  settings?: Record<string, unknown>; // 세부 설정은 나중에 타입 정의
 }
 
 interface NotificationSettings {
@@ -98,7 +98,7 @@ export function useNotificationSettings() {
   };
 
   // 신규 게임메이트 글 알림 설정 업데이트
-  const updateNewGamePost = async (enabled: boolean, detailSettings?: any) => {
+  const updateNewGamePost = async (enabled: boolean, detailSettings?: Record<string, unknown>) => {
     return updateSettings({ 
       newGamePost: { 
         enabled, 
@@ -108,7 +108,7 @@ export function useNotificationSettings() {
   };
 
   // 참여중인 모임 알림 설정 업데이트
-  const updateParticipatingGame = async (enabled: boolean, detailSettings?: any) => {
+  const updateParticipatingGame = async (enabled: boolean, detailSettings?: Record<string, unknown>) => {
     return updateSettings({ 
       participatingGame: { 
         enabled, 
@@ -118,7 +118,7 @@ export function useNotificationSettings() {
   };
 
   // 내가 작성한 모임 알림 설정 업데이트
-  const updateMyGamePost = async (enabled: boolean, detailSettings?: any) => {
+  const updateMyGamePost = async (enabled: boolean, detailSettings?: Record<string, unknown>) => {
     return updateSettings({ 
       myGamePost: { 
         enabled, 

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('수동 게임글 정리 작업 시작...');
     

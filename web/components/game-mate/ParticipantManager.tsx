@@ -1,11 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, X, Users } from 'lucide-react';
+import { X, Users } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { UserSearchSelect } from '@/components/game-mate/UserSearchSelect';
 import type { UserSearchResult } from './UserSearchSelect';
@@ -31,11 +29,6 @@ export function ParticipantManager({
   maxParticipants,
   disabled = false 
 }: ParticipantManagerProps) {
-  const [newParticipant, setNewParticipant] = useState<Participant>({
-    name: '',
-    userId: '',
-    note: ''
-  });
 
   const handleUserSelect = (user: UserSearchResult) => {
     if (participants.length >= maxParticipants) {
@@ -73,12 +66,6 @@ export function ParticipantManager({
     toast.success('참여자가 제거되었습니다.');
   };
 
-  const updateParticipant = (index: number, field: keyof Participant, value: string) => {
-    const updatedParticipants = participants.map((participant, i) => 
-      i === index ? { ...participant, [field]: value } : participant
-    );
-    onChange(updatedParticipants);
-  };
 
   return (
     <Card className="bg-input border-border">

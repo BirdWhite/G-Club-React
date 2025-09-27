@@ -2,16 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useProfile } from '@/contexts/ProfileProvider';
+import type { Session } from '@supabase/supabase-js';
 
 interface MobileNavigationProps {
-  session: any;
+  session: Session | null;
   isPendingMember: boolean;
 }
 
 export function MobileNavigation({ session, isPendingMember }: MobileNavigationProps) {
   const pathname = usePathname();
-  const { profile } = useProfile();
 
   const navItems = [
     {

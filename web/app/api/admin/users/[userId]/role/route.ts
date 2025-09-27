@@ -5,9 +5,9 @@ import { getUserProfile } from '@/lib/user';
 import { hasPermission_Server, isSuperAdmin_Server } from '@/lib/database/auth';
 
 type RouteContext = {
-    params: {
+    params: Promise<{
         userId: string;
-    }
+    }>
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<RouteContext['params']> }) {

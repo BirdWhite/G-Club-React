@@ -51,19 +51,19 @@ export default function MyGamePostNotificationSettings() {
 
   // 설정 저장
   const saveSettings = async () => {
-    await updateMyGamePost(settings.myGamePost.enabled, gameSettings);
+    await updateMyGamePost(settings.myGamePost.enabled, gameSettings as unknown as Record<string, unknown>);
     router.back();
   };
 
   // 설정 업데이트 헬퍼
-  const updateSetting = (key: keyof MyGamePostSettings, value: any) => {
+  const updateSetting = (key: keyof MyGamePostSettings, value: unknown) => {
     setGameSettings(prev => ({
       ...prev,
       [key]: value
     }));
   };
 
-  const updateBeforeMeeting = (key: keyof MyGamePostSettings['beforeMeeting'], value: any) => {
+  const updateBeforeMeeting = (key: keyof MyGamePostSettings['beforeMeeting'], value: unknown) => {
     setGameSettings(prev => ({
       ...prev,
       beforeMeeting: {
@@ -73,7 +73,7 @@ export default function MyGamePostNotificationSettings() {
     }));
   };
 
-  const updateMeetingStart = (key: keyof MyGamePostSettings['meetingStart'], value: any) => {
+  const updateMeetingStart = (key: keyof MyGamePostSettings['meetingStart'], value: unknown) => {
     setGameSettings(prev => ({
       ...prev,
       meetingStart: {

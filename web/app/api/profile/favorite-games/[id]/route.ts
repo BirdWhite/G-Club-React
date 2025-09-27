@@ -5,7 +5,7 @@ import prisma from '@/lib/database/prisma';
 // 좋아하는 게임 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createServerClient();
@@ -20,7 +20,7 @@ export async function DELETE(
       );
     }
 
-    const favoriteGameId = params.id;
+    const { id: favoriteGameId } = await params;
 
     // 좋아하는 게임이 존재하고 해당 사용자의 것인지 확인
     const favoriteGame = await prisma.userFavoriteGame.findFirst({

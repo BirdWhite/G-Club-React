@@ -1,5 +1,4 @@
 import type { GamePost } from '@/types/models';
-import { DateTimeDisplay } from '../../../components/common/DateTimeDisplay';
 
 interface GamePostHeaderProps {
   post: GamePost;

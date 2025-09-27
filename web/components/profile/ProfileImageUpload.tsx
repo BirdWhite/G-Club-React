@@ -8,7 +8,7 @@ interface ProfileImageUploadProps {
   showCurrentImage?: boolean;
 }
 
-export function ProfileImageUpload({ 
+export const ProfileImageUpload = ({ 
   image, 
   croppedImage, 
   currentImage, 

@@ -5,10 +5,10 @@ import prisma from '@/lib/database/prisma';
 // 채팅 메시지(댓글) 목록 조회
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: postId } = params;
+    const { id: postId } = await params;
 
     const post = await prisma.gamePost.findUnique({
       where: { id: postId },
@@ -47,7 +47,7 @@ export async function GET(
 // 채팅 메시지(댓글) 작성
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -57,7 +57,7 @@ export async function POST(
   }
 
   try {
-    const { id: postId } = params;
+    const { id: postId } = await params;
     const { content } = await request.json();
 
     if (!content || content.trim() === '') {

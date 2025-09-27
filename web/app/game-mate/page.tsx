@@ -32,7 +32,7 @@ export default function GameMatePage() {
   };
 
   // 게임 포스트 데이터 - 최상위에서 한 번만 호출
-  const { posts, loading, filters, setFilters } = useGamePostListSubscription({
+  const { posts, loading, setFilters } = useGamePostListSubscription({
     status: getApiStatus(urlState.status),
     gameId: urlState.gameId === 'all' ? undefined : urlState.gameId,
   });

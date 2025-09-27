@@ -7,7 +7,7 @@ interface ProfileFormLayoutProps {
   maxWidth?: 'sm' | 'md' | 'lg';
 }
 
-export function ProfileFormLayout({ 
+export const ProfileFormLayout = ({ 
   title, 
   subtitle, 
   children, 

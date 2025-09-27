@@ -137,8 +137,9 @@ export function startGamePostCleanup() {
 // 스케줄러 중지 함수 (필요시 사용)
 export function stopGamePostCleanup() {
   console.log('게임메이트 글 정리 스케줄러를 중지합니다...');
-  cron.getTasks().forEach((task: any) => {
-    if (task.getStatus() === 'scheduled') {
+  cron.getTasks().forEach((task) => {
+    const status = task.getStatus();
+    if (typeof status === 'string' && status === 'scheduled') {
       task.stop();
     }
   });

@@ -5,7 +5,7 @@ interface ProfileFormFieldsProps {
   setBirthDate: (value: string) => void;
 }
 
-export function ProfileFormFields({
+export const ProfileFormFields = ({
   name,
   setName,
   birthDate,

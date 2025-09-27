@@ -74,7 +74,7 @@ export function useUrlState<T extends Record<string, any>>(
       
       if (value !== null) {
         const initialValue = initialState[key];
-        let parsedValue: any;
+        let parsedValue: unknown;
         
         if (typeof initialValue === 'boolean') {
           parsedValue = value === 'true';

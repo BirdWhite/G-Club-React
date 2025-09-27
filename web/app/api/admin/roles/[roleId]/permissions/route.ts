@@ -7,7 +7,7 @@ type Params = {
   roleId: string;
 };
 
-export async function PATCH(request: NextRequest, { params }: { params: Params }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<Params> }) {
   try {
     const supabase = await createServerClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -32,11 +32,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Params }
     }
 
     // 슈퍼 관리자 권한 확인
-    if (!isSuperAdminServer(userProfile.role)) {
+    if (!isSuperAdmin_Server(userProfile.role)) {
       return NextResponse.json({ error: '권한이 없습니다. 슈퍼 관리자만 권한을 변경할 수 있습니다.' }, { status: 403 });
     }
 
-    const { roleId } = params;
+    const { roleId } = await params;
     const { permissionId, action } = await request.json();
 
     // 대상 역할이 존재하는지 확인

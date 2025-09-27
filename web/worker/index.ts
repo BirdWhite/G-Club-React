@@ -1,8 +1,15 @@
-// 자체 VAPID 푸시 알림 서비스 워커
+// next-pwa 커스텀 워커 - 푸시 알림 기능
+// 이 파일은 자동으로 workbox 서비스 워커에 통합됩니다
+
+// 서비스 워커 타입 선언
+declare const clients: any;
+
+// 타입 에러 방지를 위한 타입 단언
+const sw = self as any;
 
 // 푸시 이벤트 수신
-self.addEventListener('push', function(event) {
-  console.log('[push-notification-sw.js] Push event received:', event);
+self.addEventListener('push', function(event: any) {
+  console.log('[custom-worker] Push event received:', event);
   
   let notificationData = {
     title: '얼티메이트',
@@ -17,9 +24,10 @@ self.addEventListener('push', function(event) {
   if (event.data) {
     try {
       const payload = event.data.json();
+      console.log('[custom-worker] Push payload:', payload);
       notificationData = { ...notificationData, ...payload };
     } catch (error) {
-      console.error('푸시 데이터 파싱 실패:', error);
+      console.error('[custom-worker] 푸시 데이터 파싱 실패:', error);
       notificationData.body = event.data.text() || notificationData.body;
     }
   }
@@ -45,13 +53,26 @@ self.addEventListener('push', function(event) {
   };
 
   event.waitUntil(
-    self.registration.showNotification(notificationData.title, notificationOptions)
+    sw.registration.showNotification(notificationData.title, notificationOptions)
   );
 });
 
+// 메시지 이벤트 처리 (디버깅용)
+self.addEventListener('message', function(event: any) {
+  console.log('[custom-worker] Message received:', event.data);
+  
+  if (event.data.type === 'TEST_PUSH') {
+    sw.registration.showNotification(event.data.data.title, {
+      body: event.data.data.body,
+      icon: event.data.data.icon,
+      tag: 'test'
+    });
+  }
+});
+
 // 알림 클릭 이벤트 처리
-self.addEventListener('notificationclick', function(event) {
-  console.log('[push-notification-sw.js] Notification click received.');
+self.addEventListener('notificationclick', function(event: any) {
+  console.log('[custom-worker] Notification click received.');
 
   event.notification.close();
 
@@ -66,7 +87,7 @@ self.addEventListener('notificationclick', function(event) {
     clients.matchAll({
       type: 'window',
       includeUncontrolled: true
-    }).then(function(clientList) {
+    }).then(function(clientList: any) {
       // 이미 열린 탭이 있으면 포커스
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
@@ -82,4 +103,18 @@ self.addEventListener('notificationclick', function(event) {
       }
     })
   );
+});
+
+// 설치 이벤트
+self.addEventListener('install', function(event: any) {
+  console.log('[custom-worker] Service worker installed');
+  // 즉시 활성화
+  sw.skipWaiting();
+});
+
+// 활성화 이벤트
+self.addEventListener('activate', function(event: any) {
+  console.log('[custom-worker] Service worker activated');
+  // 즉시 클라이언트 제어권 가져오기
+  event.waitUntil(sw.clients.claim());
 });

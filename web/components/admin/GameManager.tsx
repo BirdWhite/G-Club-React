@@ -133,7 +133,7 @@ export function GameManager() {
       
       toast.success('게임이 삭제되었습니다.');
       fetchGames();
-    } catch (err) {
+    } catch {
       toast.error('게임 삭제 중 오류가 발생했습니다.');
     }
   };

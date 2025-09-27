@@ -2,4 +2,3 @@
 export * from './common';
 export * from './date';
 export * from './image';
-export * from './data';

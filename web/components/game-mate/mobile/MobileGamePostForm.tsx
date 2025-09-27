@@ -1,26 +1,25 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import toast from 'react-hot-toast';
-import { Game, GamePost } from '@/types/models';
+import { GamePost } from '@/types/models';
 import { MobileGameSearchSelect } from './MobileGameSearchSelect';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { JsonValue } from '@prisma/client/runtime/library';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { MobileTimePicker } from './MobileTimePicker';
-import { MobileParticipantManager, Participant } from './MobileParticipantManager';
+import { MobileParticipantManager } from './MobileParticipantManager';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect, useRef, useState } from 'react';
 
@@ -34,7 +33,7 @@ const formSchema = z.object({
     if (!value || typeof value !== 'object' || !('content' in value)) {
         return false;
     }
-    const contentArray = (value as { content: any[] }).content;
+    const contentArray = (value as { content: Array<{ type: string; content?: Array<{ text?: string }> }> }).content;
     if (!contentArray || contentArray.length === 0) return false;
     if (contentArray.length === 1 && contentArray[0].type === 'paragraph' && !contentArray[0].content) {
         return false;
@@ -45,17 +44,16 @@ const formSchema = z.object({
     name: z.string().min(1, '이름은 필수입니다.'),
     userId: z.string().optional(),
     note: z.string().optional(),
-  })).default([]),
+  })),
 });
 
 type GamePostFormData = z.infer<typeof formSchema>;
 
 interface MobileGamePostFormProps {
-  games: Game[];
   initialData?: GamePost;
 }
 
-export function MobileGamePostForm({ games, initialData }: MobileGamePostFormProps) {
+export function MobileGamePostForm({ initialData }: MobileGamePostFormProps) {
   const router = useRouter();
   const isEditMode = !!initialData;
   const { profile } = useProfile();
@@ -109,7 +107,7 @@ export function MobileGamePostForm({ games, initialData }: MobileGamePostFormPro
   };
 
   const form = useForm<GamePostFormData>({
-    resolver: zodResolver(formSchema) as any,
+    resolver: zodResolver(formSchema),
     mode: 'onSubmit', // 폼 제출 시에만 검증 실행
     reValidateMode: 'onSubmit', // 재검증도 제출 시에만 실행
     defaultValues: {
@@ -204,8 +202,8 @@ export function MobileGamePostForm({ games, initialData }: MobileGamePostFormPro
       toast.success(isEditMode ? '게시글이 수정되었습니다.' : '게시글이 작성되었습니다.');
       router.push(`/game-mate/${isEditMode ? initialData.id : result.id}`);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
     }
   };
 
@@ -222,11 +220,11 @@ export function MobileGamePostForm({ games, initialData }: MobileGamePostFormPro
          typeof currentValues.content === 'object' && 
          'content' in currentValues.content &&
          Array.isArray(currentValues.content.content) &&
-         currentValues.content.content.some((node: any) => 
-           node.type === 'paragraph' && 
-           node.content && 
-           node.content.length > 0 &&
-           node.content.some((textNode: any) => textNode.text && textNode.text.trim() !== '')
+         currentValues.content.content.some((node) => 
+           (node as { type: string; content?: Array<{ text?: string }> }).type === 'paragraph' && 
+           (node as { type: string; content?: Array<{ text?: string }> }).content && 
+           (node as { type: string; content?: Array<{ text?: string }> }).content!.length > 0 &&
+           (node as { type: string; content?: Array<{ text?: string }> }).content!.some((textNode) => textNode.text && textNode.text.trim() !== '')
          )) || // 실제 텍스트 내용이 있는지 확인
         currentValues.participants.length > 1 // 작성자 외 다른 참여자
       );
@@ -292,10 +290,10 @@ export function MobileGamePostForm({ games, initialData }: MobileGamePostFormPro
       <div ref={containerRef} className="flex-1 overflow-y-auto overscroll-contain">
         <div className="p-4 pb-24 space-y-6">
           <Form {...form}>
-            <form id="game-post-form" onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
+            <form id="game-post-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-3">
                 <FormField
-                  control={form.control as any}
+                  control={form.control}
                   name="title"
                   render={({ field }) => (
                     <FormItem>
@@ -319,7 +317,7 @@ export function MobileGamePostForm({ games, initialData }: MobileGamePostFormPro
               <div className="flex gap-4">
                 {/* 왼쪽: 날짜 선택 */}
                 <FormField
-                  control={form.control as any}
+                  control={form.control}
                   name="startDate"
                   render={({ field }) => (
                     <FormItem className="flex-1">
@@ -392,7 +390,7 @@ export function MobileGamePostForm({ games, initialData }: MobileGamePostFormPro
 
                 {/* 오른쪽: 시간 선택 */}
                 <FormField
-                  control={form.control as any}
+                  control={form.control}
                   name="startTime"
                   render={({ field }) => (
                     <FormItem className="flex-1">
@@ -409,7 +407,7 @@ export function MobileGamePostForm({ games, initialData }: MobileGamePostFormPro
               </div>
 
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name="gameId"
                 render={({ field }) => (
                   <FormItem>
@@ -426,7 +424,7 @@ export function MobileGamePostForm({ games, initialData }: MobileGamePostFormPro
               />
 
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name="maxParticipants"
                 render={({ field }) => (
                   <FormItem>
@@ -488,7 +486,7 @@ export function MobileGamePostForm({ games, initialData }: MobileGamePostFormPro
               <div className="border-t border-border"></div>
 
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name="content"
                 render={({ field }) => (
                   <FormItem>
@@ -512,7 +510,7 @@ export function MobileGamePostForm({ games, initialData }: MobileGamePostFormPro
               <div className="border-t border-border"></div>
 
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name="participants"
                 render={({ field }) => (
                   <FormItem>

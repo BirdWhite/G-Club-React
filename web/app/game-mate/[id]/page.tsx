@@ -63,7 +63,7 @@ async function getPost(id: string): Promise<GamePost | null> {
       },
     };
 
-    return postWithCounts as any as GamePost;
+    return postWithCounts as GamePost;
 
   } catch (error) {
     console.error(`Failed to fetch post ${id} from DB:`, error);

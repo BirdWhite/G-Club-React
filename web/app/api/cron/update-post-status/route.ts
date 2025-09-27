@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database/supabase';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Supabase 클라이언트 생성
     const supabase = await createServerClient();

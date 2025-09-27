@@ -189,24 +189,3 @@ export async function resizeImage(
   }
 }
 
-/**
- * 비율을 유지하며 최대 크기 내에서 새로운 크기를 계산하는 함수
- * @param original 원본 이미지 크기
- * @param max 최대 허용 크기
- * @returns ImageDimensions 계산된 새로운 크기
- */
-function calculateResizeDimensions(
-  original: ImageDimensions,
-  max: ImageDimensions
-): ImageDimensions {
-  let { width, height } = original;
-
-  // 최대 크기를 초과하는 경우에만 리사이즈
-  if (width > max.width || height > max.height) {
-    const ratio = Math.min(max.width / width, max.height / height);
-    width = Math.round(width * ratio);
-    height = Math.round(height * ratio);
-  }
-
-  return { width, height };
-}

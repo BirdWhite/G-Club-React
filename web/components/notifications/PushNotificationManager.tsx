@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/database/supabase';
 
 interface PushNotificationManagerProps {
   userId?: string;
@@ -14,53 +13,74 @@ export function PushNotificationManager({ userId }: PushNotificationManagerProps
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialCheckComplete, setIsInitialCheckComplete] = useState(false);
-  const supabase = createClient();
 
   useEffect(() => {
+    console.log('🔔 PushNotificationManager 초기화 시작');
+    console.log('🔔 userId:', userId);
+    
     // 브라우저 지원 확인
     if ('serviceWorker' in navigator && 'PushManager' in window) {
+      console.log('✅ 브라우저가 푸시 알림을 지원합니다');
       setIsSupported(true);
       setPermission(Notification.permission);
+      console.log('🔔 현재 알림 권한:', Notification.permission);
       
-      // 기존 구독 상태 확인
+      // next-pwa가 자동 등록한 서비스 워커 사용
       checkExistingSubscription();
+    } else {
+      console.log('❌ 브라우저가 푸시 알림을 지원하지 않습니다');
+      console.log('serviceWorker 지원:', 'serviceWorker' in navigator);
+      console.log('PushManager 지원:', 'PushManager' in window);
     }
   }, [userId]);
 
+
   const checkExistingSubscription = async () => {
     try {
+      console.log('🔍 기존 구독 상태 확인 중...');
       const registration = await navigator.serviceWorker.ready;
+      console.log('✅ 서비스 워커 등록 완료:', registration);
+      
       const existingSubscription = await registration.pushManager.getSubscription();
+      console.log('🔍 브라우저 구독 상태:', existingSubscription);
       
       if (userId) {
+        console.log('🔍 서버 구독 상태 확인 중...');
         // 서버에 해당 사용자의 구독이 있는지 확인
         const serverHasSubscription = await checkServerSubscription();
+        console.log('🔍 서버 구독 상태:', serverHasSubscription);
         
         if (existingSubscription && serverHasSubscription) {
           // 브라우저와 서버 모두 구독 정보가 있음
+          console.log('✅ 브라우저와 서버 모두 구독됨');
           setSubscription(existingSubscription);
         } else if (existingSubscription && !serverHasSubscription) {
           // 브라우저에는 있지만 서버에는 없음 - 브라우저 구독 정리
+          console.log('⚠️ 브라우저에만 구독됨 - 정리 중...');
           await existingSubscription.unsubscribe();
           setSubscription(null);
           setError('구독 정보가 동기화되지 않았습니다. 다시 구독해주세요.');
         } else if (!existingSubscription && serverHasSubscription) {
           // 서버에는 있지만 브라우저에는 없음 - 서버 구독 정리하고 재구독 필요
+          console.log('⚠️ 서버에만 구독됨 - 재구독 필요');
           setSubscription(null);
           setError('구독 정보가 동기화되지 않았습니다. 다시 구독해주세요.');
         } else {
           // 둘 다 없음 - 정상 상태
+          console.log('❌ 구독 없음 - 정상 상태');
           setSubscription(null);
         }
       } else if (existingSubscription) {
         // userId가 없지만 브라우저 구독이 있음
+        console.log('⚠️ userId 없음 - 브라우저 구독만 확인');
         setSubscription(existingSubscription);
       }
     } catch (error) {
-      console.error('기존 구독 확인 실패:', error);
+      console.error('❌ 기존 구독 확인 실패:', error);
       setError('구독 상태 확인에 실패했습니다.');
     } finally {
       setIsInitialCheckComplete(true);
+      console.log('🔔 초기화 완료');
     }
   };
 

@@ -34,7 +34,7 @@ export default function AdminDashboard() {
   }, [profile, isLoading, hasAdminAccess, router]); // router 의존성 복구
 
   const handleTabChange = (newTab: string) => {
-    setTab(newTab as any);
+    setTab(newTab as 'user' | 'permission' | 'games');
     const url = new URL(window.location.href);
     url.searchParams.set('tab', newTab);
     window.history.pushState({}, '', url);

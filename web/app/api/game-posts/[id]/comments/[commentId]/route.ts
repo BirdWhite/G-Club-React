@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
-import { UserRole } from '@/lib/database/auth';
 
 // 채팅 메시지(댓글) 삭제
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string; commentId: string } }
+  { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
     const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,7 +15,7 @@ export async function DELETE(
   }
 
   try {
-    const { id: postId, commentId: messageId } = params;
+    const { id: postId, commentId: messageId } = await params;
 
     const message = await prisma.chatMessage.findUnique({
       where: { id: messageId },
@@ -36,7 +35,7 @@ export async function DELETE(
         return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 404 });
     }
 
-    const userRole = userProfile.role.name as UserRole;
+    const userRole = userProfile.role.name;
     const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
     if (message.userId !== user.id && !isAdmin) {

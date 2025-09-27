@@ -8,7 +8,7 @@ import { PlusCircle } from 'lucide-react';
 
 interface DesktopGamePostListProps {
   userId?: string;
-  posts: any[];
+  posts: GamePost[];
   loading: boolean;
   urlState: {
     gameId: string;

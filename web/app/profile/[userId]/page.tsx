@@ -3,11 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect, useState, use } from 'react';
-import { createClient } from '@/lib/database/supabase';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { redirect } from 'next/navigation';
 import { MobileProfileMenu } from '@/components/mobile/MobileProfileMenu';
 import { DesktopProfilePage } from '@/components/desktop/DesktopProfilePage';
+import type { FullUserProfile } from '@/lib/user';
 
 interface ProfilePageProps {
   params: Promise<{
@@ -18,17 +18,12 @@ interface ProfilePageProps {
 export default function ProfilePage({ params }: ProfilePageProps) {
   const router = useRouter();
   const { profile: currentUserProfile, isLoading: currentUserLoading, error: currentUserError } = useProfile();
-  const [targetProfile, setTargetProfile] = useState<any>(null);
+  const [targetProfile, setTargetProfile] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMounted, setIsMounted] = useState(false);
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   const { userId } = use(params);
   const isOwnProfile = currentUserProfile?.userId === userId;
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   // 프로필 데이터 로드
   useEffect(() => {
@@ -88,7 +83,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   }
 
   // NONE 역할 사용자는 자신의 프로필이 아닌 경우에만 대기 페이지 표시
-  if (targetProfile.role?.name === 'NONE' && !isOwnProfile) {
+  if ((targetProfile as { role?: { name?: string } })?.role?.name === 'NONE' && !isOwnProfile) {
     redirect('/auth/pending');
   }
 
@@ -98,9 +93,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     return (
       <>
         {isMobile ? (
-          <MobileProfileMenu profile={targetProfile} />
+          <MobileProfileMenu profile={targetProfile as FullUserProfile} />
         ) : (
-          <DesktopProfilePage targetProfile={targetProfile} isOwnProfile={isOwnProfile} />
+          <DesktopProfilePage targetProfile={targetProfile as FullUserProfile} isOwnProfile={isOwnProfile} />
         )}
       </>
     );
@@ -111,7 +106,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       {isMobile ? (
         <div>모바일에서는 다른 사용자 프로필을 볼 수 없습니다.</div>
       ) : (
-        <DesktopProfilePage targetProfile={targetProfile} isOwnProfile={isOwnProfile} />
+        <DesktopProfilePage targetProfile={targetProfile as FullUserProfile} isOwnProfile={isOwnProfile} />
       )}
     </>
   );

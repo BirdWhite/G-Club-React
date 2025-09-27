@@ -14,9 +14,10 @@ const extractTextFromContent = (content: JsonValue): string => {
   }
   
   return content.content
-    .map((node: any) => {
-      if (node.type === 'paragraph' && node.content) {
-        return node.content.map((textNode: any) => textNode.text || '').join('');
+    .map((node: unknown) => {
+      const typedNode = node as { type: string; content?: Array<{ text?: string }> };
+      if (typedNode.type === 'paragraph' && typedNode.content) {
+        return typedNode.content.map((textNode) => textNode.text || '').join('');
       }
       return '';
     })

@@ -1,34 +1,14 @@
+'use client';
+
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { GamePostForm } from '@/components/game-mate/GamePostForm';
-import { Game } from '@/types/models';
-import prisma from '@/lib/database/prisma';
-import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { MobileGamePostForm } from '@/components/game-mate/mobile/MobileGamePostForm';
 
-async function getGames(): Promise<Game[]> {
-  try {
-    const games = await prisma.game.findMany({
-      orderBy: {
-        name: 'asc',
-      },
-    });
-    return games;
-  } catch (error) {
-    console.error('Failed to fetch games from DB:', error);
-    return [];
-  }
-}
+export default function NewGamePostPage() {
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
-export default async function NewGamePostPage() {
-  const games = await getGames();
-  const headersList = await headers();
-  const userAgent = headersList.get('user-agent') || '';
-  
-  // 모바일 기기 감지
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  
-  // 모바일인 경우 모바일 페이지로 리다이렉트
   if (isMobile) {
-    redirect('/game-mate/new/mobile');
+    return <MobileGamePostForm />;
   }
 
   return (
@@ -38,7 +18,7 @@ export default async function NewGamePostPage() {
         <p className="mt-2 text-sm text-muted-foreground">함께 게임을 즐길 파티원을 모집해보세요!</p>
       </div>
       <div className="bg-card border border-border shadow-lg rounded-lg p-6 sm:p-8">
-        <GamePostForm games={games} />
+        <GamePostForm />
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { GamePost, GameParticipant, WaitingParticipant } from '@/types/models';
+import { GamePost } from '@/types/models';
 import toast from 'react-hot-toast';
 import { useGamePostDetailSubscription } from '@/hooks/useRealtimeSubscription';
 
@@ -45,8 +45,8 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
       toast.success(successMessage);
       refresh(); // Re-fetch data using the hook's method
 
-    } catch (error: any) {
-      toast.error(error.message || errorMessage);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : errorMessage);
     }
   };
 
@@ -84,8 +84,8 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
       toast.success('게시글이 삭제되었습니다.');
       router.push('/game-mate');
 
-    } catch (error: any) {
-      toast.error(error.message || '게시글 삭제 중 오류가 발생했습니다.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : '게시글 삭제 중 오류가 발생했습니다.');
     }
   };
 
@@ -107,7 +107,7 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
     <>
       <GamePostHeader
         post={currentPost}
-        isOwner={isOwner}
+        isOwner={isOwner || false}
         onDelete={handleDeletePost}
         onEdit={handleEditPost}
         loading={isSubmitting}
@@ -146,9 +146,9 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
         <div className="mt-8">
           <ActionButtons
             postStatus={currentPost.status}
-            isParticipating={isParticipating}
-            isWaiting={isWaiting}
-            isOwner={isOwner}
+            isParticipating={isParticipating || false}
+            isWaiting={isWaiting || false}
+            isOwner={isOwner || false}
             onParticipate={handleParticipate}
             onCancelParticipation={handleCancelParticipation}
             onWait={handleWait}

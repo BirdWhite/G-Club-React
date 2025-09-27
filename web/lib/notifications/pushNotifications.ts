@@ -69,11 +69,11 @@ export async function sendPushNotificationInternal({
     console.log(`푸시 알림 발송 성공: ${userId}`);
     return true;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`푸시 알림 발송 실패 (${userId}):`, error);
     
     // 구독이 만료된 경우 DB에서 제거
-    if (error.statusCode === 410) {
+    if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 410) {
       try {
         const supabase = await createServerClient();
         await supabase
@@ -124,7 +124,7 @@ export async function sendBulkPushNotificationInternal({
 }
 
 // 게임 선호도 기반 사용자 목록 가져오기 (나중에 구현 예정)
-export async function getUsersByGamePreference(gameId: string): Promise<string[]> {
+export async function getUsersByGamePreference(): Promise<string[]> {
   try {
     const supabase = await createServerClient();
     

@@ -92,7 +92,7 @@ export function GameSearchSelect({ value, onChange, className = '', initialGameN
       // value가 없으면(선택 해제) query도 비웁니다.
       setQuery('');
     }
-  }, [value]);
+  }, [value, games, query]);
 
   // 게임 선택 핸들러
   const handleSelect = (game: Game | null) => {

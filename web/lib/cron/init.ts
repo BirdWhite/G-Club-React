@@ -5,7 +5,7 @@ import { startNotificationCleanup } from './notificationCleanup';
 // 전역 변수로 스케줄러 시작 상태 관리
 declare global {
   var __cronSchedulerStarted: boolean | undefined;
-  var __cronSchedulerInstance: any | undefined;
+  var __cronSchedulerInstance: unknown | undefined;
 }
 
 // 서버 사이드에서만 실행 (브라우저에서는 실행되지 않음)

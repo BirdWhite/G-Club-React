@@ -5,6 +5,7 @@ import React, { useState, useEffect, Fragment, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider'; // 1. useProfile 훅 임포트
+import type { Session } from '@supabase/supabase-js';
 import { MobileNavigation } from '@/components/layout/MobileNavigation';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 
@@ -13,10 +14,9 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const { profile } = useProfile(); // 2. useProfile 훅 호출
   const isAdmin = profile?.role?.name === 'ADMIN' || profile?.role?.name === 'SUPER_ADMIN'; // 3. isAdmin 변수 생성
@@ -56,7 +56,7 @@ export function Header() {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       
-      setSession(user ? { user } : null);
+      setSession(user ? { user } as Session : null);
       return user;
     } catch (error) {
       console.error('사용자 정보를 가져오는 중 오류 발생:', error);
