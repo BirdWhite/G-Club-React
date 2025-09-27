@@ -14,10 +14,11 @@ const extractTextFromContent = (content: JsonValue): string => {
   }
   
   return content.content
-    .map((node: unknown) => {
-      const typedNode = node as { type: string; content?: Array<{ text?: string }> };
-      if (typedNode.type === 'paragraph' && typedNode.content) {
-        return typedNode.content.map((textNode) => textNode.text || '').join('');
+    .map((node: JsonValue) => {
+      if (node && typeof node === 'object' && 'type' in node && node.type === 'paragraph' && 'content' in node && Array.isArray(node.content)) {
+        return node.content.map((textNode: JsonValue) => 
+          textNode && typeof textNode === 'object' && 'text' in textNode ? textNode.text || '' : ''
+        ).join('');
       }
       return '';
     })
@@ -31,7 +32,7 @@ interface GamePostCardProps {
 }
 
 const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
-  const isOwner = post.author?.id === currentUserId;
+  const isOwner = post.author?.userId === currentUserId;
   const isParticipating = post.participants?.some(p => p.userId === currentUserId);
   const isWaiting = post.waitingList?.some(w => w.userId === currentUserId);
 
@@ -114,7 +115,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
         </div>
         
         <div className="flex justify-between items-start gap-2 mb-1">
-            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
+            <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2">
               {post.title}
             </h3>
             <div className="text-sm text-card-foreground/70 group-hover:text-card-foreground transition-colors duration-300 flex-shrink-0 mt-1">

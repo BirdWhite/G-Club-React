@@ -80,14 +80,14 @@ export function GameSearchSelect({
           aria-expanded={open}
           data-state={open ? "open" : "closed"}
           className={cn(
-            "w-full justify-between bg-popover text-popover-foreground border-border hover:bg-popover/80",
+            "w-full justify-between bg-popover text-popover-foreground border-border hover:bg-popover/80 h-12",
             !value && "text-muted-foreground",
             className
           )}
         >
           {value === 'all' ? (
             <div className="flex items-center gap-2">
-              <LayoutGrid className="h-4 w-4" />
+              <LayoutGrid className="h-6 w-6" />
               <span>전체</span>
             </div>
           ) : selectedGame ? (
@@ -96,7 +96,7 @@ export function GameSearchSelect({
                 <img
                   src={selectedGame.iconUrl}
                   alt=""
-                  className="h-4 w-4 rounded-sm"
+                  className="h-6 w-6 rounded-sm"
                 />
               )}
               <span className="truncate">{selectedGame.name}</span>
@@ -104,16 +104,17 @@ export function GameSearchSelect({
           ) : (
             placeholder
           )}
-          <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronDownIcon className="ml-2 h-6 w-6 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-popover text-popover-foreground border-border" align="start">
+             <PopoverContent className="w-[calc(var(--radix-popover-trigger-width)*2+0.75rem)] p-2 bg-popover text-popover-foreground border-border" align="start">
                  <Command className="bg-popover text-popover-foreground">
            <CommandInput
              placeholder="게임 이름이나 별칭으로 검색..."
+             className="h-12 text-base px-4 py-4"
            />
           <CommandList>
-            <CommandEmpty>
+            <CommandEmpty className="py-4 text-base">
               {isLoading ? "검색 중..." : "게임을 찾을 수 없습니다."}
             </CommandEmpty>
             <CommandGroup>
@@ -124,14 +125,15 @@ export function GameSearchSelect({
                     onChange(currentValue === value ? "" : currentValue);
                     setOpen(false);
                   }}
+                  className="py-3 px-3 text-base"
                 >
-                  <div className="flex items-center gap-2 w-full">
-                    <LayoutGrid className="h-4 w-4 flex-shrink-0" />
+                  <div className="flex items-center gap-3 w-full">
+                    <LayoutGrid className="h-6 w-6 flex-shrink-0" />
                     <span className="truncate">전체</span>
                   </div>
                   <Check
                     className={cn(
-                      "ml-auto h-4 w-4",
+                      "ml-auto h-6 w-6",
                       value === 'all' ? "opacity-100" : "opacity-0"
                     )}
                   />
@@ -145,20 +147,21 @@ export function GameSearchSelect({
                      onChange(game.id);
                      setOpen(false);
                    }}
+                   className="py-3 px-3 text-base"
                  >
-                  <div className="flex items-center gap-2 w-full">
+                  <div className="flex items-center gap-3 w-full">
                     {game.iconUrl && (
                       <img
                         src={game.iconUrl}
                         alt=""
-                        className="h-4 w-4 rounded-sm flex-shrink-0"
+                        className="h-6 w-6 rounded-sm flex-shrink-0"
                       />
                     )}
                     <span className="truncate">{game.name}</span>
                   </div>
                   <Check
                     className={cn(
-                      "ml-auto h-4 w-4",
+                      "ml-auto h-6 w-6",
                       value === game.id ? "opacity-100" : "opacity-0"
                     )}
                   />

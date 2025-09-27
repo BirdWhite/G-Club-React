@@ -223,7 +223,7 @@ export class NotificationFilter {
   /**
    * 좋아하는 게임인지 확인 (배치 처리용)
    */
-  private static isFavoriteGame(userFavoriteGames: any[], gameId?: string): boolean {
+  private static isFavoriteGame(userFavoriteGames: { gameId: string }[], gameId?: string): boolean {
     if (!gameId) return false;
     
     return userFavoriteGames.some(fav => fav.gameId === gameId);
@@ -236,6 +236,9 @@ export class NotificationFilter {
     settings: unknown,
     context?: NotificationContext
   ): boolean {
+    // settings가 null이면 기본값으로 허용
+    if (!settings) return true;
+    
     const settingsObj = settings as {
       memberJoin?: boolean;
       memberLeave?: boolean;
@@ -278,19 +281,27 @@ export class NotificationFilter {
       myGamePostSettings: unknown;
       waitingListEnabled: boolean;
       user: {
-        favoriteGames: any[];
+        favoriteGames: { gameId: string }[];
       };
     },
     notificationType: string,
     context?: NotificationContext
   ): boolean {
+    // settings가 null이면 기본값으로 허용
+    if (!settings) return true;
     switch (notificationType) {
       case 'NEW_GAME_POST':
         if (!settings.newGamePostEnabled) return false;
         
         // 게임 필터 확인
         if (context?.gameId) {
-          const gameSettings = settings.newGamePostSettings as any;
+          const gameSettings = settings.newGamePostSettings as {
+            gameFilters?: {
+              enabled: boolean;
+              mode: string;
+              excludedGames?: string[];
+            };
+          };
           if (gameSettings?.gameFilters?.enabled) {
             if (gameSettings.gameFilters.mode === 'FAVORITE_ONLY') {
               return this.isFavoriteGame(settings.user.favoriteGames || [], context.gameId);
@@ -353,20 +364,26 @@ export class NotificationFilter {
       const filteredUserIds: string[] = [];
       
       for (const setting of userSettings) {
-        // 방해 금지 시간 확인
-        if (this.isDoNotDisturbTime(setting)) {
+        try {
+          // 방해 금지 시간 확인
+          if (this.isDoNotDisturbTime(setting)) {
+            continue;
+          }
+          
+          // 카테고리별 설정 확인
+          const shouldSend = this.checkCategorySettingsBatch(
+            setting,
+            notificationType,
+            context
+          );
+          
+          if (shouldSend) {
+            filteredUserIds.push(setting.userId);
+          }
+        } catch (error) {
+          console.error(`사용자 ${setting.userId} 알림 필터링 중 오류:`, error);
+          // 오류 발생 시 해당 사용자는 알림을 받지 않음
           continue;
-        }
-        
-        // 카테고리별 설정 확인
-        const shouldSend = this.checkCategorySettingsBatch(
-          setting,
-          notificationType,
-          context
-        );
-        
-        if (shouldSend) {
-          filteredUserIds.push(setting.userId);
         }
       }
       

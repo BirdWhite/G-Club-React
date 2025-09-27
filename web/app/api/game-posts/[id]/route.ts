@@ -26,7 +26,10 @@ export async function GET(
     const userId = user?.id;
 
     const post = await prisma.gamePost.findUnique({
-      where: { id },
+      where: { 
+        id,
+        status: { not: 'DELETED' } // 삭제된 게시글 제외
+      },
       include: {
         game: {
           select: {
@@ -160,7 +163,10 @@ export async function PATCH(
     }
 
     const existingPost = await prisma.gamePost.findUnique({ 
-      where: { id },
+      where: { 
+        id,
+        status: { not: 'DELETED' } // 삭제된 게시글 제외
+      },
       include: {
         participants: true,
       }
@@ -318,7 +324,10 @@ export async function DELETE(
     const { id } = await params;
 
     const post = await prisma.gamePost.findUnique({
-      where: { id },
+      where: { 
+        id,
+        status: { not: 'DELETED' } // 삭제된 게시글 제외
+      },
       include: { 
         author: { include: { role: true } },
         game: true
@@ -359,10 +368,7 @@ export async function DELETE(
       },
     });
 
-    // 게시글 삭제
-    await prisma.gamePost.delete({ where: { id } });
-
-    // 참여자들에게 게임메이트 취소 알림 발송
+    // 참여자들에게 게임메이트 취소 알림 발송 (삭제 전에)
     if (participants.length > 0) {
       try {
         const participantUserIds = participants
@@ -370,7 +376,8 @@ export async function DELETE(
           .map(p => p.userId!);
 
         if (participantUserIds.length > 0) {
-          await notificationService.sendGamePostCancelledNotification(
+          console.log(`게임메이트 취소 알림 발송 시작: ${participantUserIds.length}명에게 발송`);
+          const result = await notificationService.sendGamePostCancelledNotification(
             participantUserIds,
             {
               gamePostId: id,
@@ -379,6 +386,7 @@ export async function DELETE(
               title: post.title,
             }
           );
+          console.log(`게임메이트 취소 알림 발송 완료:`, result);
         }
       } catch (notificationError) {
         console.error('게임메이트 취소 알림 발송 실패:', notificationError);
@@ -386,6 +394,13 @@ export async function DELETE(
       }
     }
 
+    // 게시글을 DELETED 상태로 변경 (실제 삭제 대신)
+    await prisma.gamePost.update({
+      where: { id },
+      data: { status: 'DELETED' }
+    });
+
+    console.log(`게임포스트 삭제 완료: ${id} (${post.title})`);
     return NextResponse.json({ message: '게시글이 삭제되었습니다.' });
   } catch (error) {
     console.error('모집글 삭제 오류:', error);

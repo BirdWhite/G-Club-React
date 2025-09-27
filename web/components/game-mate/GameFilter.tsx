@@ -32,9 +32,9 @@ export function GameFilter({
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* 게임 선택 드롭다운 */}
-        <div className="flex-1 md:max-w-md">
+      <div className="flex gap-3">
+        {/* 게임 선택 드롭다운 - 모바일에서 반반 나누기 */}
+        <div className="flex-1">
           <GameSearchSelect
             value={selectedGame}
             onChange={handleGameSelect}
@@ -43,18 +43,18 @@ export function GameFilter({
           />
         </div>
 
-        {/* 상태 필터 드롭다운 */}
-        <div className="w-full md:w-40">
+        {/* 상태 필터 드롭다운 - 모바일에서 반반 나누기 */}
+        <div className="flex-1">
           <Select value={statusFilter} onValueChange={handleStatusSelect}>
-            <SelectTrigger className="w-full bg-popover border-border hover:bg-popover/80 text-popover-foreground">
+            <SelectTrigger className="w-full bg-popover border-border hover:bg-popover/80 text-popover-foreground h-12 !h-12">
               <SelectValue placeholder="상태" />
             </SelectTrigger>
-              <SelectContent className="bg-popover border-border text-popover-foreground">
-                <SelectItem value="all">전체</SelectItem>
-                <SelectItem value="recruiting">모집 중</SelectItem>
-                <SelectItem value="open">자리 있음</SelectItem>
-                <SelectItem value="full">가득 참</SelectItem>
-                <SelectItem value="completed_expired">완료/만료됨</SelectItem>
+              <SelectContent className="bg-popover border-border text-popover-foreground py-2">
+                <SelectItem value="all" className="py-4 text-base">전체</SelectItem>
+                <SelectItem value="recruiting" className="py-4 text-base">모집 중</SelectItem>
+                <SelectItem value="open" className="py-4 text-base">자리 있음</SelectItem>
+                <SelectItem value="full" className="py-4 text-base">가득 참</SelectItem>
+                <SelectItem value="completed_expired" className="py-4 text-base">완료/만료됨</SelectItem>
               </SelectContent>
           </Select>
         </div>

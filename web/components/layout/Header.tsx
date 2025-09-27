@@ -260,6 +260,7 @@ export function Header() {
                     {session && !isPendingMember && (
                       <>
                         <NavLink href="/game-mate">게임메이트</NavLink>
+                        <NavLink href="/notifications">알림</NavLink>
                         {isAdmin && (
                           <NavLink href="/admin/dashboard">
                             관리자 대시보드
@@ -362,7 +363,7 @@ export function Header() {
                   ) : (
                     <Link
                       href="/auth/login"
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-cyber-black bg-cyber-blue hover:bg-cyber-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-blue focus:ring-offset-cyber-black transition-colors"
+                      className="inline-flex items-center px-3 py-2 md:px-4 border border-transparent text-sm font-medium rounded-md shadow-sm text-cyber-black bg-cyber-blue hover:bg-cyber-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-blue focus:ring-offset-cyber-black transition-colors"
                     >
                       로그인
                     </Link>

@@ -88,30 +88,104 @@ const withPWAConfig = withPWA({
   customWorkerDir: 'worker', // 커스텀 워커 디렉토리
   workboxOptions: {
     disableDevLogs: true,
-    // 개발 환경에서 HMR 충돌 방지 설정
-    skipWaiting: process.env.NODE_ENV === 'production',
-    clientsClaim: process.env.NODE_ENV === 'production',
-    // 개발 환경에서는 캐시 비활성화
-    runtimeCaching: process.env.NODE_ENV === 'development' ? [] : [
+    // 항상 즉시 업데이트 적용
+    skipWaiting: true,
+    clientsClaim: true,
+    // 강제 캐시 무효화
+    cleanupOutdatedCaches: true,
+    // 캐시 전략 개선
+    runtimeCaching: [
+      // 인증 관련 API는 캐시하지 않음
+      {
+        urlPattern: /^\/api\/(auth|profile).*/,
+        handler: 'NetworkOnly',
+        options: {
+          cacheName: 'auth-cache',
+          expiration: {
+            maxEntries: 0,
+            maxAgeSeconds: 0,
+          },
+        },
+      },
+      // 푸시 알림 관련 API는 캐시하지 않음
+      {
+        urlPattern: /^\/api\/push.*/,
+        handler: 'NetworkOnly',
+        options: {
+          cacheName: 'push-cache',
+          expiration: {
+            maxEntries: 0,
+            maxAgeSeconds: 0,
+          },
+        },
+      },
+      // 알림 설정 관련 API는 캐시하지 않음
+      {
+        urlPattern: /^\/api\/notifications.*/,
+        handler: 'NetworkOnly',
+        options: {
+          cacheName: 'notifications-cache',
+          expiration: {
+            maxEntries: 0,
+            maxAgeSeconds: 0,
+          },
+        },
+      },
+      // 기타 API 요청은 네트워크 우선
+      {
+        urlPattern: /^\/api\/.*/,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'api-cache',
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 5 * 60, // 5분
+          },
+          networkTimeoutSeconds: 10,
+        },
+      },
+      // 정적 자산은 캐시 우선
+      {
+        urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'images-cache',
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30일
+          },
+        },
+      },
+      // 기타 요청은 네트워크 우선
       {
         urlPattern: /^https?.*/,
         handler: 'NetworkFirst',
         options: {
-          cacheName: 'offlineCache',
+          cacheName: 'offline-cache',
           expiration: {
             maxEntries: 200,
+            maxAgeSeconds: 24 * 60 * 60, // 24시간
           },
+          networkTimeoutSeconds: 10,
         },
       },
     ],
-    // 개발 환경에서 파일 변경 감지 제외
-    exclude: process.env.NODE_ENV === 'development' ? [
+    // 캐시에서 제외할 파일들
+    exclude: [
       /\.map$/,
-      /manifest$/,
       /\.htaccess$/,
-      /_next\/static\/chunks\/.*\.js$/,
       /_next\/static\/development/,
-    ] : [],
+    ],
+    // 매니페스트 파일은 항상 네트워크에서 가져오기
+    additionalManifestEntries: [
+      {
+        url: '/manifest.json',
+        revision: Date.now().toString(),
+      },
+    ],
+    // 인증 관련 요청은 캐시하지 않음
+    navigateFallback: null,
+    navigateFallbackDenylist: [/^\/api\/auth/, /^\/api\/profile/, /^\/api\/push/, /^\/api\/notifications/],
   },
 });
 

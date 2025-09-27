@@ -44,12 +44,14 @@
   --foreground: var(--color-neutral-50);
   --card: var(--color-neutral-800);
   --card-foreground: var(--color-neutral-50);
+  --card-muted: var(--color-neutral-900);
+  --card-muted-foreground: var(--color-neutral-50);
   --popover: var(--color-neutral-700);
   --popover-foreground: var(--color-neutral-50);
   --primary: var(--color-cyber-blue);
   --primary-foreground: var(--color-neutral-900);
-  --secondary: var(--color-cyber-black-100);
-  --secondary-foreground: var(--color-cyber-gray);
+  --secondary: var(--color-neutral-800);
+  --secondary-foreground: var(--color-neutral-50);
   --muted: var(--color-neutral-800);
   --muted-foreground: var(--color-neutral-50);
   --accent: var(--color-neutral-500);
@@ -72,6 +74,10 @@
   --sidebar-border: var(--color-cyber-black-300);
   --sidebar-ring: var(--color-cyber-blue);
 
+  --scrollbar-track: var(--color-neutral-900);
+  --scrollbar-thumb: var(--color-neutral-700);
+  --scrollbar-thumb-hover: var(--color-neutral-600);
+
   --header-background: var(--color-neutral-950);
   --header-foreground: var(--color-neutral-50);
   --danger: var(--color-cyber-red);
@@ -84,19 +90,21 @@
   --foreground: var(--color-neutral-50);
   --card: var(--color-neutral-800);
   --card-foreground: var(--color-neutral-50);
+  --card-muted: var(--color-neutral-900);
+  --card-muted-foreground: var(--color-neutral-50);
   --popover: var(--color-neutral-700);
   --popover-foreground: var(--color-neutral-50);
   --primary: var(--color-cyber-blue);
   --primary-foreground: var(--color-neutral-900);
-  --secondary: var(--color-cyber-black-100);
-  --secondary-foreground: var(--color-cyber-gray);
-  --muted: var(--color-cyber-black-100);
-  --muted-foreground: var(--color-cyber-darkgray);
+  --secondary: var(--color-neutral-800);
+  --secondary-foreground: var(--color-neutral-50);
+  --muted: var(--color-neutral-800);
+  --muted-foreground: var(--color-neutral-50);
   --accent: var(--color-neutral-500);
   --accent-foreground: var(--color-neutral-50);
   --destructive: var(--color-cyber-orange);
   --border: var(--color-neutral-800);
-  --input: var(--color-neutral-800);
+  --input: var(--color-neutral-700);
   --ring: var(--color-cyber-blue);
   --chart-1: var(--color-cyber-blue);
   --chart-2: var(--color-cyber-purple);
@@ -111,6 +119,10 @@
   --sidebar-accent-foreground: var(--color-cyber-gray);
   --sidebar-border: var(--color-cyber-black-300);
   --sidebar-ring: var(--color-cyber-blue);
+
+  --scrollbar-track: var(--color-neutral-900);
+  --scrollbar-thumb: var(--color-neutral-700);
+  --scrollbar-thumb-hover: var(--color-neutral-600);
 
   --header-background: var(--color-neutral-950);
   --header-foreground: var(--color-neutral-50);
@@ -127,6 +139,8 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-card-muted: var(--card-muted);
+  --color-card-muted-foreground: var(--card-muted-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
@@ -155,6 +169,10 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  --color-scrollbar-track: var(--scrollbar-track);
+  --color-scrollbar-thumb: var(--scrollbar-thumb);
+  --color-scrollbar-thumb-hover: var(--scrollbar-thumb-hover);
+  
   --color-header-background: var(--header-background);
   --color-header-foreground: var(--header-foreground);
   --color-danger: var(--danger);
@@ -322,7 +340,7 @@
 
 }
 
-/* 다크 모드 스크롤바 스타일 */
+  /* 다크 모드 스크롤바 스타일 */
 @layer utilities {
   /* 웹킷 기반 브라우저 (Chrome, Safari, Edge) */
   ::-webkit-scrollbar {
@@ -331,41 +349,41 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--color-cyber-black-100);
+    background: var(--scrollbar-track);
     border-radius: 6px;
     border: 1px solid var(--color-cyber-black-200);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--color-cyber-black-300);
+    background: var(--scrollbar-thumb);
     border-radius: 6px;
-    border: 2px solid var(--color-cyber-black-100);
+    border: 2px solid var(--scrollbar-track);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-cyber-black-400);
+    background: var(--scrollbar-thumb-hover);
     border-color: var(--color-cyber-black-200);
   }
 
   ::-webkit-scrollbar-thumb:active {
     background: var(--color-cyber-gray);
-    border-color: var(--color-cyber-black-300);
+    border-color: var(--scrollbar-thumb);
   }
 
   ::-webkit-scrollbar-corner {
-    background: var(--color-cyber-black-100);
+    background: var(--scrollbar-track);
   }
 
   /* Firefox */
   * {
     scrollbar-width: auto;
-    scrollbar-color: var(--color-cyber-black-300) var(--color-cyber-black-100);
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   /* 스크롤바가 항상 보이도록 설정 */
   .scrollbar-visible {
     scrollbar-width: auto;
-    scrollbar-color: var(--color-cyber-black-300) var(--color-cyber-black-100);
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .scrollbar-visible::-webkit-scrollbar {
@@ -374,25 +392,25 @@
   }
 
   .scrollbar-visible::-webkit-scrollbar-track {
-    background: var(--color-cyber-black-100);
+    background: var(--scrollbar-track);
     border-radius: 6px;
     border: 1px solid var(--color-cyber-black-200);
   }
 
   .scrollbar-visible::-webkit-scrollbar-thumb {
-    background: var(--color-cyber-black-300);
+    background: var(--scrollbar-thumb);
     border-radius: 6px;
-    border: 2px solid var(--color-cyber-black-100);
+    border: 2px solid var(--scrollbar-track);
   }
 
   .scrollbar-visible::-webkit-scrollbar-thumb:hover {
-    background: var(--color-cyber-black-400);
+    background: var(--scrollbar-thumb-hover);
     border-color: var(--color-cyber-black-200);
   }
 
   .scrollbar-visible::-webkit-scrollbar-thumb:active {
     background: var(--color-cyber-gray);
-    border-color: var(--color-cyber-black-300);
+    border-color: var(--scrollbar-thumb);
   }
 
   /* PWA 및 모바일 최적화 스타일 */

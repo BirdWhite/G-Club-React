@@ -16,6 +16,9 @@ interface PushNotificationPayload {
   body: string;
   url?: string;
   tag?: string;
+  notificationId?: string; // 알림 ID 추가
+  priority?: 'very-low' | 'low' | 'normal' | 'high'; // 우선순위 추가
+  ttl?: number; // TTL(초) 추가
 }
 
 // 서버 내부에서만 사용하는 개별 사용자 알림 발송
@@ -24,7 +27,10 @@ export async function sendPushNotificationInternal({
   title,
   body,
   url = '/',
-  tag = 'default'
+  tag = 'default',
+  notificationId,
+  priority = 'high',
+  ttl = 600
 }: Omit<PushNotificationPayload, 'userIds'>) {
   try {
     const supabase = await createServerClient();
@@ -51,6 +57,7 @@ export async function sendPushNotificationInternal({
       tag,
       data: {
         url,
+        notificationId, // 알림 ID 포함
         timestamp: Date.now()
       }
     });
@@ -64,8 +71,15 @@ export async function sendPushNotificationInternal({
       }
     };
 
+    // 푸시 알림 발송 옵션
+    const options = {
+      TTL: ttl, // TTL 동적 설정
+      urgency: priority, // 우선순위 동적 설정
+      headers: {}
+    };
+
     // 푸시 알림 발송
-    await webpush.sendNotification(pushSubscription, payload);
+    await webpush.sendNotification(pushSubscription, payload, options);
     console.log(`푸시 알림 발송 성공: ${userId}`);
     return true;
 
@@ -96,7 +110,10 @@ export async function sendBulkPushNotificationInternal({
   title,
   body,
   url = '/',
-  tag = 'broadcast'
+  tag = 'broadcast',
+  notificationId,
+  priority = 'high',
+  ttl = 600
 }: Omit<PushNotificationPayload, 'userId'>) {
   if (!userIds || userIds.length === 0) {
     console.log('발송할 사용자 목록이 비어있습니다.');
@@ -107,7 +124,7 @@ export async function sendBulkPushNotificationInternal({
 
   const results = await Promise.allSettled(
     userIds.map(userId => 
-      sendPushNotificationInternal({ userId, title, body, url, tag })
+      sendPushNotificationInternal({ userId, title, body, url, tag, notificationId, priority, ttl })
     )
   );
 

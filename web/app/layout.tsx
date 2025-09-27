@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { PWAInstaller } from "@/components/common/PWAInstaller";
+import { PWAManager } from "@/components/PWAManager";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 
 // 전역 변수 선언
@@ -68,10 +69,12 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ProfileProvider>
-          <ClientLayout>
-            {children}
-          </ClientLayout>
-          <PWAInstaller />
+          <PWAManager>
+            <ClientLayout>
+              {children}
+            </ClientLayout>
+            <PWAInstaller />
+          </PWAManager>
         </ProfileProvider>
       </body>
     </html>

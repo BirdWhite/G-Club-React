@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 import { notificationService } from '@/lib/notifications/notificationService';
-import { GamePost } from '@prisma/client';
 
 type RouteContext = {
   params: Promise<{

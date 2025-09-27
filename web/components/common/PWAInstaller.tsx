@@ -26,10 +26,19 @@ export function PWAInstaller() {
 
     checkStandalone();
 
+    // iOS 감지
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    // iOS에서는 beforeinstallprompt 이벤트가 지원되지 않으므로 수동으로 버튼 표시
+    if (isIOS && !isStandalone) {
+      setShowInstallButton(true);
+      return;
+    }
+
     // next-pwa가 자동으로 서비스 워커를 등록하므로 수동 등록 불필요
     // PWA 설치 프롬프트만 처리
 
-    // PWA 설치 프롬프트 이벤트 리스너
+    // PWA 설치 프롬프트 이벤트 리스너 (Windows/Android)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -54,6 +63,15 @@ export function PWAInstaller() {
   }, [isStandalone]);
 
   const handleInstallClick = async () => {
+    // iOS 감지
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    if (isIOS) {
+      // iOS에서는 설치 페이지로 리다이렉트
+      window.location.href = '/pwa-install?tab=ios';
+      return;
+    }
+
     if (!deferredPrompt) return;
 
     deferredPrompt.prompt();

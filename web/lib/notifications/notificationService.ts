@@ -189,6 +189,12 @@ async function getTargetUserIds(
         targetUsers = waitingParticipants.map(w => w.userId);
       }
       break;
+    
+    case 'SPECIFIC_USERS':
+      if (groupFilter?.userIds && Array.isArray(groupFilter.userIds)) {
+        targetUsers = groupFilter.userIds as string[];
+      }
+      break;
   }
 
   return targetUsers;
@@ -217,11 +223,8 @@ async function sendPushNotificationToUsers(
     );
     
     if (filteredUserIds.length === 0) {
-      console.log('알림을 받을 사용자가 없습니다.');
       return;
     }
-    
-    console.log(`원본 사용자 수: ${userIds.length}, 필터링 후 사용자 수: ${filteredUserIds.length}`);
     
     // 사용자들의 푸시 구독 정보 조회
     const subscriptions = await prisma.pushSubscription.findMany({
@@ -230,16 +233,28 @@ async function sendPushNotificationToUsers(
         isEnabled: true
       }
     });
+    
+    if (subscriptions.length === 0) {
+      console.log('푸시 구독이 활성화된 사용자가 없습니다.');
+      return;
+    }
 
     // 각 구독에 대해 푸시 발송
     const pushPromises = subscriptions.map(async (sub) => {
       try {
+        // 모든 알림을 high 우선순위, 10분 TTL로 설정
+        const priority = 'high';
+        const ttl = 600; // 10분
+
         await sendPushNotificationInternal({
           userId: sub.userId,
           title: pushData.title,
           body: pushData.body,
           url: (pushData.data?.actionUrl as string) || '/',
-          tag: 'notification'
+          tag: 'notification',
+          notificationId, // 알림 ID 전달
+          priority,
+          ttl
         });
 
         // 푸시 발송 성공 기록
@@ -372,11 +387,23 @@ export const GamePostNotifications = {
   ) {
     if (participantUserIds.length === 0) return;
 
+    // 게임 정보 조회하여 아이콘 가져오기
+    const gamePost = await prisma.gamePost.findUnique({
+      where: { id: context.gamePostId },
+      include: {
+        game: {
+          select: {
+            iconUrl: true
+          }
+        }
+      }
+    });
+
     return createAndSendNotification({
       type: 'PARTICIPATING_GAME_UPDATE',
       title: `게임메이트가 취소되었습니다`,
       body: `${context.authorName}님이 "${context.title}" 게임메이트를 취소했습니다.`,
-      icon: '/icons/icon-192x192.png',
+      icon: gamePost?.game?.iconUrl || '/icons/maskable_icon_x512.png',
       actionUrl: '/game-mate',
       priority: 'HIGH',
       isGroupSend: true,
@@ -384,7 +411,7 @@ export const GamePostNotifications = {
       groupFilter: { userIds: participantUserIds },
       gamePostId: context.gamePostId,
       context: {
-        gameId: undefined,
+        gameId: gamePost?.gameId || undefined,
         eventType: 'GAME_CANCELLED'
       }
     });
@@ -482,7 +509,7 @@ export const GamePostNotifications = {
       body: `${gamePost.game?.name || gamePost.customGameName} 게임 모임이 가득 찼습니다.`,
       icon: gamePost.game?.iconUrl || undefined,
       actionUrl: `/game-mate/${gamePostId}`,
-      priority: 'NORMAL',
+      priority: 'HIGH',
       isGroupSend: true,
       groupType: 'SPECIFIC_USERS',
       groupFilter: { userIds: participantIds },

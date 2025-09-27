@@ -31,7 +31,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
       
       // 사용자 프로필 정보를 가져오는 API 호출
-      const res = await fetch('/api/profile');
+      const res = await fetch('/api/profile', {
+        cache: 'no-store', // 캐시 방지
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
+      
+      // 401 에러는 인증되지 않은 사용자
+      if (res.status === 401) {
+        setProfile(null);
+        return;
+      }
+      
       if (!res.ok) {
         throw new Error('프로필 정보를 불러오는데 실패했습니다.');
       }

@@ -220,8 +220,8 @@ export function useGamePostDetail({ postId }: UseGamePostDetailProps) {
   }, [fetchPost]);
 
   // 파생 상태
-  const isAuthor = post?.author.id === user?.id;
-  const isParticipating = post?.participants.some(p => p.user?.id === user?.id) || false;
+  const isAuthor = post?.author.userId === user?.id;
+  const isParticipating = post?.participants.some(p => p.userId === user?.id) || false;
   const isFull = post ? post.participants.length >= post.maxParticipants : false;
 
   return {

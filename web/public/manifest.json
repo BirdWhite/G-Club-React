@@ -11,6 +11,8 @@
   "lang": "ko",
   "categories": ["games", "entertainment", "social"],
   "prefer_related_applications": false,
+  "background_sync": ["background-sync"],
+  "gcm_sender_id": "103953800507",
   "icons": [
     {
       "src": "/favicon.ico",
@@ -19,28 +21,40 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/icon_white.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable_icon_x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/maskable_icon_x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/maskable_icon_x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/maskable_icon_x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable_icon_x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "monochrome"
     }
   ]
 }

@@ -11,7 +11,7 @@ export function GameManager() {
   const [error, setError] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [editingGame, setEditingGame] = useState<Partial<Game> | null>(null);
-  const [formData, setFormData] = useState<Omit<Game, 'id' | 'createdAt' | 'updatedAt'>>({
+  const [formData, setFormData] = useState<Omit<Game, 'id' | 'createdAt' | 'updatedAt' | 'gamePosts' | 'favoritedBy'>>({
     name: '',
     description: '',
     iconUrl: '',

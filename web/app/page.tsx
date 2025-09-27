@@ -8,7 +8,6 @@ import { redirect } from 'next/navigation';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { MobileHomePage } from '@/components/mobile/MobileHomePage';
 import { DesktopHomePage } from '@/components/desktop/DesktopHomePage';
-import { PushNotificationManager } from '@/components/notifications/PushNotificationManager';
 
 export default function Home() {
   // 프로필 체크 로직 - 세션 확인 및 프로필 존재 여부에 따른 리다이렉션
@@ -41,9 +40,6 @@ export default function Home() {
   // 메인 페이지 렌더링
   return (
     <>
-      {/* 푸시 알림 관리자 */}
-      <PushNotificationManager userId={profile?.userId} />
-      
       {isMobile ? (
         <MobileHomePage onStartClick={handleStartClick} onLearnMoreClick={handleLearnMoreClick} />
       ) : (

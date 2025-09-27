@@ -1,4 +1,4 @@
-import { GamePost } from '@prisma/client';
+import { GamePost } from '@/types/models';
 
 export interface NotificationContent {
   title: string;
@@ -12,12 +12,12 @@ export class NotificationContentGenerator {
    * 새로운 게임 포스트 알림
    */
   static generateNewGamePostNotification(
-    gamePost: GamePost & { game: { name: string }; author: { name: string } }
+    gamePost: GamePost & { game: { name: string; iconUrl?: string }; author: { name: string } }
   ): NotificationContent {
     return {
-      title: '새로운 게임메이트 모집!',
-      body: `${gamePost.game.name} - ${gamePost.author.name}님이 새로운 모집을 시작했어요`,
-      icon: '/icons/game-controller.png',
+      title: `${gamePost.title} - ${gamePost.game.name}`,
+      body: `${gamePost.author.name}님이 새로운 모집을 시작했어요`,
+      icon: gamePost.game?.iconUrl || '/icons/maskable_icon_x512.png',
       actionUrl: `/game-mate/${gamePost.id}`
     };
   }
@@ -26,13 +26,13 @@ export class NotificationContentGenerator {
    * 참여자 추가 알림
    */
   static generateParticipantJoinedNotification(
-    gamePost: GamePost & { game: { name: string } },
+    gamePost: GamePost & { game: { name: string; iconUrl?: string } },
     participant: { name: string }
   ): NotificationContent {
     return {
-      title: '새로운 참여자가 추가되었습니다',
-      body: `${gamePost.game.name} 모임에 ${participant.name}님이 참여했어요`,
-      icon: '/icons/user-plus.png',
+      title: `${gamePost.title} - 새로운 참가자가 추가되었습니다`,
+      body: `${gamePost.game.name} 모임에 ${participant.name}님이 참가했어요`,
+      icon: gamePost.game?.iconUrl || '/icons/maskable_icon_x512.png',
       actionUrl: `/game-mate/${gamePost.id}`
     };
   }
@@ -41,13 +41,13 @@ export class NotificationContentGenerator {
    * 참여자 탈퇴 알림
    */
   static generateParticipantLeftNotification(
-    gamePost: GamePost & { game: { name: string } },
+    gamePost: GamePost & { game: { name: string; iconUrl?: string } },
     participant: { name: string }
   ): NotificationContent {
     return {
-      title: '참여자가 모임을 떠났습니다',
+      title: `${gamePost.title} - 참가자가 모임을 떠났습니다`,
       body: `${gamePost.game.name} 모임에서 ${participant.name}님이 탈퇴했어요`,
-      icon: '/icons/user-minus.png',
+      icon: gamePost.game?.iconUrl || '/icons/maskable_icon_x512.png',
       actionUrl: `/game-mate/${gamePost.id}`
     };
   }
@@ -56,12 +56,12 @@ export class NotificationContentGenerator {
    * 모임 정원 마감 알림
    */
   static generateGameFullNotification(
-    gamePost: GamePost & { game: { name: string } }
+    gamePost: GamePost & { game: { name: string; iconUrl?: string } }
   ): NotificationContent {
     return {
-      title: '모임 정원이 마감되었습니다',
-      body: `${gamePost.game.name} 모임의 참여자 모집이 완료되었어요`,
-      icon: '/icons/check-circle.png',
+      title: `${gamePost.title} - 게임 시작 준비 완료!`,
+      body: `${gamePost.game.name} 모임 인원이 모두 모였어요. 이제 게임 시작만 남았습니다!`,
+      icon: gamePost.game?.iconUrl || '/icons/maskable_icon_x512.png',
       actionUrl: `/game-mate/${gamePost.id}`
     };
   }
@@ -70,14 +70,14 @@ export class NotificationContentGenerator {
    * 모임 시간 변경 알림
    */
   static generateTimeChangeNotification(
-    gamePost: GamePost & { game: { name: string } },
+    gamePost: GamePost & { game: { name: string; iconUrl?: string } },
     oldTime: string,
     newTime: string
   ): NotificationContent {
     return {
-      title: '모임 시간이 변경되었습니다',
+      title: `${gamePost.title} - 모임 시간이 변경되었습니다`,
       body: `${gamePost.game.name} 모임 시간이 ${oldTime}에서 ${newTime}으로 변경되었어요`,
-      icon: '/icons/clock.png',
+      icon: gamePost.game?.iconUrl || '/icons/maskable_icon_x512.png',
       actionUrl: `/game-mate/${gamePost.id}`
     };
   }
@@ -86,13 +86,13 @@ export class NotificationContentGenerator {
    * 모임 시작 전 알림
    */
   static generateBeforeMeetingNotification(
-    gamePost: GamePost & { game: { name: string } },
+    gamePost: GamePost & { game: { name: string; iconUrl?: string } },
     minutesBefore: number
   ): NotificationContent {
     return {
-      title: `모임 시작 ${minutesBefore}분 전`,
+      title: `${gamePost.title} - 모임 시작 ${minutesBefore}분 전`,
       body: `${gamePost.game.name} 모임이 곧 시작됩니다`,
-      icon: '/icons/alert-circle.png',
+      icon: gamePost.game?.iconUrl || '/icons/maskable_icon_x512.png',
       actionUrl: `/game-mate/${gamePost.id}`
     };
   }
@@ -101,12 +101,12 @@ export class NotificationContentGenerator {
    * 모임 시작 알림
    */
   static generateMeetingStartNotification(
-    gamePost: GamePost & { game: { name: string } }
+    gamePost: GamePost & { game: { name: string; iconUrl?: string } }
   ): NotificationContent {
     return {
-      title: '모임이 시작되었습니다',
+      title: `${gamePost.title} - 게임을 시작 할 시간이에요!`,
       body: `${gamePost.game.name} 모임이 시작되었어요`,
-      icon: '/icons/play-circle.png',
+      icon: gamePost.game?.iconUrl || '/icons/maskable_icon_x512.png',
       actionUrl: `/game-mate/${gamePost.id}`
     };
   }
@@ -115,12 +115,12 @@ export class NotificationContentGenerator {
    * 대기열에서 참여로 승격 알림
    */
   static generatePromotedFromWaitingNotification(
-    gamePost: GamePost & { game: { name: string } }
+    gamePost: GamePost & { game: { name: string; iconUrl?: string } }
   ): NotificationContent {
     return {
-      title: '모임 참여가 확정되었습니다',
+      title: `${gamePost.title} - 모임 참여가 확정되었습니다`,
       body: `${gamePost.game.name} 모임에 참여할 수 있게 되었어요`,
-      icon: '/icons/star.png',
+      icon: gamePost.game?.iconUrl || '/icons/maskable_icon_x512.png',
       actionUrl: `/game-mate/${gamePost.id}`
     };
   }
@@ -166,29 +166,29 @@ export class NotificationContentGenerator {
       'NEW_GAME_POST': {
         title: '새로운 게임메이트 모집!',
         body: `${gameName} 새로운 모집이 시작되었어요`,
-        icon: '/icons/game-controller.png'
+        icon: '/icons/icon-512x512.png'
       },
       'PARTICIPANT_JOIN': {
         title: '새로운 참여자',
         body: `${gameName} 모임에 새로운 참여자가 추가되었어요`,
-        icon: '/icons/user-plus.png'
+        icon: '/icons/icon-512x512.png'
       },
       'PARTICIPANT_LEAVE': {
         title: '참여자 탈퇴',
         body: `${gameName} 모임에서 참여자가 탈퇴했어요`,
-        icon: '/icons/user-minus.png'
+        icon: '/icons/icon-512x512.png'
       },
       'GAME_FULL': {
         title: '모임 정원 마감',
         body: `${gameName} 모임의 참여자 모집이 완료되었어요`,
-        icon: '/icons/check-circle.png'
+        icon: '/icons/icon-512x512.png'
       }
     };
 
     const baseNotification = notifications[type] || {
       title: '게임메이트 알림',
       body: `${gameName} 관련 알림이 있어요`,
-      icon: '/icons/bell.png'
+      icon: '/icons/icon-512x512.png'
     };
 
     if (additionalInfo) {

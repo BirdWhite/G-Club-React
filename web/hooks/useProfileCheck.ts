@@ -40,10 +40,16 @@ export const useProfileCheck = () => {
         }
 
         // 프로필 존재 여부 확인 API 호출
-        const response = await fetch('/api/profile/check');
+        const response = await fetch('/api/profile/check', {
+          cache: 'no-store', // 캐시 방지
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
         
         // 401 에러는 인증되지 않은 사용자이므로 로그인 페이지로 리다이렉트
         if (response.status === 401) {
+          console.log('인증되지 않은 사용자 - 로그인 페이지로 리다이렉트');
           router.push('/auth/login');
           return;
         }
@@ -56,6 +62,8 @@ export const useProfileCheck = () => {
         
         if (!response.ok) {
           console.error('프로필 확인 중 오류 발생:', await response.text());
+          // 오류 발생 시에도 로딩 해제
+          setIsLoading(false);
           return;
         }
 
@@ -71,12 +79,17 @@ export const useProfileCheck = () => {
         // 프로필 페이지 접근은 허용하되, 다른 기능은 제한
       } catch (error) {
         console.error('프로필 확인 중 오류:', error);
+        // 네트워크 오류 등으로 인한 예외 발생 시에도 로딩 해제
+        setIsLoading(false);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkProfile();
+    // 짧은 지연 후 프로필 체크 실행 (PWA 업데이트 완료 대기)
+    const timeoutId = setTimeout(checkProfile, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [router]); // router 의존성 복구
 
   return { isLoading };

@@ -76,7 +76,8 @@ export function MobileGamePostList({
 
   return (
     <div>
-      <div className="bg-card p-4 rounded-lg shadow mb-6 border border-border">
+      {/* 플로팅 필터 - 스크롤 시에도 고정 */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4 mb-4">
         <GameFilter
           selectedGame={urlState.gameId}
           onGameChange={onGameChange}
@@ -85,7 +86,10 @@ export function MobileGamePostList({
         />
       </div>
 
-      {renderPosts()}
+      {/* 첫 게임메이트 글이 필터에 가려지지 않도록 상단 패딩 추가 */}
+      <div className="pt-2">
+        {renderPosts()}
+      </div>
     </div>
   );
 }

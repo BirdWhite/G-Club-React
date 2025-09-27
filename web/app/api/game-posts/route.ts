@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 import { notificationService } from '@/lib/notifications/notificationService';
-import { GamePost } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
@@ -19,8 +18,10 @@ export async function GET(request: Request) {
     const gameId = searchParams.get('gameId');
     const status = searchParams.get('status');
 
-    // 게시글 조회 조건 설정
-    const where: Record<string, unknown> = {};
+    // 게시글 조회 조건 설정 (DELETED 상태 제외)
+    const where: Record<string, unknown> = {
+      status: { not: 'DELETED' } // 삭제된 게시글 제외
+    };
 
     // 게임 ID 필터링
     if (gameId && gameId !== 'all') {
@@ -31,20 +32,33 @@ export async function GET(request: Request) {
     if (status) {
       if (status === 'recruiting') {
         // 모집 중 (OPEN, FULL, IN_PROGRESS)
-        where.OR = [
-          { status: 'OPEN' },
-          { status: 'FULL' },
-          { status: 'IN_PROGRESS' },
+        where.AND = [
+          { status: { not: 'DELETED' } },
+          {
+            OR: [
+              { status: 'OPEN' },
+              { status: 'FULL' },
+              { status: 'IN_PROGRESS' },
+            ]
+          }
         ];
       } else if (status === 'completed_expired') {
         // 완료&만료됨 (COMPLETED 또는 EXPIRED)
-        where.OR = [
-          { status: 'COMPLETED' },
-          { status: 'EXPIRED' },
+        where.AND = [
+          { status: { not: 'DELETED' } },
+          {
+            OR: [
+              { status: 'COMPLETED' },
+              { status: 'EXPIRED' },
+            ]
+          }
         ];
       } else if (['OPEN', 'FULL', 'COMPLETED', 'EXPIRED'].includes(status)) {
         // 특정 상태로 필터링
-        where.status = status as 'OPEN' | 'FULL' | 'COMPLETED' | 'EXPIRED';
+        where.AND = [
+          { status: { not: 'DELETED' } },
+          { status: status as 'OPEN' | 'FULL' | 'COMPLETED' | 'EXPIRED' }
+        ];
       }
     }
 

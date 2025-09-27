@@ -1,0 +1,12 @@
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 250" width="250" height="250">
+	<title>New Project</title>
+	<style>
+		.s0 { fill: #ffffff;stroke: #ffffff;stroke-miterlimit:10;stroke-width: 0 } 
+		.s1 { fill: #ffffff;stroke: #ffffff;stroke-miterlimit:10;stroke-width: 0 } 
+	</style>
+	<g id="Layer 1">
+		<path id="모양 3" fill-rule="evenodd" class="s0" d="m125.3 178.4l17.7-15.4v-67.8l96.4-51.5 5.2-40.6-137 72.5v87.3z"/>
+		<path id="모양 1" fill-rule="evenodd" class="s0" d="m6 3l4.9 40.6 76.8 40.9v-38z"/>
+		<path id="모양 2" fill-rule="evenodd" class="s1" d="m14.3 70.7l4.9 40.5 33 17.6v55.7l73.2 61.8 72.9-61.4-0.2-56 32.8-17.5 5.3-40.7-73.5 39.1 0.1 60.4-37.5 31.7-37.4-31.4v-60.6z"/>
+	</g>
+</svg>

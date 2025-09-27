@@ -4,83 +4,127 @@ import { useEffect, useState } from 'react';
 
 interface PushNotificationManagerProps {
   userId?: string;
+  onPermissionChange?: (permission: NotificationPermission, subscription: PushSubscription | null) => void;
+  masterEnabled?: boolean; // 마스터 토글 상태
 }
 
-export function PushNotificationManager({ userId }: PushNotificationManagerProps) {
+export function PushNotificationManager({ userId, onPermissionChange, masterEnabled }: PushNotificationManagerProps) {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
   const [isSupported, setIsSupported] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isInitialCheckComplete, setIsInitialCheckComplete] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    console.log('🔔 PushNotificationManager 초기화 시작');
-    console.log('🔔 userId:', userId);
+    if (isInitialized || !userId) return;
+    
+    // PWA 설치 여부 확인
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  (window.navigator as { standalone?: boolean }).standalone === true;
+    
+    // PWA가 설치되지 않은 경우 알림 기능 비활성화
+    if (!isPWA) {
+      setIsSupported(false);
+      setIsInitialized(true);
+      return;
+    }
     
     // 브라우저 지원 확인
     if ('serviceWorker' in navigator && 'PushManager' in window) {
-      console.log('✅ 브라우저가 푸시 알림을 지원합니다');
       setIsSupported(true);
-      setPermission(Notification.permission);
-      console.log('🔔 현재 알림 권한:', Notification.permission);
       
-      // next-pwa가 자동 등록한 서비스 워커 사용
-      checkExistingSubscription();
-    } else {
-      console.log('❌ 브라우저가 푸시 알림을 지원하지 않습니다');
-      console.log('serviceWorker 지원:', 'serviceWorker' in navigator);
-      console.log('PushManager 지원:', 'PushManager' in window);
+      // PWA 환경에서 권한 상태 정확히 확인
+      const checkPermission = async () => {
+        try {
+          // 현재 기기의 권한 상태만 확인 (다른 기기 구독과 무관)
+          const currentPermission = Notification.permission;
+          setPermission(currentPermission);
+          
+          // next-pwa가 자동 등록한 서비스 워커 사용
+          checkExistingSubscription();
+        } catch (error) {
+          console.error('PWA 권한 확인 실패:', error);
+          setPermission(Notification.permission);
+          checkExistingSubscription();
+        }
+      };
+      
+      checkPermission();
     }
-  }, [userId]);
+    
+    setIsInitialized(true);
+  }, [userId, isInitialized]);
+
+  // 마스터 토글 상태에 따른 구독/구독 취소 처리
+  useEffect(() => {
+    if (!isInitialized || masterEnabled === undefined) return; // 초기화 완료 전이거나 초기 로딩 중이면 무시
+    
+    if (masterEnabled) {
+      // 마스터 토글이 켜지면 구독
+      if (permission === 'granted' && !subscription) {
+        subscribeUser();
+      }
+    } else {
+      // 마스터 토글이 꺼지면 구독 취소
+      if (subscription) {
+        unsubscribe();
+      }
+    }
+  }, [masterEnabled, permission, subscription, isInitialized]);
 
 
   const checkExistingSubscription = async () => {
     try {
-      console.log('🔍 기존 구독 상태 확인 중...');
       const registration = await navigator.serviceWorker.ready;
-      console.log('✅ 서비스 워커 등록 완료:', registration);
-      
       const existingSubscription = await registration.pushManager.getSubscription();
-      console.log('🔍 브라우저 구독 상태:', existingSubscription);
       
       if (userId) {
-        console.log('🔍 서버 구독 상태 확인 중...');
         // 서버에 해당 사용자의 구독이 있는지 확인
         const serverHasSubscription = await checkServerSubscription();
-        console.log('🔍 서버 구독 상태:', serverHasSubscription);
         
         if (existingSubscription && serverHasSubscription) {
           // 브라우저와 서버 모두 구독 정보가 있음
-          console.log('✅ 브라우저와 서버 모두 구독됨');
           setSubscription(existingSubscription);
+          onPermissionChange?.(permission, existingSubscription);
         } else if (existingSubscription && !serverHasSubscription) {
-          // 브라우저에는 있지만 서버에는 없음 - 브라우저 구독 정리
-          console.log('⚠️ 브라우저에만 구독됨 - 정리 중...');
-          await existingSubscription.unsubscribe();
-          setSubscription(null);
-          setError('구독 정보가 동기화되지 않았습니다. 다시 구독해주세요.');
+          // 브라우저에는 있지만 서버에는 없음 - 서버에 구독 정보 저장
+          try {
+            await savePushSubscription(existingSubscription);
+            setSubscription(existingSubscription);
+            onPermissionChange?.(permission, existingSubscription);
+          } catch {
+            // 저장 실패 시 브라우저 구독 정리
+            await existingSubscription.unsubscribe();
+            setSubscription(null);
+            onPermissionChange?.(permission, null);
+          }
         } else if (!existingSubscription && serverHasSubscription) {
-          // 서버에는 있지만 브라우저에는 없음 - 서버 구독 정리하고 재구독 필요
-          console.log('⚠️ 서버에만 구독됨 - 재구독 필요');
-          setSubscription(null);
-          setError('구독 정보가 동기화되지 않았습니다. 다시 구독해주세요.');
+          // 서버에는 있지만 브라우저에는 없음 - 서버 구독 정보 정리
+          try {
+            await fetch('/api/push/unsubscribe', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ userId })
+            });
+            setSubscription(null);
+            onPermissionChange?.(permission, null);
+          } catch {
+            setSubscription(null);
+            onPermissionChange?.(permission, null);
+          }
         } else {
           // 둘 다 없음 - 정상 상태
-          console.log('❌ 구독 없음 - 정상 상태');
           setSubscription(null);
+          onPermissionChange?.(permission, null);
         }
       } else if (existingSubscription) {
         // userId가 없지만 브라우저 구독이 있음
-        console.log('⚠️ userId 없음 - 브라우저 구독만 확인');
         setSubscription(existingSubscription);
+        onPermissionChange?.(permission, existingSubscription);
       }
-    } catch (error) {
-      console.error('❌ 기존 구독 확인 실패:', error);
-      setError('구독 상태 확인에 실패했습니다.');
-    } finally {
-      setIsInitialCheckComplete(true);
-      console.log('🔔 초기화 완료');
+    } catch {
+      onPermissionChange?.(permission, null);
     }
   };
 
@@ -92,39 +136,13 @@ export function PushNotificationManager({ userId }: PushNotificationManagerProps
         return data.hasSubscription;
       }
       return false;
-    } catch (error) {
-      console.error('서버 구독 확인 실패:', error);
+    } catch {
       return false;
     }
   };
 
-  const requestPermission = async () => {
-    if (!isSupported) {
-      alert('이 브라우저는 푸시 알림을 지원하지 않습니다.');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const permission = await Notification.requestPermission();
-      setPermission(permission);
-
-      if (permission === 'granted') {
-        await subscribeUser();
-      }
-    } catch (error) {
-      console.error('푸시 알림 권한 요청 실패:', error);
-      setError('알림 권한 요청에 실패했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const subscribeUser = async () => {
-    setIsLoading(true);
-    setError(null);
     
     try {
       const registration = await navigator.serviceWorker.ready;
@@ -146,13 +164,12 @@ export function PushNotificationManager({ userId }: PushNotificationManagerProps
         await savePushSubscription(subscription);
         // 서버 저장이 성공한 경우에만 상태 업데이트
         setSubscription(subscription);
+        onPermissionChange?.(permission, subscription);
       } else {
         setSubscription(subscription);
+        onPermissionChange?.(permission, subscription);
       }
-    } catch (error) {
-      console.error('푸시 알림 구독 실패:', error);
-      setError('알림 구독에 실패했습니다. 잠시 후 다시 시도해주세요.');
-      
+    } catch {
       // 구독 실패 시 브라우저 구독도 취소
       try {
         const registration = await navigator.serviceWorker.ready;
@@ -160,12 +177,11 @@ export function PushNotificationManager({ userId }: PushNotificationManagerProps
         if (existingSubscription) {
           await existingSubscription.unsubscribe();
         }
-      } catch (unsubError) {
-        console.error('구독 정리 실패:', unsubError);
+      } catch {
+        // 구독 정리 실패 무시
       }
       setSubscription(null);
-    } finally {
-      setIsLoading(false);
+      onPermissionChange?.(permission, null);
     }
   };
 
@@ -187,7 +203,6 @@ export function PushNotificationManager({ userId }: PushNotificationManagerProps
         throw new Error(`구독 정보 저장 실패: ${response.status} ${errorData}`);
       }
     } catch (error) {
-      console.error('구독 정보 저장 오류:', error);
       throw error; // 에러를 다시 던져서 상위에서 처리하도록
     }
   };
@@ -197,6 +212,7 @@ export function PushNotificationManager({ userId }: PushNotificationManagerProps
       if (subscription) {
         await subscription.unsubscribe();
         setSubscription(null);
+        onPermissionChange?.(permission, null);
         
         // 서버에서도 구독 정보 제거
         if (userId) {
@@ -209,8 +225,8 @@ export function PushNotificationManager({ userId }: PushNotificationManagerProps
           });
         }
       }
-    } catch (error) {
-      console.error('구독 해제 실패:', error);
+    } catch {
+      // 구독 해제 실패 무시
     }
   };
 
@@ -236,128 +252,7 @@ export function PushNotificationManager({ userId }: PushNotificationManagerProps
 
   return (
     <div className="push-notification-manager">
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <h3 className="text-red-800 font-semibold mb-2">❌ 오류 발생</h3>
-          <p className="text-red-700 mb-3">{error}</p>
-          <button
-            onClick={() => setError(null)}
-            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
-          >
-            닫기
-          </button>
-        </div>
-      )}
 
-      {permission === 'default' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <h3 className="text-blue-800 font-semibold mb-2">🔔 알림 설정</h3>
-          <p className="text-blue-700 mb-3">
-            새로운 게임메이트 모집, 공지사항 등을 실시간으로 받아보세요!
-          </p>
-          <button
-            onClick={requestPermission}
-            disabled={isLoading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                처리 중...
-              </>
-            ) : (
-              '알림 허용하기'
-            )}
-          </button>
-        </div>
-      )}
-
-      {permission === 'granted' && !subscription && !error && isLoading && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-green-700">알림이 허용되었습니다. 구독 중...</p>
-          </div>
-        </div>
-      )}
-
-      {permission === 'granted' && !subscription && !error && !isLoading && isInitialCheckComplete && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <h3 className="text-blue-800 font-semibold mb-2">🔔 알림 구독</h3>
-          <p className="text-blue-700 mb-3">
-            푸시 알림을 받으려면 구독해주세요.
-          </p>
-          <button
-            onClick={subscribeUser}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            알림 구독하기
-          </button>
-        </div>
-      )}
-
-      {permission === 'granted' && !subscription && error && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-          <h3 className="text-yellow-800 font-semibold mb-2">⚠️ 구독 실패</h3>
-          <p className="text-yellow-700 mb-3">
-            {error}
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                setError(null);
-                subscribeUser();
-              }}
-              disabled={isLoading}
-              className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  재시도 중...
-                </>
-              ) : (
-                '다시 시도'
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setError(null);
-                checkExistingSubscription();
-              }}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              상태 확인
-            </button>
-          </div>
-        </div>
-      )}
-
-      {permission === 'granted' && subscription && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-green-800 font-semibold">✅ 알림 활성화됨</h3>
-              <p className="text-green-700 text-sm">실시간 알림을 받고 있습니다.</p>
-            </div>
-            <button
-              onClick={unsubscribe}
-              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
-            >
-              알림 끄기
-            </button>
-          </div>
-        </div>
-      )}
-
-      {permission === 'denied' && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <h3 className="text-red-800 font-semibold">❌ 알림이 차단됨</h3>
-          <p className="text-red-700 text-sm">
-            브라우저 설정에서 알림을 허용해주세요.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

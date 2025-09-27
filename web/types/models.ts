@@ -48,9 +48,8 @@ export enum GamePostStatus {
 // 권한 모델
 export interface Permission {
   id: string;
-  name: string;
-  description?: string;
-  roles: Role[];
+  type: PermissionType;
+  description: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,200 +58,237 @@ export interface Permission {
 export interface Role {
   id: string;
   name: string;
-  description?: string;
-  isDefault: boolean;
+  description: string;
   permissions: Permission[];
-  userProfiles: UserProfile[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 // 사용자 프로필 모델
 export interface UserProfile {
-  id: string;
   userId: string;
   name: string;
-  birthDate: Date;
+  email: string;
   image?: string;
-  roleId?: string;
-  role?: Role;
-  createdAt: Date;
-  updatedAt: Date;
-  isGuest?: boolean; // 게스트 참여자 여부
-  
-  // 관계 필드
-  gameParticipations: GameParticipant[];
+  bio?: string;
+  favoriteGames: UserFavoriteGame[];
   gamePosts: GamePost[];
-  chatMessages: ChatMessage[];
-  chatRooms: ChatParticipant[];
-}
-
-
-
-
-// 채팅 관련 모델
-export interface ChatRoom {
-  id: string;
-  type: ChatRoomType;
-  name: string;
-  description?: string;
-  isActive: boolean;
-  maxMembers?: number;
-  
-  // 관계 필드
-  gamePostId?: string;
-  gamePost?: GamePost;
-  
-  // 메시지 및 참여자
-  messages: ChatMessage[];
-  participants: ChatParticipant[];
-  
-  // 메타데이터
+  gameParticipants: GameParticipant[];
+  waitingParticipants: WaitingParticipant[];
+  roles: UserRole[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface ChatParticipant {
+// 사용자 역할 모델
+export interface UserRole {
   id: string;
-  chatRoom: ChatRoom;
-  chatRoomId: string;
-  user: UserProfile;
   userId: string;
-  joinedAt: Date;
-  lastReadAt: Date;
-  isMuted: boolean;
-}
-
-export interface ChatMessage {
-  id: string;
-  content: string;
-  chatRoom: ChatRoom;
-  chatRoomId: string;
+  roleId: string;
   user: UserProfile;
-  userId: string;
+  role: Role;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// 게임 관련 모델
+// 게임 모델
 export interface Game {
   id: string;
   name: string;
-  description?: string | null;
-  iconUrl?: string | null;
+  description?: string;
+  iconUrl?: string;
   aliases: string[];
+  gamePosts: GamePost[];
+  favoritedBy: UserFavoriteGame[];
   createdAt: Date;
   updatedAt: Date;
 }
 
+// 사용자 즐겨찾기 게임 모델
+export interface UserFavoriteGame {
+  id: string;
+  userId: string;
+  gameId: string;
+  user: UserProfile;
+  game: Game;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 게임메이트 게시물 모델
 export interface GamePost {
   id: string;
+  authorId: string;
   title: string;
   content: JsonValue;
-  gameId: string; // Add gameId field
+  gameId?: string;
+  customGameName?: string;
+  startTime: Date;
   maxParticipants: number;
-  startTime: Date | string;
   status: GamePostStatus;
-  game: {
-    id: string; // Add id field to game object
-    name: string;
-    iconUrl?: string | null;
-  } | null;
-  author: {
-    id: string;
-    userId: string;
-    name: string;
-    image?: string | null;
-  };
-  createdAt: Date | string;
-  updatedAt: Date | string;
-
-  // 관계 필드
+  author: UserProfile;
+  game?: Game;
   participants: GameParticipant[];
-  waitingList?: WaitingParticipant[];
-  
-  // 가상 필드 (클라이언트 측에서 사용)
-  isOwner?: boolean;
-  isParticipating?: boolean;
-  isWaiting?: boolean;
-  _count?: {
+  waitingList: WaitingParticipant[];
+  _count: {
     participants: number;
     waitingList: number;
   };
+  // 상세 페이지에서 사용하는 추가 속성들
+  isOwner?: boolean;
+  isParticipating?: boolean;
+  isWaiting?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
+// 게임 참여자 모델
 export interface GameParticipant {
   id: string;
-  gamePostId: string;
-  participantType: 'MEMBER' | 'GUEST';
   userId?: string;
-  user?: {
-    id: string;
-    userId: string;
-    name: string;
-    image?: string | null;
-  };
+  gamePostId: string;
+  participantType: 'HOST' | 'MEMBER' | 'GUEST';
   guestName?: string;
-  joinedAt: Date | string;
+  user?: UserProfile;
+  gamePost: GamePost;
+  joinedAt: Date;
 }
 
+// 대기 참여자 모델
 export interface WaitingParticipant {
   id: string;
-  gamePostId: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
   userId: string;
-  requestedAt: Date | string;
-  availableTime?: string | null;
-  user: {
-    id: string;
-    name: string;
-    image?: string | null;
-  };
+  gamePostId: string;
+  availableTime?: string;
+  user: UserProfile;
+  gamePost: GamePost;
+  requestedAt: Date;
 }
 
-// 게임 메이트 포스트 폼 데이터
-export interface GamePostFormData {
-  title: string;
+// 채팅방 모델
+export interface ChatRoom {
+  id: string;
+  name: string;
+  type: ChatRoomType;
+  gamePostId?: string;
+  gamePost?: GamePost;
+  messages: ChatMessage[];
+  participants: ChatParticipant[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 채팅 참여자 모델
+export interface ChatParticipant {
+  id: string;
+  userId: string;
+  chatRoomId: string;
+  user: UserProfile;
+  chatRoom: ChatRoom;
+  joinedAt: Date;
+}
+
+// 채팅 메시지 모델
+export interface ChatMessage {
+  id: string;
   content: string;
-  gameId: string;
-  maxPlayers: number;
-  startTime: string;
+  userId: string;
+  chatRoomId: string;
+  user: UserProfile;
+  chatRoom: ChatRoom;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// 게임 필터링 옵션
-export interface GameFilterOptions {
-  searchQuery?: string;
-  gameId?: string;
-  status?: GamePostStatus | string;
-  sortBy?: 'latest' | 'deadline';
-  page?: number;
-  limit?: number;
+// 푸시 구독 모델
+export interface PushSubscription {
+  id: string;
+  userId: string;
+  user: UserProfile;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  isEnabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// 알림 관련 타입
+// 알림 모델
 export interface Notification {
   id: string;
-  type: 'COMMENT' | 'PARTICIPATION' | 'SYSTEM';
-  message: string;
-  read: boolean;
-  createdAt: Date;
-  link?: string;
+  title: string;
+  body: string;
+  icon?: string;
+  actionUrl?: string;
+  type: string;
+  priority: 'LOW' | 'NORMAL' | 'HIGH';
+  senderId?: string;
   sender?: UserProfile;
+  gamePostId?: string;
+  gamePost?: GamePost;
+  receipts: NotificationReceipt[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// API 응답 공통 타입
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
+// 알림 수신 모델
+export interface NotificationReceipt {
+  id: string;
+  notificationId: string;
+  userId: string;
+  notification: Notification;
+  user: UserProfile;
+  isRead: boolean;
+  readAt?: Date;
+  isClicked: boolean;
+  clickedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// 페이지네이션 타입
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+// 알림 설정 모델
+export interface NotificationSetting {
+  id: string;
+  userId: string;
+  user: UserProfile;
+  doNotDisturb: DoNotDisturbSettings;
+  newGamePost: CategorySettings;
+  participatingGame: CategorySettings;
+  myGamePost: CategorySettings;
+  waitingList: CategorySettings;
+  newGamePostSettings: JsonValue;
+  participatingGameSettings: JsonValue;
+  myGamePostSettings: JsonValue;
+  waitingListSettings: JsonValue;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
+// 방해 금지 설정
+export interface DoNotDisturbSettings {
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
+  days: string[];
+}
+
+// 카테고리 설정
+export interface CategorySettings {
+  enabled: boolean;
+}
+
+// 게임 필터 설정
+export interface GameFilterSettings {
+  enabled: boolean;
+  mode: 'INCLUDE' | 'EXCLUDE';
+  gameIds: string[];
+}
+
+// 시간 필터 설정
+export interface TimeFilterSettings {
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
+  days: string[];
+}

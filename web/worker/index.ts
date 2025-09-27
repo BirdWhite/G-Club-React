@@ -48,8 +48,13 @@ self.addEventListener('push', function(event: any) {
         title: '닫기'
       }
     ],
-    requireInteraction: false,
-    silent: false
+    requireInteraction: true,  // 사용자 상호작용 요구 (알림 지속성 향상)
+    silent: false,
+    vibrate: [200, 100, 200],  // 진동 패턴
+    priority: 'high',          // 높은 우선순위
+    timestamp: Date.now(),     // 타임스탬프
+    renotify: true,           // 같은 태그의 알림 재알림
+    sticky: true              // 알림 지속성
   };
 
   event.waitUntil(
@@ -57,7 +62,7 @@ self.addEventListener('push', function(event: any) {
   );
 });
 
-// 메시지 이벤트 처리 (디버깅용)
+// 메시지 이벤트 처리
 self.addEventListener('message', function(event: any) {
   console.log('[custom-worker] Message received:', event.data);
   
@@ -67,6 +72,41 @@ self.addEventListener('message', function(event: any) {
       icon: event.data.data.icon,
       tag: 'test'
     });
+  }
+  
+  // 캐시 강제 새로고침 요청
+  if (event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(
+      caches.keys().then(function(cacheNames) {
+        return Promise.all(
+          cacheNames.map(function(cacheName) {
+            console.log('[custom-worker] Clearing cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+        );
+      }).then(function() {
+        // 모든 클라이언트에게 캐시 정리 완료 알림
+        return sw.clients.matchAll().then(function(clients: any[]) {
+          clients.forEach(function(client: any) {
+            client.postMessage({ type: 'CACHE_CLEARED' });
+          });
+        });
+      })
+    );
+  }
+  
+  // 서비스 워커 업데이트 요청
+  if (event.data.type === 'UPDATE_SW') {
+    event.waitUntil(
+      sw.registration.update().then(function() {
+        console.log('[custom-worker] Service worker updated');
+        return sw.clients.matchAll().then(function(clients: any[]) {
+          clients.forEach(function(client: any) {
+            client.postMessage({ type: 'SW_UPDATED' });
+          });
+        });
+      })
+    );
   }
 });
 
@@ -82,28 +122,85 @@ self.addEventListener('notificationclick', function(event: any) {
 
   // 알림 클릭 시 앱으로 이동
   const urlToOpen = event.notification.data?.url || '/';
+  const notificationId = event.notification.data?.notificationId;
+  
+  console.log('[custom-worker] 알림 클릭 데이터:', {
+    url: urlToOpen,
+    notificationId: notificationId
+  });
   
   event.waitUntil(
-    clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true
-    }).then(function(clientList: any) {
-      // 이미 열린 탭이 있으면 포커스
-      for (let i = 0; i < clientList.length; i++) {
-        const client = clientList[i];
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.navigate(urlToOpen);
-          return client.focus();
-        }
-      }
+    Promise.all([
+      // 알림 읽음 처리
+      notificationId ? markNotificationAsRead(notificationId) : Promise.resolve(),
       
-      // 열린 탭이 없으면 새 창 열기
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
-    })
+      // 앱으로 이동
+      clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true
+      }).then(function(clientList: any) {
+        // 이미 열린 탭이 있으면 포커스
+        for (let i = 0; i < clientList.length; i++) {
+          const client = clientList[i];
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            client.navigate(urlToOpen);
+            return client.focus();
+          }
+        }
+        
+        // 열린 탭이 없으면 새 창 열기
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+    ])
   );
 });
+
+// 알림 읽음 처리 함수
+async function markNotificationAsRead(notificationId: string) {
+  try {
+    console.log(`[custom-worker] 알림 읽음 처리: ${notificationId}`);
+    
+    // 먼저 사용자의 NotificationReceipt를 찾아서 receiptId를 가져와야 함
+    const receiptResponse = await fetch(`/api/notifications/receipt?notificationId=${notificationId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!receiptResponse.ok) {
+      console.error(`[custom-worker] Receipt 조회 실패: ${notificationId}`, receiptResponse.status);
+      return;
+    }
+    
+    const receiptData = await receiptResponse.json();
+    const receiptId = receiptData.receiptId;
+    
+    if (!receiptId) {
+      console.error(`[custom-worker] Receipt ID를 찾을 수 없음: ${notificationId}`);
+      return;
+    }
+    
+    console.log(`[custom-worker] Receipt ID: ${receiptId}`);
+    
+    const response = await fetch(`/api/notifications/${receiptId}/read`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (response.ok) {
+      console.log(`[custom-worker] 알림 읽음 처리 완료: ${notificationId} (receiptId: ${receiptId})`);
+    } else {
+      console.error(`[custom-worker] 알림 읽음 처리 실패: ${notificationId}`, response.status);
+    }
+  } catch (error) {
+    console.error(`[custom-worker] 알림 읽음 처리 오류: ${notificationId}`, error);
+  }
+}
 
 // 설치 이벤트
 self.addEventListener('install', function(event: any) {
@@ -112,9 +209,71 @@ self.addEventListener('install', function(event: any) {
   sw.skipWaiting();
 });
 
+// 백그라운드 동기화 이벤트
+self.addEventListener('sync', function(event: any) {
+  console.log('[custom-worker] Background sync event:', event.tag);
+  
+  if (event.tag === 'background-sync') {
+    event.waitUntil(doBackgroundSync());
+  }
+});
+
+// 백그라운드 동기화 함수
+function doBackgroundSync() {
+  console.log('[custom-worker] Performing background sync');
+  
+  // 백그라운드에서 알림 상태 확인
+  return fetch('/api/notifications/check', {
+    method: 'GET',
+    headers: {
+      'Cache-Control': 'no-cache',
+    },
+    cache: 'no-store'
+  })
+  .then(response => {
+    if (response.ok) {
+      return response.json();
+    }
+    throw new Error('Background sync failed');
+  })
+  .then(data => {
+    if (data.hasNewNotifications) {
+      // 새 알림이 있으면 표시
+      return sw.registration.showNotification('새 알림', {
+        body: '확인하지 않은 알림이 있습니다.',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-192x192.png',
+        tag: 'background-sync',
+        requireInteraction: true,
+        vibrate: [200, 100, 200],
+        priority: 'high'
+      });
+    }
+  })
+  .catch(error => {
+    console.error('[custom-worker] Background sync error:', error);
+  });
+}
+
 // 활성화 이벤트
 self.addEventListener('activate', function(event: any) {
   console.log('[custom-worker] Service worker activated');
-  // 즉시 클라이언트 제어권 가져오기
-  event.waitUntil(sw.clients.claim());
+  
+  event.waitUntil(
+    Promise.all([
+      // 즉시 클라이언트 제어권 가져오기
+      sw.clients.claim(),
+      // 백그라운드 동기화 등록
+      sw.registration.sync.register('background-sync'),
+      // 모든 캐시 강제 삭제
+      caches.keys().then(function(cacheNames) {
+        return Promise.all(
+          cacheNames.map(function(cacheName) {
+            console.log('[custom-worker] Deleting all cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+        );
+      })
+    ])
+  );
 });
