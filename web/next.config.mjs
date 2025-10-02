@@ -88,85 +88,58 @@ const withPWAConfig = withPWA({
   customWorkerDir: 'worker', // 커스텀 워커 디렉토리
   workboxOptions: {
     disableDevLogs: true,
-    // 항상 즉시 업데이트 적용
     skipWaiting: true,
     clientsClaim: true,
-    // 강제 캐시 무효화
     cleanupOutdatedCaches: true,
-    // 캐시 전략 개선
+    cacheId: 'ultimate-pwa-v2', // 버전 업데이트
+    // 최소한의 캐시 전략 - 정적 자산만 캐시
     runtimeCaching: [
-      // 인증 관련 API는 캐시하지 않음
-      {
-        urlPattern: /^\/api\/(auth|profile).*/,
-        handler: 'NetworkOnly',
-        options: {
-          cacheName: 'auth-cache',
-          expiration: {
-            maxEntries: 0,
-            maxAgeSeconds: 0,
-          },
-        },
-      },
-      // 푸시 알림 관련 API는 캐시하지 않음
-      {
-        urlPattern: /^\/api\/push.*/,
-        handler: 'NetworkOnly',
-        options: {
-          cacheName: 'push-cache',
-          expiration: {
-            maxEntries: 0,
-            maxAgeSeconds: 0,
-          },
-        },
-      },
-      // 알림 설정 관련 API는 캐시하지 않음
-      {
-        urlPattern: /^\/api\/notifications.*/,
-        handler: 'NetworkOnly',
-        options: {
-          cacheName: 'notifications-cache',
-          expiration: {
-            maxEntries: 0,
-            maxAgeSeconds: 0,
-          },
-        },
-      },
-      // 기타 API 요청은 네트워크 우선
+      // 모든 API 요청은 캐시하지 않음 (NetworkOnly)
       {
         urlPattern: /^\/api\/.*/,
-        handler: 'NetworkFirst',
+        handler: 'NetworkOnly',
         options: {
-          cacheName: 'api-cache',
+          cacheName: 'api-no-cache',
           expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 5 * 60, // 5분
+            maxEntries: 0,
+            maxAgeSeconds: 0,
           },
-          networkTimeoutSeconds: 10,
         },
       },
-      // 정적 자산은 캐시 우선
+      // 모든 페이지 요청은 캐시하지 않음 (NetworkOnly)
+      {
+        urlPattern: /^\/(?!_next\/static|icons|images).*/,
+        handler: 'NetworkOnly',
+        options: {
+          cacheName: 'pages-no-cache',
+          expiration: {
+            maxEntries: 0,
+            maxAgeSeconds: 0,
+          },
+        },
+      },
+      // 정적 이미지만 캐시 (프로필 사진, 아이콘 등)
       {
         urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
         handler: 'CacheFirst',
         options: {
-          cacheName: 'images-cache',
+          cacheName: 'static-images',
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7일
+          },
+        },
+      },
+      // Next.js 정적 자산만 캐시
+      {
+        urlPattern: /^\/_next\/static\/.*/,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'next-static',
           expiration: {
             maxEntries: 100,
             maxAgeSeconds: 30 * 24 * 60 * 60, // 30일
           },
-        },
-      },
-      // 기타 요청은 네트워크 우선
-      {
-        urlPattern: /^https?.*/,
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'offline-cache',
-          expiration: {
-            maxEntries: 200,
-            maxAgeSeconds: 24 * 60 * 60, // 24시간
-          },
-          networkTimeoutSeconds: 10,
         },
       },
     ],
@@ -183,9 +156,9 @@ const withPWAConfig = withPWA({
         revision: Date.now().toString(),
       },
     ],
-    // 인증 관련 요청은 캐시하지 않음
+    // 오프라인 폴백 비활성화
     navigateFallback: null,
-    navigateFallbackDenylist: [/^\/api\/auth/, /^\/api\/profile/, /^\/api\/push/, /^\/api\/notifications/],
+    navigateFallbackDenylist: [/.*/], // 모든 경로에서 폴백 비활성화
   },
 });
 

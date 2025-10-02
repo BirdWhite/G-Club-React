@@ -6,6 +6,21 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const searchQuery = searchParams.get('search') || '';
+    const ids = searchParams.get('ids');
+    
+    // 특정 ID들로 게임 조회
+    if (ids) {
+      const gameIds = ids.split(',').filter(id => id.trim());
+      if (gameIds.length > 0) {
+        const games = await prisma.game.findMany({
+          where: {
+            id: { in: gameIds }
+          },
+          orderBy: { name: 'asc' },
+        });
+        return NextResponse.json(games);
+      }
+    }
     
     if (searchQuery) {
       

@@ -16,13 +16,33 @@ export async function POST(
 
   try {
     const { id: gamePostId } = await params;
-    const { availableTime } = (await request.json()) as { availableTime?: string };
+    
+    // 요청 본문이 있는지 확인하고 JSON 파싱
+    let availableTime: string | null = null;
+    try {
+      const body = await request.json();
+      availableTime = body.availableTime || null;
+    } catch {
+      // JSON이 없거나 빈 경우 기본값 사용
+      availableTime = null;
+    }
 
     const post = await prisma.gamePost.findUnique({
       where: { id: gamePostId },
       include: {
-        participants: { select: { userId: true } },
-        waitingList: { select: { userId: true } },
+        participants: { 
+          select: { 
+            userId: true,
+            status: true
+          } 
+        },
+        waitingList: { 
+          select: { 
+            id: true,
+            userId: true,
+            status: true
+          } 
+        },
       },
     });
 
@@ -33,23 +53,66 @@ export async function POST(
       return NextResponse.json({ error: '자신이 생성한 모집글에는 대기할 수 없습니다.' }, { status: 400 });
     }
 
-    const isAlreadyParticipant = post.participants.some(p => p.userId === userId);
+    // 예비 참가는 OPEN이거나 IN_PROGRESS 상태에서만 가능
+    if (post.status !== 'OPEN' && post.status !== 'IN_PROGRESS') {
+      return NextResponse.json({ error: '예비 참가는 모집 중이거나 게임 진행 중인 글에서만 가능합니다.' }, { status: 400 });
+    }
+
+    // 바로 참여 예비 참가 제한 (빈자리가 있으면 불가능)
+    if (!availableTime) {
+      const currentParticipantsCount = post.participants.filter(p => p.status === 'ACTIVE').length;
+      if (currentParticipantsCount < post.maxParticipants) {
+        return NextResponse.json({ error: '빈자리가 있는 경우 바로 참여 예비 참가는 불가능합니다. 일반 참여를 이용해주세요.' }, { status: 400 });
+      }
+    }
+
+    // 시간 예비 참가인 경우 시간 검증
+    if (availableTime) {
+      const availableDateTime = new Date(availableTime);
+      const gameStartTime = new Date(post.startTime);
+      
+      // 참여 가능 시간이 게임 시작 시간보다 이전이면 오류
+      if (availableDateTime <= gameStartTime) {
+        return NextResponse.json({ error: '참여 가능 시간은 게임 시작 시간 이후여야 합니다.' }, { status: 400 });
+      }
+    }
+
+    const isAlreadyParticipant = post.participants.some(p => p.userId === userId && p.status === 'ACTIVE');
     if (isAlreadyParticipant) {
       return NextResponse.json({ error: '이미 참여하고 있는 모집글입니다.' }, { status: 400 });
     }
 
-    const isAlreadyWaiting = post.waitingList.some(w => w.userId === userId);
+    const isAlreadyWaiting = post.waitingList.some(w => w.userId === userId && (w.status === 'WAITING' || w.status === 'TIME_WAITING' || w.status === 'INVITED'));
     if (isAlreadyWaiting) {
       return NextResponse.json({ error: '이미 예비 명단에 등록되어 있습니다.' }, { status: 400 });
     }
 
-    await prisma.waitingParticipant.create({
-      data: {
-        gamePostId,
-        userId,
-        availableTime,
-      },
-    });
+    // CANCELED 상태인 기존 레코드가 있는지 확인
+    const canceledParticipant = post.waitingList.find(w => w.userId === userId && w.status === 'CANCELED');
+    
+    // 상태 결정: availableTime이 있으면 TIME_WAITING, 없으면 WAITING
+    const waitingStatus = availableTime ? 'TIME_WAITING' : 'WAITING';
+    
+    if (canceledParticipant) {
+      // 기존 CANCELED 레코드를 적절한 상태로 업데이트
+      await prisma.waitingParticipant.update({
+        where: { id: canceledParticipant.id },
+        data: {
+          status: waitingStatus,
+          availableTime,
+        },
+      });
+    } else {
+      // 새로운 예비 참여자 생성
+      await prisma.waitingParticipant.create({
+        data: {
+          gamePostId,
+          userId,
+          availableTime,
+          status: waitingStatus,
+        },
+      });
+    }
 
     return NextResponse.json({ message: '예비 명단에 등록되었습니다.' });
   } catch (error) {

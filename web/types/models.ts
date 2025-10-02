@@ -37,7 +37,6 @@ export enum ChatRoomType {
 
 export enum GamePostStatus {
   OPEN = 'OPEN',
-  FULL = 'FULL',
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
   EXPIRED = 'EXPIRED'
@@ -126,6 +125,7 @@ export interface GamePost {
   startTime: Date;
   maxParticipants: number;
   status: GamePostStatus;
+  isFull: boolean;
   author: UserProfile;
   game?: Game;
   participants: GameParticipant[];
@@ -148,16 +148,18 @@ export interface GameParticipant {
   userId?: string;
   gamePostId: string;
   participantType: 'HOST' | 'MEMBER' | 'GUEST';
+  status: 'ACTIVE' | 'LEFT_EARLY' | 'COMPLETED';
   guestName?: string;
   user?: UserProfile;
   gamePost: GamePost;
   joinedAt: Date;
+  leftAt?: Date;
 }
 
 // 대기 참여자 모델
 export interface WaitingParticipant {
   id: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'WAITING' | 'TIME_WAITING' | 'INVITED' | 'CANCELED';
   userId: string;
   gamePostId: string;
   availableTime?: string;

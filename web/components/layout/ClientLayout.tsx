@@ -18,7 +18,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     return (
       <div className="min-h-screen grid grid-rows-[auto_1fr]">
         <Header />
-        <main className="overflow-y-auto">
+        <main>
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">로딩 중...</p>
           </div>
@@ -30,7 +30,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <div className="min-h-screen grid grid-rows-[auto_1fr]">
       <Header />
-      <main className="overflow-y-auto">
+      <main>
         {children}
       </main>
     </div>

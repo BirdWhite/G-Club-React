@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GamePost } from '@/types/models';
 import toast from 'react-hot-toast';
 import { useGamePostDetailSubscription } from '@/hooks/useRealtimeSubscription';
+import { ChevronDown, ChevronRight, Users, Clock } from 'lucide-react';
 
 import { GamePostHeader } from '@/components/game-mate/GamePostHeader';
 import { GamePostContent } from '@/components/game-mate/GamePostContent';
@@ -20,6 +21,7 @@ interface GamePostDetailClientProps {
 export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClientProps) {
   const router = useRouter();
   const { post, loading: isSubmitting, refresh } = useGamePostDetailSubscription(initialPost.id, initialPost);
+  const [isWaitingListExpanded, setIsWaitingListExpanded] = useState(false);
   
   // 게시글이 삭제된 경우 리다이렉트
   useEffect(() => {
@@ -62,10 +64,20 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
     '참여 취소 중 오류가 발생했습니다.'
   );
   
-  const handleWait = () => handleAction(
-    () => fetch(`/api/game-posts/${currentPost.id}/wait`, { method: 'POST' }),
-    '예비 명단에 등록되었습니다.',
-    '예비 명단 등록 중 오류가 발생했습니다.'
+  const handleWait = (availableTime: string | null) => handleAction(
+    () => fetch(`/api/game-posts/${currentPost.id}/wait`, { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ availableTime })
+    }),
+    '예비 참가가 등록되었습니다.',
+    '예비 참가 등록 중 오류가 발생했습니다.'
+  );
+
+  const handleLeaveEarly = () => handleAction(
+    () => fetch(`/api/game-posts/${currentPost.id}/leave-early`, { method: 'PATCH' }),
+    '중도 퇴장 처리되었습니다.',
+    '중도 퇴장 처리 중 오류가 발생했습니다.'
   );
   
   const handleDeletePost = async () => {
@@ -119,26 +131,44 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
 
       <div className="mt-8">
         <div className="flex items-center mb-4">
+          <Users className="h-5 w-5 text-foreground mr-2" />
           <h3 className="text-xl font-bold text-cyber-gray mr-3">참여자 목록</h3>
           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30">
-            {currentPost._count?.participants || 0}/{currentPost.maxParticipants}
+            {currentPost.participants?.filter(p => p.status === 'ACTIVE').length || 0}/{currentPost.maxParticipants}
           </span>
         </div>
         <ParticipantList
           participants={currentPost.participants}
           authorId={currentPost.author.userId}
+          gamePostId={currentPost.id}
+          gameStatus={currentPost.status}
+          isOwner={isOwner}
+          onParticipantUpdate={refresh}
         />
       </div>
 
-      {currentPost.waitingList && currentPost.waitingList.length > 0 && (
+      {currentPost.waitingList && currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED').length > 0 && (
          <div className="mt-8">
-            <div className="flex items-center mb-4">
-              <h3 className="text-xl font-bold text-cyber-gray mr-3">예비 명단</h3>
+            <div 
+              className="flex items-center mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors w-fit"
+              onClick={() => setIsWaitingListExpanded(!isWaitingListExpanded)}
+            >
+              <Clock className="h-5 w-5 text-foreground mr-2" />
+              <h3 className="text-xl font-bold text-cyber-gray mr-3">예비 목록</h3>
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30">
-                {currentPost._count?.waitingList || 0}명
+                {currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED').length}명
               </span>
+              <div className="ml-3">
+                {isWaitingListExpanded ? (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-gray-500" />
+                )}
+              </div>
             </div>
-            <WaitingList waitingList={currentPost.waitingList} />
+            {isWaitingListExpanded && (
+              <WaitingList waitingList={currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED')} />
+            )}
          </div>
       )}
 
@@ -146,13 +176,19 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
         <div className="mt-8">
           <ActionButtons
             postStatus={currentPost.status}
+            isFull={currentPost.isFull || false}
             isParticipating={isParticipating || false}
             isWaiting={isWaiting || false}
             isOwner={isOwner || false}
+            gamePostId={currentPost.id}
+            gameStartTime={currentPost.startTime}
+            waitingList={currentPost.waitingList?.filter(w => w.userId === userId && (w.status === 'WAITING' || w.status === 'INVITED')) || []}
             onParticipate={handleParticipate}
             onCancelParticipation={handleCancelParticipation}
+            onLeaveEarly={handleLeaveEarly}
             onWait={handleWait}
             onToggleStatus={handleToggleStatus}
+            onWaitingListUpdate={refresh}
             loading={isSubmitting}
           />
         </div>

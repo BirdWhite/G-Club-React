@@ -31,13 +31,12 @@ export async function GET(request: Request) {
     // 상태 필터링
     if (status) {
       if (status === 'recruiting') {
-        // 모집 중 (OPEN, FULL, IN_PROGRESS)
+        // 모집 중 (OPEN, IN_PROGRESS)
         where.AND = [
           { status: { not: 'DELETED' } },
           {
             OR: [
               { status: 'OPEN' },
-              { status: 'FULL' },
               { status: 'IN_PROGRESS' },
             ]
           }
@@ -53,11 +52,17 @@ export async function GET(request: Request) {
             ]
           }
         ];
-      } else if (['OPEN', 'FULL', 'COMPLETED', 'EXPIRED'].includes(status)) {
+      } else if (status === 'full') {
+        // 가득 찬 게임글 (isFull이 true인 것들)
+        where.AND = [
+          { status: { not: 'DELETED' } },
+          { isFull: true }
+        ];
+      } else if (['OPEN', 'COMPLETED', 'EXPIRED'].includes(status)) {
         // 특정 상태로 필터링
         where.AND = [
           { status: { not: 'DELETED' } },
-          { status: status as 'OPEN' | 'FULL' | 'COMPLETED' | 'EXPIRED' }
+          { status: status as 'OPEN' | 'COMPLETED' | 'EXPIRED' }
         ];
       }
     }
@@ -75,6 +80,7 @@ export async function GET(request: Request) {
         author: {
           select: {
             id: true,
+            userId: true,
             name: true,
             image: true,
           },
@@ -88,17 +94,23 @@ export async function GET(request: Request) {
     });
 
     // 응답 데이터 형식 변환
-    const responseData = posts.map((post) => ({
-      ...post,
-      // _count를 클라이언트에서 계산할 수 있도록 participants와 waitingList 길이를 기반으로 생성
-      _count: {
-        participants: post.participants.length,
-        waitingList: post.waitingList.length,
-      },
-      startTime: post.startTime.toISOString(),
-      createdAt: post.createdAt.toISOString(),
-      updatedAt: post.updatedAt.toISOString(),
-    }));
+    const responseData = posts.map((post) => {
+      const activeParticipantsCount = post.participants.filter(p => p.status === 'ACTIVE').length;
+      const isFull = activeParticipantsCount >= post.maxParticipants;
+      
+      return {
+        ...post,
+        isFull: isFull,
+        // _count를 클라이언트에서 계산할 수 있도록 participants와 waitingList 길이를 기반으로 생성
+        _count: {
+          participants: activeParticipantsCount,
+          waitingList: post.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED').length,
+        },
+        startTime: post.startTime.toISOString(),
+        createdAt: post.createdAt.toISOString(),
+        updatedAt: post.updatedAt.toISOString(),
+      };
+    });
 
     return NextResponse.json(responseData);
   } catch (error) {

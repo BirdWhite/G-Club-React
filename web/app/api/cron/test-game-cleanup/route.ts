@@ -29,8 +29,8 @@ export async function POST() {
     console.log('1단계: 게임 시작 처리 중...');
     const { data: fullPosts, error: fullError } = await supabase
       .from('GamePost')
-      .select('id, title, startTime, status')
-      .eq('status', 'FULL')
+      .select('id, title, startTime, status, isFull')
+      .eq('isFull', true)
       .lte('startTime', currentTime.toISOString());
     
     if (fullError) {

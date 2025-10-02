@@ -24,7 +24,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         setProfile(null);
         return;

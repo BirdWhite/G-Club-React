@@ -1,16 +1,23 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/database/supabase';
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+  const [error, setError] = useState<string | null>(null);
 
   const handleKakaoLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
+      options: {
+        queryParams: {
+          prompt: 'select_account' // 매번 계정 선택 화면 표시
+        }
+      }
     });
 
     if (error) {
@@ -20,6 +27,12 @@ export function LoginForm() {
   };
 
   useEffect(() => {
+    // URL에서 에러 파라미터 확인
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setError('로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
+
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -27,7 +40,7 @@ export function LoginForm() {
       }
     };
     checkUser();
-  }, [router, supabase]); // 의존성 복구
+  }, [router, supabase, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -39,6 +52,11 @@ export function LoginForm() {
           <p className="mt-2 text-sm text-gray-600">
             카카오 계정으로 간편하게 시작하세요
           </p>
+          {error && (
+            <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
         </div>
         <div className="mt-8">
           <button

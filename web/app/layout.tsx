@@ -16,7 +16,11 @@ if (typeof window === 'undefined' && !global.__cronSchedulerStarted) {
   import('@/lib/cron/server-init');
 }
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',  // 폰트 로드 전에도 텍스트 표시
+  preload: true,    // 폰트 미리 로드
+});
 
 export const metadata: Metadata = {
   title: "얼티메이트",

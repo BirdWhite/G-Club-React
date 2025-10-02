@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
-
-interface Game {
-  id: string;
-  name: string;
-  description?: string;
-  iconUrl?: string;
-  aliases: string[];
-}
+import type { Game } from '@/types/models';
 
 interface FavoriteGame {
   id: string;

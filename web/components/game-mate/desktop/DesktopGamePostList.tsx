@@ -9,7 +9,6 @@ import { PlusCircle } from 'lucide-react';
 interface DesktopGamePostListProps {
   userId?: string;
   posts: GamePost[];
-  loading: boolean;
   urlState: {
     gameId: string;
     status: string;
@@ -23,7 +22,6 @@ type StatusFilterType = 'all' | 'recruiting' | 'open' | 'full' | 'completed_expi
 export function DesktopGamePostList({ 
   userId, 
   posts, 
-  loading, 
   urlState, 
   onGameChange, 
   onStatusChange 
@@ -33,28 +31,10 @@ export function DesktopGamePostList({
   const filteredPosts = posts;
 
   const renderPosts = () => {
-    if (loading) {
-      return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="bg-card p-4 rounded-lg shadow animate-pulse">
-              <div className="h-8 bg-card-foreground/10 rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-card-foreground/10 rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-card-foreground/10 rounded w-full mb-2"></div>
-              <div className="h-4 bg-card-foreground/10 rounded w-full mb-4"></div>
-              <div className="flex justify-between items-center">
-                <div className="h-6 bg-card-foreground/10 rounded w-1/4"></div>
-                <div className="h-6 bg-card-foreground/10 rounded w-1/4"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
 
     if (filteredPosts.length === 0) {
       return (
-        <div className="text-center py-12 bg-card rounded-lg shadow">
+        <div className="text-center py-12">
           <svg className="mx-auto h-12 w-12 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>

@@ -1,11 +1,5 @@
 import { useState, useEffect } from 'react';
-
-interface DoNotDisturbSettings {
-  enabled: boolean;
-  startTime: string;
-  endTime: string;
-  days: string[]; // ['0', '1', '2', '3', '4', '5', '6'] (0=일요일)
-}
+import type { DoNotDisturbSettings, NotificationSetting } from '@/types/models';
 
 interface CategorySettings {
   enabled: boolean;
@@ -19,6 +13,7 @@ interface NotificationSettings {
   participatingGame: CategorySettings;
   myGamePost: CategorySettings;
   waitingList: CategorySettings;
+  customGameIds: string[];
   updatedAt?: string;
 }
 
@@ -33,7 +28,8 @@ export function useNotificationSettings() {
     newGamePost: { enabled: true },
     participatingGame: { enabled: true },
     myGamePost: { enabled: true },
-    waitingList: { enabled: true }
+    waitingList: { enabled: true },
+    customGameIds: []
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -103,7 +99,9 @@ export function useNotificationSettings() {
       newGamePost: { 
         enabled, 
         settings: detailSettings 
-      } 
+      },
+      // customGameIds는 현재 값 유지 (undefined로 전달하지 않음)
+      customGameIds: settings.customGameIds
     });
   };
 
@@ -132,6 +130,11 @@ export function useNotificationSettings() {
     return updateSettings({ 
       waitingList: { enabled } 
     });
+  };
+
+  // 커스텀 게임 배열 업데이트
+  const updateCustomGameIds = async (customGameIds: string[]) => {
+    return updateSettings({ customGameIds });
   };
 
   // 특정 카테고리 토글
@@ -199,6 +202,7 @@ export function useNotificationSettings() {
     updateParticipatingGame,
     updateMyGamePost,
     updateWaitingList,
+    updateCustomGameIds,
     toggleCategory,
     toggleDoNotDisturb,
     isDoNotDisturbTime,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -23,6 +23,17 @@ export default function NotificationSettingsPage() {
   const [serverHasSubscription, setServerHasSubscription] = useState<boolean | null>(null); // 서버 구독 상태 (null: 로딩 중)
   const [isToggling, setIsToggling] = useState(false); // 토글 처리 중 상태
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true); // 구독 상태 로딩 중
+  const [hasLoadedSubscription, setHasLoadedSubscription] = useState(false); // 구독 상태 로드 완료 플래그
+  const [allDeviceSubscriptions, setAllDeviceSubscriptions] = useState<Array<{
+    id: string;
+    deviceName: string | null;
+    browser: string | null;
+    deviceType: string;
+    isEnabled: boolean;
+    createdAt: string;
+    userAgent: string | null;
+    isCurrentDevice: boolean;
+  }>>([]); // 모든 디바이스 구독 정보
   const [isPWA, setIsPWA] = useState(false); // PWA 상태
 
   const [showDoNotDisturbDetail, setShowDoNotDisturbDetail] = useState(false);
@@ -43,15 +54,69 @@ export default function NotificationSettingsPage() {
   }, []);
 
   // 푸시 알림 권한 변경 핸들러
-  const handlePermissionChange = (permission: NotificationPermission, subscription: PushSubscription | null) => {
+  const handlePermissionChange = useCallback((permission: NotificationPermission, subscription: PushSubscription | null) => {
     setPushPermission(permission);
     setPushSubscription(subscription);
+  }, []);
+
+  // 기기 핑거프린트 생성 (모든 기기 정보 포함)
+  const generateDeviceFingerprint = (): string => {
+    const userAgent = navigator.userAgent;
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    
+    // 기기 타입과 이름
+    let deviceType = 'unknown';
+    let deviceName = 'Unknown';
+    
+    if (isMobile) {
+      deviceType = 'mobile';
+      if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+        deviceName = 'iOS';
+      } else if (userAgent.includes('Android')) {
+        deviceName = 'Android';
+      } else {
+        deviceName = 'Mobile';
+      }
+    } else {
+      deviceType = 'desktop';
+      if (userAgent.includes('Windows')) {
+        deviceName = 'Windows';
+      } else if (userAgent.includes('Mac')) {
+        deviceName = 'Mac';
+      } else if (userAgent.includes('Linux')) {
+        deviceName = 'Linux';
+      } else {
+        deviceName = 'Desktop';
+      }
+    }
+    
+    // 브라우저 정보
+    let browser = 'Unknown';
+    if (userAgent.includes('Chrome')) browser = 'Chrome';
+    else if (userAgent.includes('Safari')) browser = 'Safari';
+    else if (userAgent.includes('Firefox')) browser = 'Firefox';
+    else if (userAgent.includes('Edge')) browser = 'Edge';
+    
+    return [
+      deviceName,                              // 기기 이름
+      deviceType,                              // 기기 타입
+      browser,                                 // 브라우저
+      navigator.maxTouchPoints || '0',        // 터치 지원
+      screen.colorDepth,                      // 색상 깊이
+      navigator.hardwareConcurrency || '0'    // CPU 코어 수
+    ].join('|');
   };
 
+
   // 서버 구독 상태 확인
-  const checkServerSubscription = async (): Promise<boolean> => {
+  const checkServerSubscription = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/push/check?userId=${profile?.userId}`, {
+             // 디바이스 타입 감지
+             const userAgent = navigator.userAgent.toLowerCase();
+             const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+             const deviceType = isMobile ? 'mobile' : 'desktop';
+
+      const response = await fetch(`/api/push/check?userId=${profile?.userId}&deviceFingerprint=${encodeURIComponent(generateDeviceFingerprint())}&deviceType=${deviceType}`, {
         cache: 'no-store', // 캐시 방지
         headers: {
           'Cache-Control': 'no-cache',
@@ -59,17 +124,18 @@ export default function NotificationSettingsPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        return data.hasSubscription;
+        setAllDeviceSubscriptions(data.allDeviceSubscriptions || []);
+        return data.currentDeviceSubscription;
       }
       return false;
     } catch (error) {
       console.error('서버 구독 확인 실패:', error);
       return false;
     }
-  };
+  }, [profile?.userId]);
 
   // PWA 환경에서 권한 상태 정확히 확인
-  const checkPWAPermission = async (): Promise<NotificationPermission> => {
+  const checkPWAPermission = useCallback(async (): Promise<NotificationPermission> => {
     try {
       // 현재 기기의 권한 상태만 확인 (다른 기기 구독과 무관)
       const currentPermission = Notification.permission;
@@ -79,10 +145,15 @@ export default function NotificationSettingsPage() {
       console.error('PWA 권한 확인 실패:', error);
       return Notification.permission;
     }
-  };
+  }, []);
 
   // 서버 구독 상태 로드
-  const loadServerSubscriptionStatus = async () => {
+  const loadServerSubscriptionStatus = useCallback(async () => {
+    // 이미 로드했다면 중복 실행 방지
+    if (hasLoadedSubscription) {
+      return;
+    }
+    
     setIsLoadingSubscription(true);
     if (profile?.userId) {
       try {
@@ -92,17 +163,20 @@ export default function NotificationSettingsPage() {
         
         const hasSubscription = await checkServerSubscription();
         setServerHasSubscription(hasSubscription);
+        setHasLoadedSubscription(true);
       } catch (error) {
         console.error('서버 구독 상태 로드 실패:', error);
         // 오류 발생 시 기본값(false) 유지
         setServerHasSubscription(false);
+        setHasLoadedSubscription(true);
       }
     } else {
       // userId가 없으면 기본값(false) 유지
       setServerHasSubscription(false);
+      setHasLoadedSubscription(true);
     }
     setIsLoadingSubscription(false);
-  };
+  }, [profile?.userId, hasLoadedSubscription, checkServerSubscription, checkPWAPermission]);
 
   // 마스터 토글 상태 계산 (서버 구독 상태 기반)
   const isMasterEnabled = serverHasSubscription === true;
@@ -190,10 +264,17 @@ export default function NotificationSettingsPage() {
     toggleCategory('newGamePost');
   };
 
+  // userId가 변경될 때 플래그 리셋
+  useEffect(() => {
+    setHasLoadedSubscription(false);
+  }, [profile?.userId]);
+
   // 컴포넌트 마운트 시 서버 구독 상태 로드
   useEffect(() => {
-    loadServerSubscriptionStatus();
-  }, [profile?.userId]);
+    if (!hasLoadedSubscription && profile?.userId) {
+      loadServerSubscriptionStatus();
+    }
+  }, [profile?.userId, hasLoadedSubscription, loadServerSubscriptionStatus]);
 
   const handleResetToDefaults = async () => {
     try {
@@ -215,17 +296,26 @@ export default function NotificationSettingsPage() {
     }
   };
 
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* 헤더 */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-foreground">알림 설정</h1>
               <p className="text-muted-foreground mt-2">
                 원하는 알림만 받아보세요
@@ -255,17 +345,17 @@ export default function NotificationSettingsPage() {
           <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors ${
             isMasterEnabled 
               ? 'bg-card hover:bg-card/80' 
-              : 'bg-card hover:bg-card/80'
+              : 'bg-muted/50' // Only background is transparent
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🔔</span>
                 <div>
-                  <h3 className="font-semibold text-foreground">알림 설정</h3>
+                  <h3 className={`font-semibold text-foreground ${!isMasterEnabled ? 'opacity-60' : ''}`}>알림 설정</h3>
                   <p className="text-sm text-muted-foreground">
                     {!isPWA
                       ? (
-                        <span>
+                        <span className={!isMasterEnabled ? 'text-foreground font-medium' : ''}>
                           PWA 앱을 설치해야 알림을 활성화할 수 있습니다.{' '}
                           <Link 
                             href="/pwa-install" 
@@ -288,7 +378,7 @@ export default function NotificationSettingsPage() {
                 {(isToggling || isLoadingSubscription) && (
                   <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                 )}
-                <label className={`relative inline-flex items-center ${(isToggling || isLoadingSubscription || !isPWA) ? 'cursor-wait' : 'cursor-pointer'}`}>
+                <label className={`relative inline-flex items-center ${(isToggling || isLoadingSubscription || !isPWA) ? 'cursor-wait' : 'cursor-pointer'} ${!isMasterEnabled ? 'opacity-60' : ''}`}>
                   <input
                     type="checkbox"
                     checked={isMasterEnabled}
@@ -302,6 +392,78 @@ export default function NotificationSettingsPage() {
             </div>
           </div>
         </div>
+
+        {/* 기기 구독 상태 */}
+        {allDeviceSubscriptions.length > 0 && (
+          <div className="mb-6 p-6 bg-card rounded-2xl shadow-lg border border-border">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">📱</span>
+              <div>
+                <h3 className="font-semibold text-foreground">기기 구독 상태</h3>
+                <p className="text-sm text-muted-foreground">
+                  현재 계정으로 구독된 기기의 알림 상태입니다
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              {allDeviceSubscriptions.map((device, index) => {
+                // API에서 받은 현재 기기 여부 사용
+                const isCurrentDevice = device.isCurrentDevice;
+                
+                // 기기 정보 표시
+                let deviceName = device.deviceName || '알 수 없는 기기';
+                const deviceInfo = device.browser || '알 수 없음';
+                
+                       // 기기 이름을 한국어로 변환
+                       if (deviceName === 'iOS') deviceName = 'iOS 기기';
+                       else if (deviceName === 'Android') deviceName = 'Android 기기';
+                       else if (deviceName === 'Windows') deviceName = 'Windows PC';
+                       else if (deviceName === 'Mac') deviceName = 'Mac';
+                       else if (deviceName === 'Linux') deviceName = 'Linux PC';
+                
+                return (
+                  <div key={index} className={`p-3 rounded-lg border ${
+                    isCurrentDevice 
+                      ? 'bg-primary/10 border-primary/30' 
+                      : 'bg-muted/50 border-border'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">
+                          {device.deviceType === 'mobile' ? '📱' : 
+                           device.deviceType === 'tablet' ? '📱' : '💻'}
+                        </span>
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {deviceName} ({deviceInfo})
+                            {isCurrentDevice && (
+                              <span className="ml-2 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
+                                현재 기기
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            구독일: {new Date(device.createdAt).toLocaleDateString('ko-KR')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          device.isEnabled 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {device.isEnabled ? '활성' : '비활성'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* 에러 메시지 */}
         {error && (
@@ -317,7 +479,7 @@ export default function NotificationSettingsPage() {
             settings.doNotDisturb.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
-          } ${(!isMasterEnabled || !isPWA) ? 'opacity-50 pointer-events-none' : ''}`}>
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3">
@@ -337,7 +499,6 @@ export default function NotificationSettingsPage() {
                 <button
                   onClick={() => setShowDoNotDisturbDetail(!showDoNotDisturbDetail)}
                   className="text-primary hover:text-primary/80 text-sm font-medium cursor-pointer"
-                  disabled={!isMasterEnabled || !isPWA}
                 >
                   상세 설정
                 </button>
@@ -347,7 +508,6 @@ export default function NotificationSettingsPage() {
                     checked={settings.doNotDisturb.enabled}
                     onChange={toggleDoNotDisturb}
                     className="sr-only peer"
-                    disabled={!isMasterEnabled || !isPWA}
                   />
                   <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
@@ -427,7 +587,7 @@ export default function NotificationSettingsPage() {
             settings.newGamePost.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
-          } ${(!isMasterEnabled || !isPWA) ? 'opacity-50 pointer-events-none' : ''}`}>
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🎮</span>
@@ -439,7 +599,7 @@ export default function NotificationSettingsPage() {
               <div className="flex items-center gap-3">
                 <Link 
                   href="/notifications/settings/new-game-post"
-                  className={`text-primary hover:text-primary/80 text-sm font-medium ${(!isMasterEnabled || !isPWA) ? 'pointer-events-none' : ''}`}
+                  className="text-primary hover:text-primary/80 text-sm font-medium"
                 >
                   상세 설정
                 </Link>
@@ -449,7 +609,6 @@ export default function NotificationSettingsPage() {
                     checked={settings.newGamePost.enabled}
                     onChange={toggleNewGamePost}
                     className="sr-only peer"
-                    disabled={!isMasterEnabled || !isPWA}
                   />
                   <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
@@ -462,7 +621,7 @@ export default function NotificationSettingsPage() {
             settings.participatingGame.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
-          } ${(!isMasterEnabled || !isPWA) ? 'opacity-50 pointer-events-none' : ''}`}>
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">👥</span>
@@ -474,7 +633,7 @@ export default function NotificationSettingsPage() {
               <div className="flex items-center gap-3">
                 <Link 
                   href="/notifications/settings/participating-game"
-                  className={`text-primary hover:text-primary/80 text-sm font-medium ${(!isMasterEnabled || !isPWA) ? 'pointer-events-none' : ''}`}
+                  className="text-primary hover:text-primary/80 text-sm font-medium"
                 >
                   상세 설정
                 </Link>
@@ -484,7 +643,6 @@ export default function NotificationSettingsPage() {
                     checked={settings.participatingGame.enabled}
                     onChange={() => toggleCategory('participatingGame')}
                     className="sr-only peer"
-                    disabled={!isMasterEnabled || !isPWA}
                   />
                   <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
@@ -497,7 +655,7 @@ export default function NotificationSettingsPage() {
             settings.myGamePost.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
-          } ${(!isMasterEnabled || !isPWA) ? 'opacity-50 pointer-events-none' : ''}`}>
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">✍️</span>
@@ -509,7 +667,7 @@ export default function NotificationSettingsPage() {
               <div className="flex items-center gap-3">
                 <Link 
                   href="/notifications/settings/my-game-post"
-                  className={`text-primary hover:text-primary/80 text-sm font-medium ${(!isMasterEnabled || !isPWA) ? 'pointer-events-none' : ''}`}
+                  className="text-primary hover:text-primary/80 text-sm font-medium"
                 >
                   상세 설정
                 </Link>
@@ -519,7 +677,6 @@ export default function NotificationSettingsPage() {
                     checked={settings.myGamePost.enabled}
                     onChange={() => toggleCategory('myGamePost')}
                     className="sr-only peer"
-                    disabled={!isMasterEnabled || !isPWA}
                   />
                   <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
@@ -532,7 +689,7 @@ export default function NotificationSettingsPage() {
             settings.waitingList.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
-          } ${(!isMasterEnabled || !isPWA) ? 'opacity-50 pointer-events-none' : ''}`}>
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">⏳</span>
@@ -548,7 +705,6 @@ export default function NotificationSettingsPage() {
                     checked={settings.waitingList.enabled}
                     onChange={() => toggleCategory('waitingList')}
                     className="sr-only peer"
-                    disabled={!isMasterEnabled || !isPWA}
                   />
                   <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
@@ -573,6 +729,7 @@ export default function NotificationSettingsPage() {
               </button>
             </div>
           </div>
+
         </div>
 
         {/* 푸터 */}

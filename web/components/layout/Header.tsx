@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/database/supabase';
-import React, { useState, useEffect, Fragment, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider'; // 1. useProfile 훅 임포트
@@ -16,7 +16,6 @@ export function Header() {
   const supabase = createClient();
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMounted, setIsMounted] = useState(false);
   
   const { profile } = useProfile(); // 2. useProfile 훅 호출
   const isAdmin = profile?.role?.name === 'ADMIN' || profile?.role?.name === 'SUPER_ADMIN'; // 3. isAdmin 변수 생성
@@ -37,26 +36,23 @@ export function Header() {
     if (pathname.startsWith('/notifications')) return '알림';
     return 'G-Club';
   };
-  
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   // 사용자 정보 가져오기
   const fetchUser = useCallback(async () => {
     try {
-      // 1. 먼저 세션 확인
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (!authSession) {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
         setSession(null);
         return null;
       }
 
-      // 2. 세션이 있는 경우에만 사용자 정보 가져오기
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       
-      setSession(user ? { user } as Session : null);
+      const sessionData = user ? { user } as Session : null;
+      setSession(sessionData);
+      
       return user;
     } catch (error) {
       console.error('사용자 정보를 가져오는 중 오류 발생:', error);
@@ -65,7 +61,7 @@ export function Header() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase.auth]); // 의존성 복구
+  }, [supabase.auth]);
 
   useEffect(() => {
     // 초기 사용자 정보 로드
@@ -95,13 +91,25 @@ export function Header() {
       }
     };
 
+    // 서비스 워커 세션 준비 완료 이벤트 리스너 (단순화)
+    const handleSWSessionReady = (event: Event) => {
+      const customEvent = event as CustomEvent<{ session: unknown; fromCache: boolean; isPWA: boolean }>;
+      const { isPWA } = customEvent.detail || {};
+      console.log('서비스 워커 세션 준비 완료:', { isPWA });
+      
+      // 항상 서버에서 세션을 가져오기
+      fetchUser();
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('swSessionReady', handleSWSessionReady);
 
     // 클린업 함수
     return () => {
       // 구독 해제
       subscription?.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('swSessionReady', handleSWSessionReady);
     };
   }, [fetchUser, router, supabase.auth, pathname]); // 의존성 복구
   
@@ -185,9 +193,26 @@ export function Header() {
         return;
       }
       
-      // 로그아웃 시도
+      // Supabase 로그아웃
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      // 카카오 OAuth 세션도 로그아웃 (카카오 계정이면)
+      if (session.user?.app_metadata?.provider === 'kakao') {
+        try {
+          // 카카오 로그아웃 URL로 리다이렉트
+          const kakaoLogoutUrl = 'https://kauth.kakao.com/oauth/logout?client_id=' + 
+            process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID + 
+            '&logout_redirect_uri=' + encodeURIComponent(window.location.origin + '/auth/login');
+          
+          // 카카오 로그아웃 후 로그인 페이지로 리다이렉트
+          window.location.href = kakaoLogoutUrl;
+          return;
+        } catch (kakaoError) {
+          console.error('카카오 로그아웃 중 오류:', kakaoError);
+          // 카카오 로그아웃 실패해도 계속 진행
+        }
+      }
       
       // 상태 초기화
       setSession(null);
@@ -252,21 +277,17 @@ export function Header() {
               </div>
 
               {/* 데스크톱 네비게이션 */}
-              <nav className="hidden lg:ml-6 lg:flex lg:space-x-8">
-                {isMounted && (
+              <nav className="hidden md:ml-6 md:flex md:space-x-6 lg:space-x-8">
+                <NavLink href="/">홈</NavLink>
+                {/* 로그인한 사용자만 게임메이트와 관리자 대시보드 접근 가능 */}
+                {session && !isPendingMember && (
                   <>
-                    <NavLink href="/">홈</NavLink>
-                    {/* 로그인한 사용자만 게임메이트와 관리자 대시보드 접근 가능 */}
-                    {session && !isPendingMember && (
-                      <>
-                        <NavLink href="/game-mate">게임메이트</NavLink>
-                        <NavLink href="/notifications">알림</NavLink>
-                        {isAdmin && (
-                          <NavLink href="/admin/dashboard">
-                            관리자 대시보드
-                          </NavLink>
-                        )}
-                      </>
+                    <NavLink href="/game-mate">게임메이트</NavLink>
+                    <NavLink href="/notifications">알림</NavLink>
+                    {isAdmin && (
+                      <NavLink href="/admin/dashboard">
+                        관리자 대시보드
+                      </NavLink>
                     )}
                   </>
                 )}
@@ -274,28 +295,26 @@ export function Header() {
             </div>
 
             {/* 페이지 제목 - 모바일에서만 표시 */}
-            <div className="flex-1 flex items-center justify-center md:hidden">
+            <div className="flex-1 flex items-center justify-center sm:hidden">
               <h1 className="text-lg font-semibold text-header-foreground">
-                {isMounted && getPageTitle()}
+                {getPageTitle()}
               </h1>
             </div>
 
             {/* 프로필 영역 - 우측 상단 */}
             <div className="flex items-center">
-              {isMounted && (
-                <>
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      {/* 로딩 스피너 */}
-                    </div>
-                  ) : session ? (
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  {/* 로딩 스피너 */}
+                </div>
+              ) : session ? (
                     <div className="flex items-center space-x-2">
                       {/* 프로필 사진 */}
                       <Link href={profile?.userId ? `/profile/${profile.userId}` : "/profile"} className="group relative flex rounded-full focus:outline-none">
                         <span className="sr-only">프로필 페이지로 이동</span>
                         <div className={`relative transition-all duration-200 ${
                           pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit'
-                            ? 'ring-2 ring-primary ring-offset-2 ring-offset-transparent'
+                            ? 'ring-2 ring-primary ring-offset-2 ring-offset-transparent rounded-full'
                             : ''
                         }`}>
                           <ProfileAvatar
@@ -368,8 +387,6 @@ export function Header() {
                       로그인
                     </Link>
                   )}
-                </>
-              )}
             </div>
           </div>
         </div>

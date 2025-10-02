@@ -18,13 +18,15 @@ export function GamePostHeader({
   // 상태 정보 정의 (사이버펑크 테마에 맞게 수정)
   const statusInfo = {
     OPEN: { text: '모집 중', className: 'bg-cyber-green/20 text-cyber-green border border-cyber-green/30' },
-    FULL: { text: '가득 참', className: 'bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30' },
     IN_PROGRESS: { text: '게임 중', className: 'bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/30' },
     COMPLETED: { text: '모집 완료', className: 'bg-cyber-gray/20 text-cyber-gray border border-cyber-gray/30' },
     EXPIRED: { text: '만료됨', className: 'bg-cyber-red/20 text-cyber-red border border-cyber-red/30' },
   };
   
-  const currentStatus = statusInfo[post.status] || statusInfo.COMPLETED;
+  const fullStatus = { text: '가득 참', className: 'bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30' };
+  
+  // 가득 찬 경우를 우선 확인
+  const currentStatus = post.isFull ? fullStatus : (statusInfo[post.status] || statusInfo.COMPLETED);
 
   return (
     <div className="border-b border-gray-200 pb-4">

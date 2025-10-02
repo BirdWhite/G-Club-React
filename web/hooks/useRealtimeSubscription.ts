@@ -97,7 +97,7 @@ export function useGamePostListSubscription(
       
       if (filters.status) {
         if (filters.status === 'recruiting') {
-          shouldAdd = newPost.status === 'OPEN' || newPost.status === 'FULL' || newPost.status === 'IN_PROGRESS';
+          shouldAdd = newPost.status === 'OPEN' || newPost.isFull || newPost.status === 'IN_PROGRESS';
         } else if (filters.status === 'completed_expired') {
           shouldAdd = newPost.status === 'COMPLETED' || newPost.status === 'EXPIRED';
         } else {
@@ -120,7 +120,7 @@ export function useGamePostListSubscription(
   // 필터가 변경될 때마다 데이터를 다시 가져옴
   useEffect(() => {
     fetchPosts(filters);
-  }, [filters, fetchPosts]);
+  }, [filters]); // fetchPosts 의존성 제거
 
   // 실시간 구독 설정 - 부분 업데이트 방식
   useEffect(() => {
@@ -242,7 +242,7 @@ export function useGamePostListSubscription(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, fetchSinglePost, addNewPost, fetchPosts, filters, debouncedFetchSinglePost]);
+  }, [supabase, fetchSinglePost, addNewPost, filters, debouncedFetchSinglePost]); // fetchPosts 의존성 제거
 
   return { posts, loading, filters, setFilters };
 }
@@ -317,7 +317,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'GameParticipant',
           filter: `gamePostId=eq.${postId}`,
         },
-        (payload: any) => {
+        (payload: { new?: { userId: string } }) => {
           console.log('GameParticipant INSERT for post:', postId, payload);
           // 캐시에 새 참여자 추가
           if (payload.new && payload.new.userId) {
@@ -334,7 +334,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'GameParticipant',
           filter: `gamePostId=eq.${postId}`,
         },
-        (payload: any) => {
+        (payload: { old?: { userId: string }; new?: { userId: string }; eventType?: string }) => {
           console.log('GameParticipant DELETE for post:', postId, payload);
           console.log('DELETE payload details:', {
             old: payload.old,
@@ -366,6 +366,19 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
       .on(
         'postgres_changes' as any,
         {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'WaitingParticipant',
+          filter: `gamePostId=eq.${postId}`,
+        },
+        () => {
+          console.log('WaitingParticipant UPDATE for post:', postId);
+          fetchPost();
+        }
+      )
+      .on(
+        'postgres_changes' as any,
+        {
           event: 'DELETE',
           schema: 'public',
           table: 'WaitingParticipant',
@@ -384,7 +397,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'GamePost',
           filter: `id=eq.${postId}`,
         },
-        (payload: any) => {
+        (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
           // 게시글 정보 변경 시 전체 데이터 새로고침 (참여자 정보 포함)
           console.log('GamePost updated:', payload);
           fetchPost();
@@ -398,7 +411,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           schema: 'public',
           table: 'GameParticipant',
         },
-        (payload: any) => {
+        (payload: { new?: { gamePostId: string }; old?: { gamePostId: string }; eventType?: string }) => {
           console.log('GameParticipant ANY event:', payload);
           
           // 해당 게시글의 이벤트인지 확인
@@ -444,9 +457,9 @@ export function useRealtimeSubscription<T extends { id: string }>(
     schema?: string;
     event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
     filter?: string;
-    onInsert?: (payload: any) => void;
-    onUpdate?: (payload: any) => void;
-    onDelete?: (payload: any) => void;
+    onInsert?: (payload: { new?: Record<string, unknown> }) => void;
+    onUpdate?: (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => void;
+    onDelete?: (payload: { old?: Record<string, unknown> }) => void;
   } = {}
 ) {
   const [data, setData] = useState<T[]>([]);
@@ -485,7 +498,7 @@ export function useRealtimeSubscription<T extends { id: string }>(
           table: table,
           filter: options.filter,
         },
-        (payload: any) => {
+        (payload: { eventType?: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
           console.log('Realtime update received:', payload);
           
           switch (payload.eventType) {
@@ -501,7 +514,9 @@ export function useRealtimeSubscription<T extends { id: string }>(
               if (options.onUpdate) {
                 options.onUpdate(payload);
               } else {
-                updateItem(payload.new.id, payload.new as Partial<T>);
+                if (payload.new && typeof payload.new === 'object' && 'id' in payload.new) {
+                  updateItem(payload.new.id as string, payload.new as Partial<T>);
+                }
               }
               break;
               
@@ -509,7 +524,9 @@ export function useRealtimeSubscription<T extends { id: string }>(
               if (options.onDelete) {
                 options.onDelete(payload);
               } else {
-                removeItem(payload.old.id);
+                if (payload.old && typeof payload.old === 'object' && 'id' in payload.old) {
+                  removeItem(payload.old.id as string);
+                }
               }
               break;
           }

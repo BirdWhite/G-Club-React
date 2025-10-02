@@ -165,14 +165,14 @@ export default function NotificationsPage() {
 
   if (isLoading && notifications.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="bg-background flex items-center justify-center py-32">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* 헤더 */}
         <div className="mb-8">
@@ -301,7 +301,7 @@ export default function NotificationsPage() {
                             className="w-6 h-6 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center text-xs text-muted-foreground">
+                          <div className="w-6 h-6 bg-background rounded-full flex items-center justify-center text-xs text-muted-foreground border border-border">
                             {notification.sender.nickname.charAt(0)}
                           </div>
                         )}

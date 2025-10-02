@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { GameSearchSelect } from '@/components/ui/game-search-select';
+import { DesktopGameSearch } from '@/components/common/DesktopGameSearch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type StatusFilterType = 'all' | 'recruiting' | 'open' | 'full' | 'completed_expired';
@@ -35,7 +35,7 @@ export function GameFilter({
       <div className="flex gap-3">
         {/* 게임 선택 드롭다운 - 모바일에서 반반 나누기 */}
         <div className="flex-1">
-          <GameSearchSelect
+          <DesktopGameSearch
             value={selectedGame}
             onChange={handleGameSelect}
             placeholder="게임 선택"

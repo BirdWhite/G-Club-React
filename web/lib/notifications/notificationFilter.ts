@@ -3,6 +3,7 @@ import prisma from '@/lib/database/prisma';
 export interface NotificationContext {
   gamePostId?: string;
   gameId?: string;
+  userId?: string;
   eventType?: string;
   additionalData?: Record<string, unknown>;
 }
@@ -19,7 +20,21 @@ export class NotificationFilter {
     try {
       // 1. 알림 설정 조회
       const settings = await prisma.notificationSetting.findUnique({
-        where: { userId }
+        where: { userId },
+        select: {
+          doNotDisturbEnabled: true,
+          doNotDisturbStart: true,
+          doNotDisturbEnd: true,
+          doNotDisturbDays: true,
+          newGamePostEnabled: true,
+          newGamePostSettings: true,
+          participatingGameEnabled: true,
+          participatingGameSettings: true,
+          myGamePostEnabled: true,
+          myGamePostSettings: true,
+          waitingListEnabled: true,
+          customGameIds: true
+        }
       });
       
       if (!settings) {
@@ -93,6 +108,7 @@ export class NotificationFilter {
       myGamePostEnabled: boolean;
       myGamePostSettings: unknown;
       waitingListEnabled: boolean;
+      customGameIds?: string[];
     },
     notificationType: string,
     context?: NotificationContext
@@ -100,7 +116,7 @@ export class NotificationFilter {
     switch (notificationType) {
       case 'NEW_GAME_POST':
         if (!settings.newGamePostEnabled) return false;
-        return await this.checkNewGamePostSettings(settings.newGamePostSettings, context);
+        return await this.checkNewGamePostSettings(settings.newGamePostSettings, context, settings.customGameIds);
         
       case 'PARTICIPATING_GAME_UPDATE':
         if (!settings.participatingGameEnabled) return false;
@@ -123,25 +139,34 @@ export class NotificationFilter {
    */
   private static async checkNewGamePostSettings(
     settings: unknown,
-    context?: NotificationContext
+    context?: NotificationContext,
+    customGameIds?: string[]
   ): Promise<boolean> {
-    const settingsObj = settings as { gameFilters?: { mode?: string; selectedGames?: unknown[] } } | null;
+    const settingsObj = settings as { gameFilters?: { mode?: string } } | null;
     if (!settingsObj?.gameFilters) return true;
     
-    const { mode, selectedGames } = settingsObj.gameFilters;
+    const { mode } = settingsObj.gameFilters;
     
     if (mode === 'all') return true;
     
     if (mode === 'favorites') {
-      // 좋아하는 게임 확인
-      return await this.isFavoriteGame([], context?.gameId);
+      // 현재 게임이 사용자의 관심 게임 목록에 포함되어 있는지 확인
+      if (!context?.gameId) return false;
+      
+      // 사용자의 관심 게임 조회
+      const userFavoriteGames = await prisma.userFavoriteGame.findMany({
+        where: { userId: context.userId || '', gameId: context.gameId },
+        select: { gameId: true }
+      });
+      
+      // 현재 게임이 관심 게임 목록에 포함되어 있으면 알림 발송
+      return userFavoriteGames.length > 0;
     }
     
     if (mode === 'custom') {
-      return selectedGames?.some((game: unknown) => {
-        const gameObj = game as { id?: string };
-        return gameObj.id === context?.gameId;
-      }) || false;
+      // 커스텀으로 선택한 게임 배열에서 확인
+      if (!context?.gameId || !customGameIds) return false;
+      return customGameIds.includes(context.gameId);
     }
     
     return true;
@@ -226,6 +251,7 @@ export class NotificationFilter {
   private static isFavoriteGame(userFavoriteGames: { gameId: string }[], gameId?: string): boolean {
     if (!gameId) return false;
     
+    // 현재 게임이 사용자의 관심 게임 목록에 포함되어 있는지 확인
     return userFavoriteGames.some(fav => fav.gameId === gameId);
   }
   
@@ -280,6 +306,7 @@ export class NotificationFilter {
       myGamePostEnabled: boolean;
       myGamePostSettings: unknown;
       waitingListEnabled: boolean;
+      customGameIds: string[];
       user: {
         favoriteGames: { gameId: string }[];
       };
@@ -297,19 +324,24 @@ export class NotificationFilter {
         if (context?.gameId) {
           const gameSettings = settings.newGamePostSettings as {
             gameFilters?: {
-              enabled: boolean;
               mode: string;
-              excludedGames?: string[];
             };
           };
-          if (gameSettings?.gameFilters?.enabled) {
-            if (gameSettings.gameFilters.mode === 'FAVORITE_ONLY') {
-              return this.isFavoriteGame(settings.user.favoriteGames || [], context.gameId);
-            }
-            if (gameSettings.gameFilters.mode === 'EXCLUDE') {
-              const excludedGames = gameSettings.gameFilters.excludedGames || [];
-              return !excludedGames.includes(context.gameId);
-            }
+          
+          const mode = gameSettings?.gameFilters?.mode;
+          
+          if (mode === 'all') {
+            return true;
+          }
+          
+          if (mode === 'favorites') {
+            // 현재 게임이 사용자의 관심 게임 목록에 포함되어 있는지 확인
+            return this.isFavoriteGame(settings.user.favoriteGames || [], context.gameId);
+          }
+          
+          if (mode === 'custom') {
+            // 커스텀으로 선택한 게임 배열에서 확인
+            return settings.customGameIds.includes(context.gameId);
           }
         }
         return true;
@@ -351,10 +383,27 @@ export class NotificationFilter {
         where: {
           userId: { in: userIds }
         },
-        include: {
+        select: {
+          userId: true,
+          newGamePostEnabled: true,
+          newGamePostSettings: true,
+          participatingGameEnabled: true,
+          participatingGameSettings: true,
+          myGamePostEnabled: true,
+          myGamePostSettings: true,
+          waitingListEnabled: true,
+          customGameIds: true,
+          doNotDisturbEnabled: true,
+          doNotDisturbStart: true,
+          doNotDisturbEnd: true,
+          doNotDisturbDays: true,
           user: {
-            include: {
-              favoriteGames: true
+            select: {
+              favoriteGames: {
+                select: {
+                  gameId: true
+                }
+              }
             }
           }
         }

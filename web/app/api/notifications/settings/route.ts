@@ -64,6 +64,7 @@ export async function GET() {
         waitingList: {
           enabled: settings.waitingListEnabled
         },
+        customGameIds: settings.customGameIds || [],
         updatedAt: settings.updatedAt
       }
     });
@@ -96,7 +97,8 @@ export async function PUT(request: NextRequest) {
       newGamePost,
       participatingGame,
       myGamePost,
-      waitingList
+      waitingList,
+      customGameIds
     } = await request.json();
 
     // 업데이트할 데이터 구성
@@ -134,6 +136,10 @@ export async function PUT(request: NextRequest) {
       updateData.waitingListEnabled = waitingList.enabled;
     }
 
+    if (customGameIds !== undefined) {
+      updateData.customGameIds = customGameIds;
+    }
+
     // 설정 업데이트 (없으면 생성)
     const settings = await prisma.notificationSetting.upsert({
       where: { userId: user.id },
@@ -150,7 +156,8 @@ export async function PUT(request: NextRequest) {
         participatingGameSettings: participatingGame?.settings ?? null,
         myGamePostEnabled: myGamePost?.enabled ?? true,
         myGamePostSettings: myGamePost?.settings ?? null,
-        waitingListEnabled: waitingList?.enabled ?? true
+        waitingListEnabled: waitingList?.enabled ?? true,
+        customGameIds: customGameIds ?? []
       }
     });
 
@@ -179,6 +186,7 @@ export async function PUT(request: NextRequest) {
         waitingList: {
           enabled: settings.waitingListEnabled
         },
+        customGameIds: settings.customGameIds || [],
         updatedAt: settings.updatedAt
       }
     });

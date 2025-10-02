@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import toast from 'react-hot-toast';
 import { GamePost } from '@/types/models';
-import { MobileGameSearchSelect } from './MobileGameSearchSelect';
+import { MobileGameSearch } from '@/components/common/MobileGameSearch';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { JsonValue } from '@prisma/client/runtime/library';
 import { Button } from '@/components/ui/button';
@@ -84,14 +84,19 @@ export function MobileGamePostForm({ initialData }: MobileGamePostFormProps) {
   };
 
   // 기본 참여자 목록 생성 (작성자 본인 포함)
-  const getDefaultParticipants = () => {
+const getDefaultParticipants = () => {
     if (isEditMode && initialData?.participants) {
-      // 편집 모드: 기존 참여자 목록 사용
-      return initialData.participants.map(p => ({
-        name: p.participantType === 'GUEST' ? (p.guestName || '') : (p.user?.name || ''),
-        userId: p.participantType === 'GUEST' ? '' : (p.user?.userId || ''),
-        note: p.participantType === 'GUEST' ? '게스트 참여자' : ''
-      }));
+      // 편집 모드: 기존 참여자 목록 사용 (중도 퇴장자 제외하여 UI에만 표시)
+      return initialData.participants
+        .filter(p => p.status === 'ACTIVE') // 중도 퇴장자가 아닌 활성 참여자만 UI에 표시
+        .map(p => {
+          const isAuthor = p.userId === initialData.authorId;
+          return {
+            name: p.participantType === 'GUEST' ? (p.guestName || '') : (p.user?.name || ''),
+            userId: p.participantType === 'GUEST' ? '' : (p.user?.userId || ''),
+            note: p.participantType === 'GUEST' ? '게스트 참여자' : (isAuthor ? '작성자' : '')
+          };
+        });
     } else {
       // 새 글 작성 모드: 작성자 본인을 참여자 목록에 추가
       const defaultParticipants = [];
@@ -412,7 +417,7 @@ export function MobileGamePostForm({ initialData }: MobileGamePostFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <MobileGameSearchSelect
+                      <MobileGameSearch
                         value={field.value}
                         onChange={field.onChange}
                         placeholder="게임 선택"

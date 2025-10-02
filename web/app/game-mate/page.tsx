@@ -26,13 +26,13 @@ export default function GameMatePage() {
     if (status === 'all') return undefined;
     if (status === 'recruiting') return 'recruiting';
     if (status === 'open') return 'OPEN';
-    if (status === 'full') return 'FULL';
+    if (status === 'full') return 'full'; // isFull 기반 필터링으로 변경
     if (status === 'completed_expired') return 'completed_expired';
     return undefined;
   };
 
   // 게임 포스트 데이터 - 최상위에서 한 번만 호출
-  const { posts, loading, setFilters } = useGamePostListSubscription({
+  const { posts, setFilters } = useGamePostListSubscription({
     status: getApiStatus(urlState.status),
     gameId: urlState.gameId === 'all' ? undefined : urlState.gameId,
   });
@@ -72,7 +72,6 @@ export default function GameMatePage() {
   const commonProps = {
     userId: profile?.userId || '',
     posts,
-    loading,
     urlState,
     onGameChange: handleGameChange,
     onStatusChange: handleStatusChange,

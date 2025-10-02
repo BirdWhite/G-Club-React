@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { format, isToday, isYesterday, isTomorrow, isThisYear } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { GamePost } from '@/types/models';
-import { Clock, Users } from 'lucide-react';
+import { Clock, Users, Edit, User } from 'lucide-react';
 import { JsonValue } from '@prisma/client/runtime/library';
 
 // TipTap JSON content에서 텍스트만 추출하는 함수
@@ -33,8 +33,8 @@ interface GamePostCardProps {
 
 const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   const isOwner = post.author?.userId === currentUserId;
-  const isParticipating = post.participants?.some(p => p.userId === currentUserId);
-  const isWaiting = post.waitingList?.some(w => w.userId === currentUserId);
+  const isParticipating = post.participants?.some(p => p.userId === currentUserId && p.status === 'ACTIVE');
+  const isWaiting = post.waitingList?.some(w => w.userId === currentUserId && w.status === 'WAITING');
 
   // 게임 시간 포맷팅 함수
   const formatGameTime = (dateInput: string | Date) => {
@@ -59,17 +59,20 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   const { dateStr, timeStr } = formatGameTime(post.startTime);
   const statusInfo = {
     OPEN: { text: '모집 중', className: 'bg-chart-3/20 text-chart-3 group-hover:bg-chart-3/30' },
-    FULL: { text: '가득 참', className: 'bg-chart-4/20 text-chart-4 group-hover:bg-chart-4/30' },
     IN_PROGRESS: { text: '게임 중', className: 'bg-chart-2/20 text-chart-2 group-hover:bg-chart-2/30' },
     COMPLETED: { text: '완료 됨', className: 'bg-card-foreground/20 text-card-foreground group-hover:bg-card-foreground/30' },
-    EXPIRED: { text: '만료 됨', className: 'bg-destructive/20 text-destructive group-hover:bg-destructive/30' },
+    EXPIRED: { text: '만료 됨', className: 'bg-red-400/20 text-red-400 group-hover:bg-red-400/30' },
   };
   
-  // 내가 참여중이면 상태를 "참여중"으로 표시 (완료/만료 상태가 아닐 때만)
+  const fullStatus = { text: '가득 참', className: 'bg-chart-4/20 text-chart-4 group-hover:bg-chart-4/30' };
+  
+  // 게임글 상태 표시
   const getDisplayStatus = () => {
-    if (!isOwner && isParticipating && post.status !== 'COMPLETED' && post.status !== 'EXPIRED') {
-      return { text: '참여 중', className: 'bg-primary/20 text-primary group-hover:bg-primary/30' };
+    // 가득 찬 경우
+    if (post.isFull) {
+      return fullStatus;
     }
+    
     return statusInfo[post.status] || statusInfo.COMPLETED;
   };
   
@@ -87,9 +90,20 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
               {isToday(new Date(post.startTime)) ? timeStr : `${dateStr} ${timeStr}`}
             </time>
           </div>
-          <span className={`px-2 py-1 rounded-full font-semibold transition-colors duration-300 ${currentStatus.className}`}>
-            {currentStatus.text}
-          </span>
+          <div className="flex items-center gap-2">
+            {isOwner && (
+              <Edit className="h-4 w-4 text-green-600" />
+            )}
+            {!isOwner && isParticipating && (
+              <User className="h-4 w-4 text-primary" />
+            )}
+            {!isOwner && !isParticipating && isWaiting && (
+              <Clock className="h-4 w-4 text-orange-600" />
+            )}
+            <span className={`px-2 py-1 rounded-full font-semibold transition-colors duration-300 ${currentStatus.className}`}>
+              {currentStatus.text}
+            </span>
+          </div>
         </div>
 
         {/* 중단: 게임 정보, 제목, 작성자, 내용 */}
@@ -155,22 +169,6 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
           </div>
         </div>
 
-        {/* 참여 상태 오버레이 (우측 하단) - 대기중과 참여 가능만 표시 (완료/만료 상태 제외) */}
-        {!isOwner && post.status !== 'COMPLETED' && post.status !== 'EXPIRED' && (
-          <div className="absolute bottom-3 right-4">
-            {isWaiting ? (
-              <span className="px-3 py-1.5 text-sm font-semibold text-primary-foreground bg-primary rounded-full shadow-md">
-                대기중
-              </span>
-            ) : (
-               post.status === 'OPEN' && !isParticipating && (
-                <span className="px-3 py-1.5 text-sm font-semibold text-primary-foreground bg-primary rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-                  참여 가능
-                </span>
-               )
-            )}
-          </div>
-        )}
       </Link>
     </div>
   );

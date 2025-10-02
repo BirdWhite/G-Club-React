@@ -2,6 +2,7 @@ import prisma from '@/lib/database/prisma';
 import { sendPushNotificationInternal } from './pushNotifications';
 import type { InputJsonValue } from '@prisma/client/runtime/library';
 import { NotificationFilter, NotificationContext } from './notificationFilter';
+import { NotificationContentGenerator, NotificationType, NotificationEventType } from './notificationContent';
 
 export interface CreateNotificationData {
   type: string;
@@ -82,9 +83,16 @@ export async function createAndSendNotification(notificationData: CreateNotifica
     if (isGroupSend) {
       targetUserIds = await getTargetUserIds(groupType, groupFilter, gamePostId);
       
-      if (targetUserIds.length > 0) {
+      // 알림 설정에 따라 필터링 적용
+      const filteredUserIds = await NotificationFilter.filterUsersForNotification(
+        targetUserIds,
+        type,
+        context
+      );
+      
+      if (filteredUserIds.length > 0) {
         await prisma.notificationReceipt.createMany({
-          data: targetUserIds.map(userId => ({
+          data: filteredUserIds.map(userId => ({
             notificationId: notification.id,
             userId
           })),
@@ -94,24 +102,49 @@ export async function createAndSendNotification(notificationData: CreateNotifica
     }
 
     // 푸시 알림 발송 (예약이 아닌 경우)
-    if (!scheduledAt && targetUserIds.length > 0) {
-      await sendPushNotificationToUsers(
-        notification.id, 
-        targetUserIds, 
-        {
-          title,
-          body,
-          icon,
-          data: {
-            notificationId: notification.id,
-            actionUrl,
-            ...data
+    if (!scheduledAt) {
+      // 개별 발송인 경우
+      if (!isGroupSend && recipientId) {
+        await sendPushNotificationToUsers(
+          notification.id, 
+          [recipientId], 
+          {
+            title,
+            body,
+            icon,
+            data: {
+              notificationId: notification.id,
+              actionUrl,
+              ...data
+            }
           }
-        },
-        type,
-        gamePostId,
-        context
-      );
+        );
+      }
+      // 그룹 발송인 경우 - 이미 필터링된 사용자들에게만 발송
+      else if (isGroupSend) {
+        const finalTargetUserIds = await NotificationFilter.filterUsersForNotification(
+          targetUserIds,
+          type,
+          context
+        );
+        
+        if (finalTargetUserIds.length > 0) {
+          await sendPushNotificationToUsers(
+            notification.id, 
+            finalTargetUserIds, 
+            {
+              title,
+              body,
+              icon,
+              data: {
+                notificationId: notification.id,
+                actionUrl,
+                ...data
+              }
+            }
+          );
+        }
+      }
 
       // 알림 상태 업데이트
       await prisma.notification.update({
@@ -209,27 +242,18 @@ async function sendPushNotificationToUsers(
     body: string;
     icon?: string;
     data?: Record<string, unknown>;
-  },
-  notificationType?: string,
-  gamePostId?: string,
-  context?: NotificationContext
+  }
 ) {
   try {
-    // 개인화된 알림 필터링 적용
-    const filteredUserIds = await NotificationFilter.filterUsersForNotification(
-      userIds,
-      notificationType || 'GENERAL',
-      context
-    );
-    
-    if (filteredUserIds.length === 0) {
+    // 이미 필터링된 사용자들이므로 추가 필터링 불필요
+    if (userIds.length === 0) {
       return;
     }
     
     // 사용자들의 푸시 구독 정보 조회
     const subscriptions = await prisma.pushSubscription.findMany({
       where: {
-        userId: { in: filteredUserIds },
+        userId: { in: userIds },
         isEnabled: true
       }
     });
@@ -304,12 +328,20 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
+    // NotificationContentGenerator를 사용하여 알림 콘텐츠 생성
+    const notificationContent = NotificationContentGenerator.generateNotification(
+      NotificationType.NEW_GAME_POST,
+      NotificationEventType.MEMBER_JOIN,
+      gamePost,
+      { authorName: gamePost.author?.name }
+    );
+
     return createAndSendNotification({
       type: 'GAME_POST_NEW',
-      title: `새로운 게임메이트 모집!`,
-      body: `${gamePost.author.name}님이 ${gamePost.game?.name || gamePost.customGameName} 게임메이트를 모집합니다.`,
-      icon: gamePost.game?.iconUrl || undefined,
-      actionUrl: `/game-mate/${gamePostId}`,
+      title: notificationContent.title,
+      body: notificationContent.body,
+      icon: notificationContent.icon,
+      actionUrl: notificationContent.actionUrl,
       priority: 'NORMAL',
       senderId: authorId,
       isGroupSend: true,
@@ -336,12 +368,20 @@ export const GamePostNotifications = {
 
     const participant = gamePost.participants[0];
 
+    // NotificationContentGenerator를 사용하여 알림 콘텐츠 생성
+    const notificationContent = NotificationContentGenerator.generateNotification(
+      NotificationType.PARTICIPATING_GAME_UPDATE,
+      NotificationEventType.MEMBER_JOIN,
+      gamePost,
+      { participantName: participant.user?.name || participant.guestName || '알 수 없음' }
+    );
+
     return createAndSendNotification({
       type: 'GAME_POST_PARTICIPANT_JOINED',
-      title: `게임메이트 참여 알림`,
-      body: `${participant.user?.name || participant.guestName}님이 ${gamePost.game?.name || gamePost.customGameName} 게임에 참여했습니다.`,
-      icon: gamePost.game?.iconUrl || undefined,
-      actionUrl: `/game-mate/${gamePostId}`,
+      title: notificationContent.title,
+      body: notificationContent.body,
+      icon: notificationContent.icon,
+      actionUrl: notificationContent.actionUrl,
       priority: 'NORMAL',
       recipientId: gamePost.authorId,
       gamePostId
@@ -433,12 +473,34 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
+    // 작성자의 알림 설정 확인
+    const shouldSend = await NotificationFilter.shouldSendNotification(
+      gamePost.authorId,
+      'MY_GAME_POST_UPDATE',
+      {
+        gameId: gamePost.gameId || undefined,
+        eventType: 'MEMBER_JOIN'
+      }
+    );
+
+    if (!shouldSend) {
+      console.log(`작성자 ${gamePost.authorId}는 참여자 추가 알림을 받지 않습니다.`);
+      return;
+    }
+
+    const content = NotificationContentGenerator.generateNotification(
+      NotificationType.MY_GAME_POST_UPDATE,
+      NotificationEventType.MEMBER_JOIN,
+      gamePost,
+      { participantName }
+    );
+
     return createAndSendNotification({
       type: 'MY_GAME_POST_UPDATE',
-      title: `새로운 참여자`,
-      body: `${participantName}님이 ${gamePost.game?.name || gamePost.customGameName} 게임에 참여했습니다.`,
-      icon: gamePost.game?.iconUrl || undefined,
-      actionUrl: `/game-mate/${gamePostId}`,
+      title: content.title,
+      body: content.body,
+      icon: content.icon,
+      actionUrl: content.actionUrl,
       priority: 'NORMAL',
       senderId: participantId,
       recipientId: gamePost.authorId,
@@ -468,17 +530,39 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
+    // 다른 참여자들의 알림 설정 확인
+    const filteredParticipantIds = await NotificationFilter.filterUsersForNotification(
+      otherParticipantIds,
+      'PARTICIPATING_GAME_UPDATE',
+      {
+        gameId: gamePost.gameId || undefined,
+        eventType: 'MEMBER_JOIN'
+      }
+    );
+
+    if (filteredParticipantIds.length === 0) {
+      console.log(`참여자 추가 알림을 받을 사용자가 없습니다.`);
+      return;
+    }
+
+    const content = NotificationContentGenerator.generateNotification(
+      NotificationType.PARTICIPATING_GAME_UPDATE,
+      NotificationEventType.MEMBER_JOIN,
+      gamePost,
+      { participantName }
+    );
+
     return createAndSendNotification({
       type: 'PARTICIPATING_GAME_UPDATE',
-      title: `새로운 참여자`,
-      body: `${participantName}님이 ${gamePost.game?.name || gamePost.customGameName} 게임에 참여했습니다.`,
-      icon: gamePost.game?.iconUrl || undefined,
-      actionUrl: `/game-mate/${gamePostId}`,
+      title: content.title,
+      body: content.body,
+      icon: content.icon,
+      actionUrl: content.actionUrl,
       priority: 'NORMAL',
       senderId: participantId,
       isGroupSend: true,
       groupType: 'SPECIFIC_USERS',
-      groupFilter: { userIds: otherParticipantIds },
+      groupFilter: { userIds: filteredParticipantIds },
       gamePostId,
       context: {
         gameId: gamePost.gameId || undefined,
@@ -503,16 +587,37 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
+    // 참여자들의 알림 설정 확인
+    const filteredParticipantIds = await NotificationFilter.filterUsersForNotification(
+      participantIds,
+      'PARTICIPATING_GAME_UPDATE',
+      {
+        gameId: gamePost.gameId || undefined,
+        eventType: 'GAME_FULL'
+      }
+    );
+
+    if (filteredParticipantIds.length === 0) {
+      console.log(`모임 가득참 알림을 받을 사용자가 없습니다.`);
+      return;
+    }
+
+    const content = NotificationContentGenerator.generateNotification(
+      NotificationType.PARTICIPATING_GAME_UPDATE,
+      NotificationEventType.GAME_FULL,
+      gamePost
+    );
+
     return createAndSendNotification({
       type: 'PARTICIPATING_GAME_UPDATE',
-      title: `모임이 가득 찼습니다!`,
-      body: `${gamePost.game?.name || gamePost.customGameName} 게임 모임이 가득 찼습니다.`,
-      icon: gamePost.game?.iconUrl || undefined,
-      actionUrl: `/game-mate/${gamePostId}`,
+      title: content.title,
+      body: content.body,
+      icon: content.icon,
+      actionUrl: content.actionUrl,
       priority: 'HIGH',
       isGroupSend: true,
       groupType: 'SPECIFIC_USERS',
-      groupFilter: { userIds: participantIds },
+      groupFilter: { userIds: filteredParticipantIds },
       gamePostId,
       context: {
         gameId: gamePost.gameId || undefined,
@@ -537,12 +642,34 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
+    // 작성자의 알림 설정 확인
+    const shouldSend = await NotificationFilter.shouldSendNotification(
+      gamePost.authorId,
+      'MY_GAME_POST_UPDATE',
+      {
+        gameId: gamePost.gameId || undefined,
+        eventType: 'MEMBER_LEAVE'
+      }
+    );
+
+    if (!shouldSend) {
+      console.log(`작성자 ${gamePost.authorId}는 참여자 탈퇴 알림을 받지 않습니다.`);
+      return;
+    }
+
+    const content = NotificationContentGenerator.generateNotification(
+      NotificationType.MY_GAME_POST_UPDATE,
+      NotificationEventType.MEMBER_LEAVE,
+      gamePost,
+      { participantName }
+    );
+
     return createAndSendNotification({
       type: 'MY_GAME_POST_UPDATE',
-      title: `참여자 탈퇴`,
-      body: `${participantName}님이 ${gamePost.game?.name || gamePost.customGameName} 게임에서 탈퇴했습니다.`,
-      icon: gamePost.game?.iconUrl || undefined,
-      actionUrl: `/game-mate/${gamePostId}`,
+      title: content.title,
+      body: content.body,
+      icon: content.icon,
+      actionUrl: content.actionUrl,
       priority: 'NORMAL',
       senderId: participantId,
       recipientId: gamePost.authorId,
@@ -572,17 +699,39 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
+    // 다른 참여자들의 알림 설정 확인
+    const filteredParticipantIds = await NotificationFilter.filterUsersForNotification(
+      otherParticipantIds,
+      'PARTICIPATING_GAME_UPDATE',
+      {
+        gameId: gamePost.gameId || undefined,
+        eventType: 'MEMBER_LEAVE'
+      }
+    );
+
+    if (filteredParticipantIds.length === 0) {
+      console.log(`참여자 탈퇴 알림을 받을 사용자가 없습니다.`);
+      return;
+    }
+
+    const content = NotificationContentGenerator.generateNotification(
+      NotificationType.PARTICIPATING_GAME_UPDATE,
+      NotificationEventType.MEMBER_LEAVE,
+      gamePost,
+      { participantName }
+    );
+
     return createAndSendNotification({
       type: 'PARTICIPATING_GAME_UPDATE',
-      title: `참여자 탈퇴`,
-      body: `${participantName}님이 ${gamePost.game?.name || gamePost.customGameName} 게임에서 탈퇴했습니다.`,
-      icon: gamePost.game?.iconUrl || undefined,
-      actionUrl: `/game-mate/${gamePostId}`,
+      title: content.title,
+      body: content.body,
+      icon: content.icon,
+      actionUrl: content.actionUrl,
       priority: 'NORMAL',
       senderId: participantId,
       isGroupSend: true,
       groupType: 'SPECIFIC_USERS',
-      groupFilter: { userIds: otherParticipantIds },
+      groupFilter: { userIds: filteredParticipantIds },
       gamePostId,
       context: {
         gameId: gamePost.gameId || undefined,
@@ -605,12 +754,33 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
+    // 승격된 사용자의 알림 설정 확인
+    const shouldSend = await NotificationFilter.shouldSendNotification(
+      promotedUserId,
+      'WAITING_LIST_UPDATE',
+      {
+        gameId: gamePost.gameId || undefined,
+        eventType: 'PROMOTED'
+      }
+    );
+
+    if (!shouldSend) {
+      console.log(`사용자 ${promotedUserId}는 대기자 승격 알림을 받지 않습니다.`);
+      return;
+    }
+
+    const content = NotificationContentGenerator.generateNotification(
+      NotificationType.WAITING_LIST_UPDATE,
+      NotificationEventType.PROMOTED,
+      gamePost
+    );
+
     return createAndSendNotification({
       type: 'WAITING_LIST_UPDATE',
-      title: `대기자에서 승격되었습니다!`,
-      body: `${gamePost.game?.name || gamePost.customGameName} 게임에 참여할 수 있게 되었습니다.`,
-      icon: gamePost.game?.iconUrl || undefined,
-      actionUrl: `/game-mate/${gamePostId}`,
+      title: content.title,
+      body: content.body,
+      icon: content.icon,
+      actionUrl: content.actionUrl,
       priority: 'HIGH',
       recipientId: promotedUserId,
       gamePostId,

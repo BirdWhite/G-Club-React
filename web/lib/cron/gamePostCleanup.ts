@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
+import prisma from '@/lib/database/prisma';
 
 export function startGamePostCleanup() {
   console.log('게임메이트 글 정리 스케줄러를 시작합니다...');
@@ -26,8 +27,8 @@ export function startGamePostCleanup() {
       console.log('1단계: 게임 시작 처리 중...');
       const { data: fullPosts, error: fullError } = await supabase
         .from('GamePost')
-        .select('id, title, startTime, status')
-        .eq('status', 'FULL')
+        .select('id, title, startTime, status, isFull')
+        .eq('isFull', true)
         .lte('startTime', currentTime.toISOString());
       
       if (fullError) {
@@ -120,6 +121,50 @@ export function startGamePostCleanup() {
       
       if ((!inProgressPosts || inProgressPosts.length === 0) && (!openPosts || openPosts.length === 0)) {
         console.log('6시간 지난 게임글이 없습니다.');
+      }
+      
+      // ===== 3단계: TIME_WAITING 상태의 예비 참가자를 WAITING으로 승격 =====
+      console.log('3단계: TIME_WAITING 참가자 승격 처리 중...');
+      
+      try {
+        const timeWaitingParticipants = await prisma.waitingParticipant.findMany({
+          where: {
+            status: 'TIME_WAITING',
+            availableTime: {
+              lte: currentTime.toISOString() // availableTime이 현재 시간보다 이전이거나 같음
+            }
+          },
+          include: {
+            gamePost: {
+              select: {
+                id: true,
+                title: true,
+                status: true
+              }
+            }
+          }
+        });
+
+        if (timeWaitingParticipants.length > 0) {
+          console.log(`승격 대상 TIME_WAITING 참가자 ${timeWaitingParticipants.length}명 발견`);
+          
+          // 모든 TIME_WAITING 참가자를 WAITING으로 승격
+          await prisma.waitingParticipant.updateMany({
+            where: {
+              status: 'TIME_WAITING',
+              availableTime: {
+                lte: currentTime.toISOString()
+              }
+            },
+            data: { status: 'WAITING' }
+          });
+
+          console.log(`${timeWaitingParticipants.length}명의 TIME_WAITING 참가자를 WAITING으로 승격했습니다.`);
+        } else {
+          console.log('승격할 TIME_WAITING 참가자가 없습니다.');
+        }
+      } catch (timeWaitingError) {
+        console.error('TIME_WAITING 참가자 승격 처리 중 오류:', timeWaitingError);
       }
       
     } catch (error) {

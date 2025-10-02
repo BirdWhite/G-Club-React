@@ -117,7 +117,7 @@ export default function PWAInstallPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* 헤더 */}
         <div className="mb-8">
@@ -208,10 +208,6 @@ export default function PWAInstallPage() {
             <li className="flex items-start gap-2">
               <span className="text-primary">•</span>
               <span>푸시 알림을 통한 실시간 게임메이트 알림</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <span>오프라인에서도 기본 기능 사용 가능</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary">•</span>

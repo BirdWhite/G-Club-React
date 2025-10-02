@@ -1,9 +1,12 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 export default function MembershipPendingPage() {
+  const router = useRouter();
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="profile-card max-w-2xl w-full p-8 text-center">
+    <div className="bg-background flex items-center justify-center px-4 py-32">
+      <div className="max-w-2xl w-full p-8 text-center">
         {/* 아이콘 */}
         <div className="mb-6">
           <div className="w-20 h-20 mx-auto bg-primary/20 rounded-full flex items-center justify-center">
@@ -46,13 +49,19 @@ export default function MembershipPendingPage() {
             </svg>
             중요 안내
           </h2>
-          <p className="text-muted-foreground leading-relaxed">
+          <p className="text-muted-foreground leading-relaxed mb-4">
             <span className="text-cyber-orange font-semibold">얼티메이트 부원 확인</span>을 위해 
             <span className="text-primary font-semibold"> 이름을 본명으로 정확하게 설정</span>해 주세요.
           </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            프로필 편집에서 이름을 수정하실 수 있습니다.
-          </p>
+          <button 
+            onClick={() => router.push('/profile/edit')}
+            className="w-full btn-primary flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            프로필 수정하기
+          </button>
         </div>
 
         {/* 안내 사항 */}
@@ -101,7 +110,7 @@ export default function MembershipPendingPage() {
         {/* 상태 확인 버튼 */}
         <div>
           <button 
-            onClick={() => window.location.reload()}
+            onClick={() => router.push('/')}
             className="w-full btn-primary"
           >
             상태 확인하기

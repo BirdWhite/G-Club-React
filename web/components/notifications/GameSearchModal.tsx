@@ -22,11 +22,6 @@ export function GameSearchModal({
 
   // 게임 검색
   const searchGames = async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
-      setGames([]);
-      return;
-    }
-
     setIsLoading(true);
     try {
       const res = await fetch('/api/games');
@@ -34,16 +29,25 @@ export function GameSearchModal({
         const data = await res.json();
         const allGames = Array.isArray(data) ? data : data.games || [];
         
-        // 검색어로 필터링하고 제외할 게임들 제거
-        const filteredGames = allGames
-          .filter((game: Game) => 
-            game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            game.aliases?.some((alias: string) => 
-              alias.toLowerCase().includes(searchQuery.toLowerCase())
+        let filteredGames;
+        
+        if (!searchQuery.trim()) {
+          // 검색어가 없으면 기본적으로 10개 게임 표시
+          filteredGames = allGames
+            .filter((game: Game) => !excludeGameIds.includes(game.id))
+            .slice(0, 10);
+        } else {
+          // 검색어가 있으면 검색 결과 표시
+          filteredGames = allGames
+            .filter((game: Game) => 
+              game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              game.aliases?.some((alias: string) => 
+                alias.toLowerCase().includes(searchQuery.toLowerCase())
+              )
             )
-          )
-          .filter((game: Game) => !excludeGameIds.includes(game.id))
-          .slice(0, 10); // 최대 10개만
+            .filter((game: Game) => !excludeGameIds.includes(game.id))
+            .slice(0, 10); // 최대 10개만
+        }
         
         setGames(filteredGames);
       }
@@ -54,14 +58,23 @@ export function GameSearchModal({
     }
   };
 
+  // 모달이 열릴 때 기본 게임들 로드
+  useEffect(() => {
+    if (isOpen) {
+      searchGames(''); // 빈 검색어로 기본 게임들 로드
+    }
+  }, [isOpen, excludeGameIds]);
+
   // 검색어 변경 시 검색 실행
   useEffect(() => {
+    if (!isOpen) return;
+    
     const timeoutId = setTimeout(() => {
       searchGames(query);
     }, 300); // 300ms 디바운싱
 
     return () => clearTimeout(timeoutId);
-  }, [query, excludeGameIds]);
+  }, [query, excludeGameIds, isOpen]);
 
   // 게임 선택 핸들러
   const handleGameSelect = (game: Game) => {
@@ -120,7 +133,7 @@ export function GameSearchModal({
             </div>
           ) : games.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
-              {query ? '검색 결과가 없습니다' : '게임 이름을 입력해주세요'}
+              {query ? '검색 결과가 없습니다' : '게임을 불러오는 중...'}
             </div>
           ) : (
             <div className="p-2">

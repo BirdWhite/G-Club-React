@@ -73,6 +73,40 @@ self.addEventListener('message', function(event: any) {
       tag: 'test'
     });
   }
+
+  // 구독 상태 확인 요청
+  if (event.data.type === 'CHECK_SUBSCRIPTION') {
+    event.waitUntil(
+      sw.registration.pushManager.getSubscription().then((subscription: PushSubscription | null) => {
+        if (subscription) {
+          // 구독이 있으면 유효성 검증
+          fetch('/api/push/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: event.data.userId,
+              subscription: subscription.toJSON()
+            })
+          }).then(response => {
+            if (!response.ok) {
+              console.log('[custom-worker] 구독이 유효하지 않음, 재구독 필요');
+              // 클라이언트에게 재구독 요청
+              sw.clients.matchAll().then((clients: any[]) => {
+                clients.forEach((client: any) => {
+                  client.postMessage({ 
+                    type: 'SUBSCRIPTION_INVALID',
+                    userId: event.data.userId
+                  });
+                });
+              });
+            }
+          }).catch(error => {
+            console.error('[custom-worker] 구독 검증 실패:', error);
+          });
+        }
+      })
+    );
+  }
   
   // 캐시 강제 새로고침 요청
   if (event.data.type === 'CLEAR_CACHE') {
@@ -222,8 +256,8 @@ self.addEventListener('sync', function(event: any) {
 function doBackgroundSync() {
   console.log('[custom-worker] Performing background sync');
   
-  // 백그라운드에서 알림 상태 확인
-  return fetch('/api/notifications/check', {
+  // 먼저 세션이 있는지 확인
+  return fetch('/api/profile/check', {
     method: 'GET',
     headers: {
       'Cache-Control': 'no-cache',
@@ -231,13 +265,35 @@ function doBackgroundSync() {
     cache: 'no-store'
   })
   .then(response => {
+    // 401 에러는 인증되지 않은 사용자이므로 백그라운드 동기화 건너뛰기
+    if (response.status === 401) {
+      console.log('[custom-worker] 사용자가 인증되지 않음, 백그라운드 동기화 건너뛰기');
+      return null;
+    }
+    
+    if (!response.ok) {
+      throw new Error(`Profile check failed: ${response.status}`);
+    }
+    
+    // 인증된 사용자만 알림 상태 확인
+    return fetch('/api/notifications/check', {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
+      cache: 'no-store'
+    });
+  })
+  .then(response => {
+    if (!response) return null; // 인증되지 않은 사용자
+    
     if (response.ok) {
       return response.json();
     }
     throw new Error('Background sync failed');
   })
   .then(data => {
-    if (data.hasNewNotifications) {
+    if (data && data.hasNewNotifications) {
       // 새 알림이 있으면 표시
       return sw.registration.showNotification('새 알림', {
         body: '확인하지 않은 알림이 있습니다.',
@@ -265,12 +321,16 @@ self.addEventListener('activate', function(event: any) {
       sw.clients.claim(),
       // 백그라운드 동기화 등록
       sw.registration.sync.register('background-sync'),
-      // 모든 캐시 강제 삭제
+      // 오래된 캐시만 선택적으로 정리 (전체 삭제 대신)
       caches.keys().then(function(cacheNames) {
         return Promise.all(
           cacheNames.map(function(cacheName) {
-            console.log('[custom-worker] Deleting all cache:', cacheName);
-            return caches.delete(cacheName);
+            // 개발 환경 캐시나 오래된 캐시만 삭제
+            if (cacheName.includes('dev') || cacheName.includes('old-')) {
+              console.log('[custom-worker] Deleting outdated cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+            return Promise.resolve();
           })
         );
       })

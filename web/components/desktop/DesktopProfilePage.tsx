@@ -19,8 +19,29 @@ export function DesktopProfilePage({ targetProfile, isOwnProfile }: DesktopProfi
 
   const handleSignOut = async () => {
     try {
+      // 현재 세션 확인
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Supabase 로그아웃
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      // 카카오 OAuth 세션도 로그아웃 (카카오 계정이면)
+      if (session?.user?.app_metadata?.provider === 'kakao') {
+        try {
+          // 카카오 로그아웃 URL로 리다이렉트
+          const kakaoLogoutUrl = 'https://kauth.kakao.com/oauth/logout?client_id=' + 
+            process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID + 
+            '&logout_redirect_uri=' + encodeURIComponent(window.location.origin + '/auth/login');
+          
+          // 카카오 로그아웃 후 로그인 페이지로 리다이렉트
+          window.location.href = kakaoLogoutUrl;
+          return;
+        } catch (kakaoError) {
+          console.error('카카오 로그아웃 중 오류:', kakaoError);
+          // 카카오 로그아웃 실패해도 계속 진행
+        }
+      }
       
       router.push('/');
     } catch (error) {
@@ -74,7 +95,7 @@ export function DesktopProfilePage({ targetProfile, isOwnProfile }: DesktopProfi
                 unoptimized={targetProfile.image.includes('127.0.0.1') || targetProfile.image.includes('pnu-ultimate.kro.kr')}
               />
             ) : (
-              <div className="w-full h-full bg-white flex items-center justify-center text-gray-500">
+              <div className="w-full h-full bg-background flex items-center justify-center text-muted-foreground">
                 <span className="text-4xl font-bold">
                   {displayName.charAt(0).toUpperCase()}
                 </span>
@@ -116,6 +137,18 @@ export function DesktopProfilePage({ targetProfile, isOwnProfile }: DesktopProfi
                       <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/>
                     </svg>
                     내 게임 내역
+                  </Link>
+
+                  {/* 관심 게임 설정 */}
+                  <Link 
+                    href="/profile/favorite-games"
+                    className="flex items-center gap-3 px-4 py-3 bg-popover text-popover-foreground hover:bg-popover/80 transition-colors w-fit"
+                    style={{borderRadius: 'var(--radius)'}}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    관심 게임 설정
                   </Link>
 
                   {/* 알림 설정 */}

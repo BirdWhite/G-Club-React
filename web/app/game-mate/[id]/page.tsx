@@ -82,8 +82,8 @@ export default async function GamePostDetailPage({ params }: { params: Promise<{
 
   const userId = user?.id;
   const isOwner = userId === post.author.userId;
-  const isParticipating = post.participants?.some(p => p.userId === userId);
-  const isWaiting = post.waitingList?.some(w => w.userId === userId);
+  const isParticipating = post.participants?.some(p => p.userId === userId && p.status === 'ACTIVE');
+  const isWaiting = post.waitingList?.some(w => w.userId === userId && w.status === 'WAITING');
 
   const initialPostState = {
     ...post,
@@ -93,7 +93,7 @@ export default async function GamePostDetailPage({ params }: { params: Promise<{
   };
 
   return (
-    <div className="min-h-screen max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8">
       <GamePostDetailClient initialPost={initialPostState} userId={userId} />
     </div>
   );

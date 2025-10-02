@@ -26,6 +26,17 @@ export async function PATCH(
         id: true,
         authorId: true,
         status: true,
+        maxParticipants: true,
+        isFull: true,
+        _count: {
+          select: {
+            participants: {
+              where: {
+                status: 'ACTIVE'
+              }
+            }
+          }
+        }
       },
     });
 
@@ -43,26 +54,37 @@ export async function PATCH(
       );
     }
 
-    // 순환식 상태 변경: OPEN/FULL -> IN_PROGRESS -> COMPLETED -> OPEN
+    // 순환식 상태 변경: OPEN -> IN_PROGRESS -> COMPLETED -> OPEN
     let newStatus: GamePostStatus;
+    let newIsFull: boolean;
     let message: string;
     
     switch (post.status) {
       case 'OPEN':
-      case 'FULL':
         newStatus = GamePostStatus.IN_PROGRESS;
+        newIsFull = post.isFull; // isFull 상태 유지
         message = '게임이 시작되었습니다.';
         break;
       case 'IN_PROGRESS':
         newStatus = GamePostStatus.COMPLETED;
+        newIsFull = post.isFull; // isFull 상태 유지
         message = '게임이 완료되었습니다.';
         break;
       case 'COMPLETED':
-        newStatus = GamePostStatus.OPEN;
-        message = '모집이 재개되었습니다.';
+        // 현재 활성 참여자 수가 최대 인원과 같으면 isFull=true, 아니면 isFull=false
+        if (post._count.participants >= post.maxParticipants) {
+          newStatus = GamePostStatus.OPEN;
+          newIsFull = true;
+          message = '모집이 재개되었습니다. (인원이 가득 찼습니다)';
+        } else {
+          newStatus = GamePostStatus.OPEN;
+          newIsFull = false;
+          message = '모집이 재개되었습니다.';
+        }
         break;
       default:
         newStatus = GamePostStatus.IN_PROGRESS;
+        newIsFull = post.isFull; // isFull 상태 유지
         message = '게임이 시작되었습니다.';
     }
     
@@ -70,6 +92,7 @@ export async function PATCH(
       where: { id },
       data: {
         status: newStatus,
+        isFull: newIsFull,
       },
     });
 

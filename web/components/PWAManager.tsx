@@ -1,67 +1,115 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 interface PWAManagerProps {
   children: React.ReactNode;
 }
 
 export function PWAManager({ children }: PWAManagerProps) {
-  const [isOnline, setIsOnline] = useState(true);
+  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+
+  // 캐시 강제 새로고침 함수
+  const clearCache = useCallback(async () => {
+    if (!swRegistration?.active) return;
+    
+    try {
+      // 모든 캐시 삭제
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames.map(cacheName => caches.delete(cacheName))
+      );
+      
+      // 서비스 워커 재시작
+      await swRegistration.unregister();
+      window.location.reload();
+    } catch (error) {
+      console.error('캐시 삭제 실패:', error);
+    }
+  }, [swRegistration]);
+
+  // 서비스 워커 업데이트 함수
+  const updateServiceWorker = useCallback(async () => {
+    if (!swRegistration?.waiting) return;
+    
+    try {
+      // 대기 중인 서비스 워커에게 업데이트 신호 전송
+      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      window.location.reload();
+    } catch (error) {
+      console.error('서비스 워커 업데이트 실패:', error);
+    }
+  }, [swRegistration]);
 
   useEffect(() => {
-    // 온라인/오프라인 상태 감지
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    // PWA 환경 감지
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                  (window.navigator as { standalone?: boolean }).standalone === true;
 
-    // 서비스 워커 등록 및 업데이트 감지
+    // 서비스 워커 등록 (단순화)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
-          console.log('Service Worker 등록 성공:', registration);
-
-          // 주기적으로 업데이트 확인 (5분마다)
+          setSwRegistration(registration);
+          
+          // 즉시 세션 준비 이벤트 발생 (캐시 없이)
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('swSessionReady', {
+              detail: { session: null, fromCache: false, isPWA }
+            }));
+          }, 100);
+          
+          // 주기적으로 서비스 워커 업데이트 확인
           setInterval(() => {
             registration.update();
-          }, 5 * 60 * 1000);
+          }, 5 * 60 * 1000); // 5분마다
         })
         .catch((error) => {
           console.error('Service Worker 등록 실패:', error);
+          // 서비스 워커 등록 실패 시에도 세션 준비 이벤트 발생
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('swSessionReady', {
+              detail: { session: null, fromCache: false, isPWA }
+            }));
+          }, 100);
         });
 
-      // 서비스 워커 메시지 수신
+      // 서비스 워커 메시지 리스너
       navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data.type === 'CACHE_CLEARED') {
-          console.log('캐시가 정리되었습니다.');
-        }
-        
-        if (event.data.type === 'SW_UPDATED') {
-          console.log('서비스 워커가 업데이트되었습니다.');
+        if (event.data.type === 'SUBSCRIPTION_INVALID') {
+          console.log('[PWAManager] 구독이 유효하지 않음, 재구독 필요');
+          // 구독 무효화 이벤트 발생
+          window.dispatchEvent(new CustomEvent('subscriptionInvalid', {
+            detail: { userId: event.data.userId }
+          }));
         }
       });
+    } else {
+      // 서비스 워커를 지원하지 않는 환경
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('swSessionReady', {
+          detail: { session: null, fromCache: false, isPWA }
+        }));
+      }, 100);
+    }
+
+    // 개발 환경에서 전역 함수로 노출
+    if (process.env.NODE_ENV === 'development') {
+      (window as typeof window & {
+        clearPWACache?: () => Promise<void>;
+        updateServiceWorker?: () => Promise<void>;
+      }).clearPWACache = clearCache;
+      (window as typeof window & {
+        clearPWACache?: () => Promise<void>;
+        updateServiceWorker?: () => Promise<void>;
+      }).updateServiceWorker = updateServiceWorker;
     }
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      // cleanup
     };
-  }, []);
+  }, [clearCache, updateServiceWorker]);
 
-
-  return (
-    <>
-      {children}
-      
-      {/* 오프라인 상태 표시 */}
-      {!isOnline && (
-        <div className="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-2 z-50">
-          오프라인 상태입니다. 연결을 확인해주세요.
-        </div>
-      )}
-
-    </>
-  );
+  return <>{children}</>;
 }

@@ -93,35 +93,34 @@ export default function ParticipatingGameNotificationSettings() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="bg-white rounded-lg shadow-sm border">
-        {/* 헤더 */}
-        <div className="p-6 border-b">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">참여중인 모임 알림</h1>
-              <p className="text-gray-600 mt-1">내가 참여한 게임 모임의 상태 변화 알림을 설정하세요</p>
-            </div>
+      {/* 헤더 */}
+      <div className="mb-12">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.back()}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">참여중인 모임 알림</h1>
+            <p className="text-muted-foreground mt-1">내가 참여한 게임 모임의 상태 변화 알림을 설정하세요</p>
           </div>
         </div>
+      </div>
 
-        {/* 설정 내용 */}
-        <div className="p-6 space-y-6">
+      {/* 설정 내용 */}
+      <div className="space-y-6">
           
           {/* 다 모였을때 알람 */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center gap-3">
               <span className="text-2xl">✅</span>
               <div>
-                <h3 className="font-semibold text-gray-900">다 모였을때 알람</h3>
-                <p className="text-sm text-gray-600">모임 인원이 가득 찼을 때 알림을 받습니다</p>
+                <h3 className="font-semibold text-foreground">다 모였을때 알람</h3>
+                <p className="text-sm text-muted-foreground">모임 인원이 가득 찼을 때 알림을 받습니다</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -131,17 +130,17 @@ export default function ParticipatingGameNotificationSettings() {
                 onChange={(e) => updateSetting('fullMeeting', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
           {/* 모임 참여 알람 */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center gap-3">
               <span className="text-2xl">👋</span>
               <div>
-                <h3 className="font-semibold text-gray-900">모임 참여 알람</h3>
-                <p className="text-sm text-gray-600">누군가가 모임에 참여할 때마다 알림을 받습니다</p>
+                <h3 className="font-semibold text-foreground">모임 참여 알람</h3>
+                <p className="text-sm text-muted-foreground">누군가가 모임에 참여할 때마다 알림을 받습니다</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -151,17 +150,17 @@ export default function ParticipatingGameNotificationSettings() {
                 onChange={(e) => updateSetting('memberJoin', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
           {/* 모임 참여 취소 알람 */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center gap-3">
               <span className="text-2xl">💔</span>
               <div>
-                <h3 className="font-semibold text-gray-900">모임 참여 취소 알람</h3>
-                <p className="text-sm text-gray-600">누군가가 모임 참여를 취소할 때마다 알림을 받습니다</p>
+                <h3 className="font-semibold text-foreground">모임 참여 취소 알람</h3>
+                <p className="text-sm text-muted-foreground">누군가가 모임 참여를 취소할 때마다 알림을 받습니다</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -171,17 +170,17 @@ export default function ParticipatingGameNotificationSettings() {
                 onChange={(e) => updateSetting('memberLeave', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
           {/* 모임 시간 변경시 알람 */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center gap-3">
               <span className="text-2xl">🕐</span>
               <div>
-                <h3 className="font-semibold text-gray-900">모임 시간 변경시 알람</h3>
-                <p className="text-sm text-gray-600">모임 시간이 변경될 때마다 알림을 받습니다</p>
+                <h3 className="font-semibold text-foreground">모임 시간 변경시 알람</h3>
+                <p className="text-sm text-muted-foreground">모임 시간이 변경될 때마다 알림을 받습니다</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -191,17 +190,17 @@ export default function ParticipatingGameNotificationSettings() {
                 onChange={(e) => updateSetting('timeChange', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
           {/* 게임메이트 취소 알람 */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center gap-3">
               <span className="text-2xl">❌</span>
               <div>
-                <h3 className="font-semibold text-gray-900">게임메이트 취소 알람</h3>
-                <p className="text-sm text-gray-600">참여한 게임메이트가 취소될 때 알림을 받습니다</p>
+                <h3 className="font-semibold text-foreground">게임메이트 취소 알람</h3>
+                <p className="text-sm text-muted-foreground">참여한 게임메이트가 취소될 때 알림을 받습니다</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -211,18 +210,18 @@ export default function ParticipatingGameNotificationSettings() {
                 onChange={(e) => updateSetting('gameCancelled', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
           {/* 모임 전 알람 */}
-          <div className="p-4 border border-gray-200 rounded-lg">
+          <div className="p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">⏰</span>
                 <div>
-                  <h3 className="font-semibold text-gray-900">모임 전 알람</h3>
-                  <p className="text-sm text-gray-600">모임 시작 전 미리 알림을 받습니다</p>
+                  <h3 className="font-semibold text-foreground">모임 전 알람</h3>
+                  <p className="text-sm text-muted-foreground">모임 시작 전 미리 알림을 받습니다</p>
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -232,25 +231,24 @@ export default function ParticipatingGameNotificationSettings() {
                   onChange={(e) => updateBeforeMeeting('enabled', e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
             
             {gameSettings.beforeMeeting.enabled && (
               <div className="ml-8 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     알림 시간
                   </label>
                   <select
                     value={gameSettings.beforeMeeting.minutes}
                     onChange={(e) => updateBeforeMeeting('minutes', parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value={10}>10분 전</option>
                     <option value={30}>30분 전</option>
                     <option value={60}>1시간 전</option>
-                    <option value={180}>3시간 전</option>
                   </select>
                 </div>
                 
@@ -259,22 +257,22 @@ export default function ParticipatingGameNotificationSettings() {
                     type="checkbox"
                     checked={gameSettings.beforeMeeting.onlyFullMeeting}
                     onChange={(e) => updateBeforeMeeting('onlyFullMeeting', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
                   />
-                  <span className="text-sm text-gray-700">모임이 다 모였을때만 알림</span>
+                  <span className="text-sm text-foreground">모임이 다 모였을때만 알림</span>
                 </label>
               </div>
             )}
           </div>
 
           {/* 모임 시작 알람 */}
-          <div className="p-4 border border-gray-200 rounded-lg">
+          <div className="p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🚀</span>
                 <div>
-                  <h3 className="font-semibold text-gray-900">모임 시작 알람</h3>
-                  <p className="text-sm text-gray-600">모임 시작 시간에 알림을 받습니다</p>
+                  <h3 className="font-semibold text-foreground">모임 시작 알람</h3>
+                  <p className="text-sm text-muted-foreground">모임 시작 시간에 알림을 받습니다</p>
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -284,7 +282,7 @@ export default function ParticipatingGameNotificationSettings() {
                   onChange={(e) => updateMeetingStart('enabled', e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
             
@@ -295,9 +293,9 @@ export default function ParticipatingGameNotificationSettings() {
                     type="checkbox"
                     checked={gameSettings.meetingStart.onlyFullMeeting}
                     onChange={(e) => updateMeetingStart('onlyFullMeeting', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
                   />
-                  <span className="text-sm text-gray-700">모임이 다 모였을때만 알림</span>
+                  <span className="text-sm text-foreground">모임이 다 모였을때만 알림</span>
                 </label>
               </div>
             )}
@@ -306,21 +304,20 @@ export default function ParticipatingGameNotificationSettings() {
         </div>
 
         {/* 하단 버튼 */}
-        <div className="px-6 py-4 bg-gray-50 border-t rounded-b-lg flex justify-between">
+        <div className="mt-12 flex justify-between">
           <button
             onClick={() => router.back()}
-            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            className="px-6 py-2 border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
           >
             취소
           </button>
           <button
             onClick={saveSettings}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
             저장
           </button>
         </div>
-      </div>
     </div>
   );
 }

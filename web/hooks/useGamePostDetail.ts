@@ -221,7 +221,7 @@ export function useGamePostDetail({ postId }: UseGamePostDetailProps) {
 
   // 파생 상태
   const isAuthor = post?.author.userId === user?.id;
-  const isParticipating = post?.participants.some(p => p.userId === user?.id) || false;
+  const isParticipating = post?.participants.some(p => p.userId === user?.id && p.status === 'ACTIVE') || false;
   const isFull = post ? post.participants.length >= post.maxParticipants : false;
 
   return {
