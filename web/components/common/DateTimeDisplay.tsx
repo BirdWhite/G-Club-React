@@ -8,7 +8,7 @@ interface DateTimeDisplayProps {
 
 export function DateTimeDisplay({ date, showIcon = true, className = '' }: DateTimeDisplayProps) {
   return (
-    <div className={`flex items-center text-gray-700 ${className}`}>
+    <div className={`flex items-center text-muted-foreground ${className}`}>
       {showIcon && (
         <svg 
           xmlns="http://www.w3.org/2000/svg" 

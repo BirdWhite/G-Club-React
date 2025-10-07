@@ -31,11 +31,55 @@ export async function GET() {
           }
         }
       },
-      orderBy: [
-        { order: 'asc' },  // 사용자 정의 순서 우선
-        { addedAt: 'desc' } // 추가 날짜 순
-      ]
+      orderBy: { order: 'asc' }  // order 값으로만 정렬
     });
+
+    // null order 값들을 자동으로 정리
+    const nullOrderItems = favoriteGames.filter(fav => fav.order === null);
+    if (nullOrderItems.length > 0) {
+      // 현재 최대 order 값 찾기
+      const maxOrder = favoriteGames
+        .filter(fav => fav.order !== null)
+        .reduce((max, fav) => Math.max(max, fav.order || 0), 0);
+
+      // null order 값들을 순차적으로 할당
+      let currentOrder = maxOrder;
+      for (const item of nullOrderItems) {
+        currentOrder++;
+        await prisma.userFavoriteGame.update({
+          where: { id: item.id },
+          data: { order: currentOrder }
+        });
+      }
+
+      // 업데이트된 데이터 다시 조회
+      const updatedFavoriteGames = await prisma.userFavoriteGame.findMany({
+        where: { userId: user.id },
+        include: {
+          game: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              iconUrl: true,
+              aliases: true
+            }
+          }
+        },
+        orderBy: { order: 'asc' }
+      });
+
+      return NextResponse.json({ 
+        success: true, 
+        favoriteGames: updatedFavoriteGames.map(fav => ({
+          id: fav.id,
+          gameId: fav.gameId,
+          addedAt: fav.addedAt,
+          order: fav.order,
+          game: fav.game
+        }))
+      });
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -109,12 +153,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 현재 사용자의 최대 order 값 조회
+    const maxOrderResult = await prisma.userFavoriteGame.findFirst({
+      where: { userId: user.id },
+      orderBy: { order: 'desc' },
+      select: { order: true }
+    });
+
+    // 새로운 order 값 계산 (기존 최대값 + 1, 또는 전달받은 값)
+    const newOrder = order || (maxOrderResult?.order || 0) + 1;
+
     // 좋아하는 게임 추가
     const favoriteGame = await prisma.userFavoriteGame.create({
       data: {
         userId: user.id,
         gameId: gameId,
-        order: order || null
+        order: newOrder
       },
       include: {
         game: {
@@ -128,6 +182,30 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // 같은 order 값을 가진 다른 게임들이 있는지 확인하고 정리
+    const duplicateOrderItems = await prisma.userFavoriteGame.findMany({
+      where: {
+        userId: user.id,
+        order: newOrder,
+        id: { not: favoriteGame.id } // 방금 추가한 항목 제외
+      },
+      orderBy: { addedAt: 'desc' } // 추가 시간이 늦은 순으로 정렬 (늦게 추가된 게임이 마지막으로 이동)
+    });
+
+    // 중복된 order 값들을 순차적으로 증가시킴
+    if (duplicateOrderItems.length > 0) {
+      const maxOrder = maxOrderResult?.order || 0;
+      let currentOrder = maxOrder + 1;
+      
+      for (const item of duplicateOrderItems) {
+        currentOrder++;
+        await prisma.userFavoriteGame.update({
+          where: { id: item.id },
+          data: { order: currentOrder }
+        });
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 

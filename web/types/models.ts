@@ -70,6 +70,13 @@ export interface UserProfile {
   email: string;
   image?: string;
   bio?: string;
+  
+  // 이용약관 동의 관련
+  termsAgreed: boolean;
+  termsAgreedAt?: Date;
+  privacyAgreed: boolean;
+  privacyAgreedAt?: Date;
+  
   favoriteGames: UserFavoriteGame[];
   gamePosts: GamePost[];
   gameParticipants: GameParticipant[];
@@ -119,17 +126,19 @@ export interface GamePost {
   id: string;
   authorId: string;
   title: string;
-  content: JsonValue;
+  content: string; // JsonValue에서 string으로 변경
   gameId?: string;
   customGameName?: string;
   startTime: Date;
   maxParticipants: number;
   status: GamePostStatus;
   isFull: boolean;
+  viewCount: number;
   author: UserProfile;
   game?: Game;
   participants: GameParticipant[];
   waitingList: WaitingParticipant[];
+  comments?: Comment[];
   _count: {
     participants: number;
     waitingList: number;
@@ -249,23 +258,85 @@ export interface NotificationReceipt {
   updatedAt: Date;
 }
 
-// 알림 설정 모델
+// 알림 설정 모델 - 개별 컬럼 버전
 export interface NotificationSetting {
   id: string;
   userId: string;
   user: UserProfile;
-  doNotDisturb: DoNotDisturbSettings;
-  newGamePost: CategorySettings;
-  participatingGame: CategorySettings;
-  myGamePost: CategorySettings;
-  waitingList: CategorySettings;
-  newGamePostSettings: JsonValue;
-  participatingGameSettings: JsonValue;
-  myGamePostSettings: JsonValue;
-  waitingListSettings: JsonValue;
+  
+  // 방해 금지 시간 설정
+  doNotDisturbEnabled: boolean;
+  doNotDisturbStart: string | null;
+  doNotDisturbEnd: string | null;
+  doNotDisturbDays: string[];
+  
+  // 신규 게임메이트 글 알림 설정
+  newGamePostEnabled: boolean;
+  newGamePostMode: 'all' | 'favorites' | 'custom';
+  customGameIds: string[];
+  
+  // 참여중인 모임 알림 설정
+  participatingGameEnabled: boolean;
+  participatingGameFullMeeting: boolean;
+  participatingGameMemberJoin: boolean;
+  participatingGameMemberLeave: boolean;
+  participatingGameTimeChange: boolean;
+  participatingGameCancelled: boolean;
+  
+  // 참여중인 모임 - 모임 전 알람 설정
+  participatingGameBeforeMeetingEnabled: boolean;
+  participatingGameBeforeMeetingMinutes: number;
+  participatingGameBeforeMeetingOnlyFull: boolean;
+  
+  // 참여중인 모임 - 모임 시작 알람 설정
+  participatingGameMeetingStartEnabled: boolean;
+  participatingGameMeetingStartOnlyFull: boolean;
+  
+  // 내가 작성한 모임 알림 설정
+  myGamePostEnabled: boolean;
+  myGamePostFullMeeting: boolean;
+  myGamePostMemberJoin: boolean;
+  myGamePostMemberLeave: boolean;
+  
+  // 내가 작성한 모임 - 모임 전 알람 설정
+  myGamePostBeforeMeetingEnabled: boolean;
+  myGamePostBeforeMeetingMinutes: number;
+  myGamePostBeforeMeetingOnlyFull: boolean;
+  
+  // 내가 작성한 모임 - 모임 시작 알람 설정
+  myGamePostMeetingStartEnabled: boolean;
+  myGamePostMeetingStartOnlyFull: boolean;
+  
+  // 예비 참여 알림 설정
+  waitingListEnabled: boolean;
+  
+  // 공지사항 알림 설정
+  noticeEnabled: boolean;
+  
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ========== 공통 타입 정의 ==========
+
+// 기본 활성화 설정
+export interface BaseEnabledSettings {
+  enabled: boolean;
+}
+
+// 모임 전/시작 알림 공통 설정
+export interface MeetingNotificationSettings {
+  enabled: boolean;
+  minutes: number;
+  onlyFullMeeting: boolean;
+}
+
+export interface MeetingStartSettings {
+  enabled: boolean;
+  onlyFullMeeting: boolean;
+}
+
+// ========== 알림 설정 인터페이스들 ==========
 
 // 방해 금지 설정
 export interface DoNotDisturbSettings {
@@ -275,22 +346,71 @@ export interface DoNotDisturbSettings {
   days: string[];
 }
 
-// 카테고리 설정
-export interface CategorySettings {
+// 신규 게임메이트 글 알림 설정
+export interface NewGamePostSettings {
   enabled: boolean;
+  mode: 'all' | 'favorites' | 'custom';
+  customGameIds: string[];
 }
 
-// 게임 필터 설정
-export interface GameFilterSettings {
+// 참여중인 모임 알림 설정
+export interface ParticipatingGameSettings {
   enabled: boolean;
-  mode: 'INCLUDE' | 'EXCLUDE';
-  gameIds: string[];
+  fullMeeting: boolean;
+  memberJoin: boolean;
+  memberLeave: boolean;
+  timeChange: boolean;
+  gameCancelled: boolean;
+  beforeMeeting: MeetingNotificationSettings;
+  meetingStart: MeetingStartSettings;
 }
 
-// 시간 필터 설정
-export interface TimeFilterSettings {
+// 내가 작성한 모임 알림 설정
+export interface MyGamePostSettings {
   enabled: boolean;
-  startTime: string;
-  endTime: string;
-  days: string[];
+  fullMeeting: boolean;
+  memberJoin: boolean;
+  memberLeave: boolean;
+  beforeMeeting: MeetingNotificationSettings;
+  meetingStart: MeetingStartSettings;
 }
+
+// 예비 참여 알림 설정 (단순화)
+export type WaitingListSettings = BaseEnabledSettings;
+
+// 통합 댓글 모델 (게임메이트 포스트와 공지사항 모두 사용)
+export interface Comment {
+  id: string;
+  gamePostId?: string;
+  gamePost?: GamePost;
+  noticeId?: string;
+  notice?: Notice;
+  authorId: string;
+  author: UserProfile;
+  content: string;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Notice {
+  id: string;
+  title: string;
+  content: any; // JsonValue 타입
+  summary?: string;
+  authorId: string;
+  author: UserProfile;
+  lastModifiedById?: string;
+  lastModifiedBy?: UserProfile;
+  isPublished: boolean;
+  isPinned: boolean;
+  isDeleted: boolean;
+  allowComments: boolean;
+  viewCount: number;
+  priority: number;
+  publishedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  comments?: Comment[];
+}
+

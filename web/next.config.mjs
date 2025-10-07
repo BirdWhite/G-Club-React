@@ -1,5 +1,10 @@
 import withPWA from '@ducanh2912/next-pwa';
 
+// 서버 시작 시 크론 작업 초기화
+import('./lib/cron/cronManager.js').catch(() => {
+  // 서버 시작 시에만 실행되므로 오류 무시
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // 헤더 크기 최적화

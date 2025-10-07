@@ -45,7 +45,7 @@ export function MobileAdminDashboard({ initialTab, onTabChange }: MobileAdminDas
                     : 'border-transparent text-cyber-gray hover:text-cyber-blue hover:bg-cyber-black-200'
                 } text-left py-3 px-4 border-l-4 font-medium text-sm rounded-r-md transition-colors`}
               >
-                권한 관리
+                권한 관리 (미구현)
               </button>
               <button
                 onClick={() => handleTabChange('games')}

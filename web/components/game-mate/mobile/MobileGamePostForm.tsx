@@ -7,8 +7,7 @@ import * as z from 'zod';
 import toast from 'react-hot-toast';
 import { GamePost } from '@/types/models';
 import { MobileGameSearch } from '@/components/common/MobileGameSearch';
-import { RichTextEditor } from '@/components/editor/RichTextEditor';
-import { JsonValue } from '@prisma/client/runtime/library';
+// RichTextEditor 제거 - 단순 텍스트 입력으로 변경
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
@@ -29,17 +28,7 @@ const formSchema = z.object({
   maxParticipants: z.number().min(2, '최소 2명 이상이어야 합니다.').max(100, '최대 100명까지 가능합니다.'),
   startDate: z.date({ message: '시작 날짜를 선택해주세요.' }),
   startTime: z.string().min(1, '시작 시간을 선택해주세요.'),
-  content: z.custom<JsonValue>().refine(value => {
-    if (!value || typeof value !== 'object' || !('content' in value)) {
-        return false;
-    }
-    const contentArray = (value as { content: Array<{ type: string; content?: Array<{ text?: string }> }> }).content;
-    if (!contentArray || contentArray.length === 0) return false;
-    if (contentArray.length === 1 && contentArray[0].type === 'paragraph' && !contentArray[0].content) {
-        return false;
-    }
-    return true;
-  }, { message: '내용을 입력해주세요.' }),
+  content: z.string().min(1, '내용을 입력해주세요.').max(2000, '내용은 2000자를 초과할 수 없습니다.'),
   participants: z.array(z.object({
     name: z.string().min(1, '이름은 필수입니다.'),
     userId: z.string().optional(),
@@ -121,7 +110,7 @@ const getDefaultParticipants = () => {
       maxParticipants: initialData?.maxParticipants || 10,
       startDate: initialData?.startTime ? new Date(initialData.startTime) : new Date(),
       startTime: initialData?.startTime ? new Date(initialData.startTime).toTimeString().slice(0, 5) : getNextTimeSlot(),
-      content: initialData?.content || { type: 'doc', content: [{ type: 'paragraph' }] },
+      content: initialData?.content || '',
       participants: getDefaultParticipants(),
     },
   });
@@ -221,16 +210,7 @@ const getDefaultParticipants = () => {
       return (
         currentValues.title.trim() !== '' ||
         currentValues.gameId !== '' ||
-        (currentValues.content && 
-         typeof currentValues.content === 'object' && 
-         'content' in currentValues.content &&
-         Array.isArray(currentValues.content.content) &&
-         currentValues.content.content.some((node) => 
-           (node as { type: string; content?: Array<{ text?: string }> }).type === 'paragraph' && 
-           (node as { type: string; content?: Array<{ text?: string }> }).content && 
-           (node as { type: string; content?: Array<{ text?: string }> }).content!.length > 0 &&
-           (node as { type: string; content?: Array<{ text?: string }> }).content!.some((textNode) => textNode.text && textNode.text.trim() !== '')
-         )) || // 실제 텍스트 내용이 있는지 확인
+        (currentValues.content && currentValues.content.trim() !== '') || // 텍스트 내용이 있는지 확인
         currentValues.participants.length > 1 // 작성자 외 다른 참여자
       );
     }
@@ -241,7 +221,7 @@ const getDefaultParticipants = () => {
         currentValues.title !== initialData.title ||
         currentValues.gameId !== initialData.gameId ||
         currentValues.maxParticipants !== initialData.maxParticipants ||
-        JSON.stringify(currentValues.content) !== JSON.stringify(initialData.content)
+        currentValues.content !== initialData.content
       );
     }
     
@@ -252,13 +232,13 @@ const getDefaultParticipants = () => {
     if (hasFormChanges()) {
       setShowExitModal(true);
     } else {
-      router.back();
+      router.push('/game-mate');
     }
   };
 
   const handleConfirmExit = () => {
     setShowExitModal(false);
-    router.back();
+    router.push('/game-mate');
   };
 
   const handleCancelExit = () => {
@@ -292,11 +272,11 @@ const getDefaultParticipants = () => {
       </div>
 
       {/* 스크롤 가능한 콘텐츠 */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto overscroll-contain">
+      <div ref={containerRef} className="flex-1 overflow-y-auto overscroll-contain p-4">
         <div className="p-4 pb-24 space-y-6">
           <Form {...form}>
             <form id="game-post-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <FormField
                   control={form.control}
                   name="title"
@@ -453,7 +433,7 @@ const getDefaultParticipants = () => {
                             }}
                             min="2"
                             max="100"
-                            className="w-16 text-center border-none bg-transparent text-base font-medium focus:ring-0 focus:border-none px-0"
+                            className="w-16 text-center border-2 border-accent bg-background text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary px-2 py-1 rounded-md"
                           />
                           <span className="text-base font-medium text-foreground">명</span>
                         </div>
@@ -490,26 +470,28 @@ const getDefaultParticipants = () => {
               {/* 내용 위 구분선 */}
               <div className="border-t border-border"></div>
 
-              <FormField
-                control={form.control}
-                name="content"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="pb-2">
-                        <RichTextEditor 
-                          content={field.value} 
-                          onChange={field.onChange} 
-                          showToolbar={false}
-                          placeholder="내용"
-                          mobileStyle={true}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <div className="pb-2">
+                          <textarea
+                            {...field}
+                            placeholder="게임메이트 모집 내용을 입력하세요."
+                            className="w-full min-h-[100px] px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-vertical text-sm"
+                            maxLength={2000}
+                          />
+                          <div className="text-xs text-muted-foreground text-right mt-1">
+                            {field.value?.length || 0}/2000
+                          </div>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
               {/* 내용 아래 구분선 */}
               <div className="border-t border-border"></div>

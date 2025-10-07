@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { Check, ChevronDown, Search, Gamepad2 } from 'lucide-react';
 import { cn } from '@/lib/utils/common';
 import { useGameSearch } from '@/hooks/useGameSearch';
@@ -199,9 +200,11 @@ export function GameSearchUI({
               {value === 'all' && showAllOption ? (
                 <Gamepad2 className="h-4 w-4" />
               ) : displayIcon ? (
-                <img
+                <Image
                   src={displayIcon}
                   alt=""
+                  width={16}
+                  height={16}
                   className="h-4 w-4 rounded-sm object-cover"
                 />
               ) : (
@@ -303,9 +306,11 @@ export function GameSearchUI({
                       {showGameIcon && (
                         <div className="flex-shrink-0">
                           {game.iconUrl ? (
-                            <img
+                            <Image
                               src={game.iconUrl}
                               alt=""
+                              width={16}
+                              height={16}
                               className="h-4 w-4 rounded-sm object-cover"
                             />
                           ) : (

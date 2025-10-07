@@ -7,10 +7,10 @@ interface DesktopHomePageProps {
   onLearnMoreClick: () => void;
 }
 
-export function DesktopHomePage({ onStartClick, onLearnMoreClick }: DesktopHomePageProps) {
+export function DesktopHomePage({}: DesktopHomePageProps) {
   return (
     <div className="h-full bg-background">
-      <HeroSection onStartClick={onStartClick} onLearnMoreClick={onLearnMoreClick} />
+      <HeroSection />
     </div>
   );
 }

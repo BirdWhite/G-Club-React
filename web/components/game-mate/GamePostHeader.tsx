@@ -1,4 +1,6 @@
+import Image from 'next/image';
 import type { GamePost } from '@/types/models';
+import { Eye } from 'lucide-react';
 
 interface GamePostHeaderProps {
   post: GamePost;
@@ -29,60 +31,68 @@ export function GamePostHeader({
   const currentStatus = post.isFull ? fullStatus : (statusInfo[post.status] || statusInfo.COMPLETED);
 
   return (
-    <div className="border-b border-gray-200 pb-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div className="mb-4 sm:mb-0">
-          {/* 상태 배지와 제목 */}
-          <div className="flex items-center mb-2">
-            <span className={`px-3 py-1 rounded-full font-semibold text-sm ${currentStatus.className} mr-3`}>
-              {currentStatus.text}
+    <div className="pb-4">
+      {/* 첫 번째 줄: 게임 정보와 상태 */}
+      <div className="flex items-center mb-4">
+        {post.game?.iconUrl ? (
+          <Image 
+            src={post.game.iconUrl} 
+            alt={post.game.name || '게임 아이콘'}
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-md mr-3"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-md bg-indigo-100 flex items-center justify-center mr-3">
+            <span className="text-indigo-800 font-bold text-sm">
+              {post.game?.name?.[0] || 'G'}
             </span>
-            <h1 className="text-3xl font-bold text-cyber-gray">{post.title || '제목 없음'}</h1>
           </div>
-          
-          {/* 게임 정보 */}
-          <div className="flex items-center">
-            {post.game?.iconUrl ? (
-              <img 
-                src={post.game.iconUrl} 
-                alt={post.game.name || '게임 아이콘'}
-                className="h-8 w-8 rounded-md mr-3"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-md bg-indigo-100 flex items-center justify-center mr-3">
-                <span className="text-indigo-800 font-bold text-sm">
-                  {post.game?.name?.[0] || 'G'}
-                </span>
-              </div>
-            )}
-            <span className="font-semibold text-lg text-cyber-gray">{post.game?.name || '게임 정보 없음'}</span>
-          </div>
+        )}
+        <span className="font-semibold text-lg text-cyber-gray mr-3">{post.game?.name || '게임 정보 없음'}</span>
+        <span className={`px-3 py-1 rounded-full font-semibold text-sm ${currentStatus.className}`}>
+          {currentStatus.text}
+        </span>
+      </div>
+
+      {/* 두 번째 줄: 제목(왼쪽)과 조회수+버튼들(오른쪽) */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-cyber-gray">{post.title || '제목 없음'}</h1>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => window.history.back()}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            목록
-          </button>
-          {isOwner && (
-            <>
-              <button
-                onClick={onEdit}
-                disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-cyber-purple border border-transparent rounded-md shadow-sm hover:bg-cyber-purple/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-purple disabled:opacity-50 transition-colors duration-200"
-              >
-                수정
-              </button>
-              <button
-                onClick={onDelete}
-                disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-cyber-red border border-transparent rounded-md shadow-sm hover:bg-cyber-red/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-red disabled:opacity-50 transition-colors duration-200"
-              >
-                삭제
-              </button>
-            </>
-          )}
+        <div className="flex items-center gap-5">
+          {/* 조회수 */}
+          <div className="flex items-center gap-1 text-sm text-gray-600">
+            <Eye className="w-4 h-4 text-gray-500" />
+            <span>{post.viewCount}</span>
+          </div>
+          {/* 버튼들 - 간격을 줄임 */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.history.back()}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              목록
+            </button>
+            {isOwner && (
+              <>
+                <button
+                  onClick={onEdit}
+                  disabled={loading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-cyber-purple border border-transparent rounded-md shadow-sm hover:bg-cyber-purple/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-purple disabled:opacity-50 transition-colors duration-200"
+                >
+                  수정
+                </button>
+                <button
+                  onClick={onDelete}
+                  disabled={loading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-cyber-red border border-transparent rounded-md shadow-sm hover:bg-cyber-red/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-red disabled:opacity-50 transition-colors duration-200"
+                >
+                  삭제
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

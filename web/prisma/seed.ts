@@ -67,35 +67,30 @@ async function main() {
   
   const games = [
     {
-      id: 'game-1',
       name: '리그 오브 레전드',
       description: 'MOBA 게임',
       iconUrl: '',
-      aliases: ['롤', 'LOL', 'LoL'],
+      aliases: ['롤', 'lol'],
     },
     {
-      id: 'game-2',
       name: '배틀그라운드',
       description: '배틀로얄 게임',
       iconUrl: '',
-      aliases: ['배그', 'PUBG', 'pubg'],
+      aliases: ['배그', 'pubg'],
     },
     {
-      id: 'game-3',
       name: '발로란트',
       description: '택티컬 FPS 게임',
       iconUrl: '',
-      aliases: ['발로', 'VALORANT', 'Valorant'],
+      aliases: ['발로', 'valorant'],
     },
     {
-      id: 'game-4',
       name: '오버워치 2',
       description: '팀 기반 슈팅 게임',
       iconUrl: '',
       aliases: ['오버워치', 'OW2', 'Overwatch'],
     },
     {
-      id: 'game-5',
       name: '로스트아크',
       description: 'MMORPG',
       iconUrl: '',
@@ -105,7 +100,7 @@ async function main() {
 
   for (const game of games) {
     await prisma.game.upsert({
-      where: { id: game.id },
+      where: { name: game.name },
       update: {},
       create: game,
     });

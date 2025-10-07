@@ -7,16 +7,25 @@ export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
     
+    // 로그인하지 않은 사용자에게는 빈 데이터 반환
     if (!user) {
-      return NextResponse.json(
-        { error: '인증되지 않은 사용자입니다.' },
-        { status: 401 }
-      );
+      return NextResponse.json({
+        success: true,
+        posts: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0
+        }
+      });
     }
     
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get('gameId');
     const status = searchParams.get('status');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
 
     // 게시글 조회 조건 설정 (DELETED 상태 제외)
     const where: Record<string, unknown> = {
@@ -67,7 +76,10 @@ export async function GET(request: Request) {
       }
     }
 
-    // 게시글 조회 (최신순으로 정렬)
+    // 총 게시글 수 조회
+    const total = await prisma.gamePost.count({ where });
+    
+    // 게시글 조회 (최신순으로 정렬, 페이지네이션 적용)
     const posts = await prisma.gamePost.findMany({
       where,
       include: {
@@ -91,6 +103,8 @@ export async function GET(request: Request) {
       orderBy: {
         createdAt: 'desc',
       },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     // 응답 데이터 형식 변환
@@ -98,8 +112,12 @@ export async function GET(request: Request) {
       const activeParticipantsCount = post.participants.filter(p => p.status === 'ACTIVE').length;
       const isFull = activeParticipantsCount >= post.maxParticipants;
       
+      // content 필드는 이미 string이므로 그대로 사용
+      const contentString = String(post.content || '');
+      
       return {
         ...post,
+        content: contentString, // string으로 변환된 content
         isFull: isFull,
         // _count를 클라이언트에서 계산할 수 있도록 participants와 waitingList 길이를 기반으로 생성
         _count: {
@@ -112,7 +130,16 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json(responseData);
+    return NextResponse.json({
+      success: true,
+      posts: responseData,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error('게시글 목록 조회 중 오류 발생:', error);
     return NextResponse.json(

@@ -39,8 +39,8 @@ export function TimeWaitingModal({
     for (let i = 0; i < 12; i++) {
       options.push({
         value: currentTime.toISOString(),
-        label: format(currentTime, 'a h:mm', { locale: ko }),
-        fullLabel: format(currentTime, 'M월 d일 a h:mm', { locale: ko })
+        label: format(currentTime, 'HH:mm', { locale: ko }),
+        fullLabel: format(currentTime, 'M월 d일 HH:mm', { locale: ko })
       });
       currentTime = addMinutes(currentTime, 30);
     }
@@ -52,7 +52,8 @@ export function TimeWaitingModal({
 
   const handleConfirm = () => {
     if (isImmediateAvailable || selectedTime) {
-      onConfirm(isImmediateAvailable ? null : selectedTime, isImmediateAvailable);
+      const availableTime = isImmediateAvailable ? null : selectedTime;
+      onConfirm(availableTime, isImmediateAvailable);
     }
   };
 
@@ -86,7 +87,7 @@ export function TimeWaitingModal({
           <div className="mb-4">
             <p className="text-sm text-muted-foreground mb-2">
               게임 시작 시간: <span className="font-medium text-foreground">
-                {format(typeof gameStartTime === 'string' ? new Date(gameStartTime) : gameStartTime, 'M월 d일 a h:mm', { locale: ko })}
+                {format(typeof gameStartTime === 'string' ? new Date(gameStartTime) : gameStartTime, 'M월 d일 HH:mm', { locale: ko })}
               </span>
             </p>
             <p className="text-sm text-muted-foreground">
@@ -155,7 +156,7 @@ export function TimeWaitingModal({
               disabled={(!isImmediateAvailable && !selectedTime) || loading}
               className="flex-1 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? '등록 중...' : '예비 참가 신청'}
+              {loading ? '등록 중...' : '예비 신청'}
             </button>
           </div>
         </div>

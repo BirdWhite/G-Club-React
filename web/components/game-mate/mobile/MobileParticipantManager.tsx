@@ -66,9 +66,9 @@ export function MobileParticipantManager({
 
 
   return (
-    <div className="bg-cyber-black-100 border border-cyber-black-300 rounded-lg">
-      <div className="p-4 border-b border-cyber-black-300">
-        <div className="flex items-center text-cyber-gray mb-1">
+    <>
+      <div className="">
+        <div className="flex items-center text-foreground mb-1">
           <Users className="h-5 w-5 mr-2" />
           <h3 className="font-semibold">참여자 관리</h3>
         </div>
@@ -77,17 +77,15 @@ export function MobileParticipantManager({
         </p>
       </div>
       
-      <div className="p-4 space-y-4">
+      <div className="space-y-4">
         {/* 참여자 추가 폼 */}
-        <div className="space-y-4 p-4 bg-cyber-black-200 rounded-lg border border-cyber-black-300">
-          <div>
+        <div>
             <Label>사용자 검색</Label>
             <UserSearchSelect
               onUserSelect={handleUserSelect}
               disabled={disabled || participants.length >= maxParticipants}
               placeholder="참여할 사용자 이름을 검색하세요"
             />
-          </div>
         </div>
 
         {/* 참여자 목록 */}
@@ -98,27 +96,27 @@ export function MobileParticipantManager({
               {participants.map((participant, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center gap-2 p-3 bg-cyber-black-200 rounded-lg border border-cyber-black-300"
+                  className="flex items-center gap-2 p-3 bg-background rounded-lg border border-border"
                 >
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="font-medium text-cyber-gray">{participant.name}</div>
+                        <div className="font-medium text-foreground">{participant.name}</div>
                         {/* 실존 유저의 경우 이메일 표시 */}
                         {participant.email && (
-                          <div className="text-xs text-gray-500 truncate max-w-[200px]" title={participant.email}>
+                          <div className="text-xs text-muted-foreground truncate max-w-[200px]" title={participant.email}>
                             {participant.email}
                           </div>
                         )}
                         {/* 게스트 유저의 경우 표시 */}
                         {!participant.userId && participant.note === '게스트 참여자' && (
-                          <div className="text-xs text-orange-600">
+                          <div className="text-xs text-chart-4">
                             게스트 참여자
                           </div>
                         )}
                         {/* 작성자 표시 */}
                         {participant.note === '작성자' && (
-                          <div className="text-xs text-cyber-blue">
+                          <div className="text-xs text-primary">
                             작성자
                           </div>
                         )}
@@ -133,7 +131,7 @@ export function MobileParticipantManager({
                       size="sm"
                       onClick={() => removeParticipant(index)}
                       disabled={disabled}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -144,6 +142,6 @@ export function MobileParticipantManager({
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

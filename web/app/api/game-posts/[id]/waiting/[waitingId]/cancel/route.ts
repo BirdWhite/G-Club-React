@@ -33,8 +33,8 @@ export async function POST(
       return NextResponse.json({ error: '본인의 예비 참여만 취소할 수 있습니다.' }, { status: 403 });
     }
 
-    // WAITING 또는 INVITED 상태인지 확인
-    if (waitingParticipant.status !== 'WAITING' && waitingParticipant.status !== 'INVITED') {
+    // WAITING, TIME_WAITING 또는 INVITED 상태인지 확인
+    if (waitingParticipant.status !== 'WAITING' && waitingParticipant.status !== 'TIME_WAITING' && waitingParticipant.status !== 'INVITED') {
       return NextResponse.json({ error: '대기 중이거나 초대받은 예비 참여만 취소할 수 있습니다.' }, { status: 400 });
     }
 

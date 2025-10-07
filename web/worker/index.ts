@@ -14,8 +14,8 @@ self.addEventListener('push', function(event: any) {
   let notificationData = {
     title: '얼티메이트',
     body: '새로운 알림이 있습니다.',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-192x192.png',
+    icon: '/icons/maskable_icon_x192.png',
+    badge: '/icons/maskable_icon_x192.png',
     tag: 'default',
     data: { url: '/' }
   };
@@ -297,8 +297,8 @@ function doBackgroundSync() {
       // 새 알림이 있으면 표시
       return sw.registration.showNotification('새 알림', {
         body: '확인하지 않은 알림이 있습니다.',
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-192x192.png',
+        icon: '/icons/maskable_icon_x192.png',
+        badge: '/icons/maskable_icon_x192.png',
         tag: 'background-sync',
         requireInteraction: true,
         vibrate: [200, 100, 200],

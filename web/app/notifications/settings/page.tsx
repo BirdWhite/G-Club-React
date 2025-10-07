@@ -6,6 +6,11 @@ import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { PushNotificationManager } from '@/components/notifications/PushNotificationManager';
 import { useProfile } from '@/contexts/ProfileProvider';
+import { Bell, Gamepad2, Users, Lightbulb, Moon, Clock, PenTool, Megaphone, Settings } from 'lucide-react';
+import { MdOutlineDevices, MdSmartphone } from 'react-icons/md';
+import { FaAndroid, FaApple, FaWindows, FaLinux } from 'react-icons/fa';
+import { AiOutlineMacCommand } from 'react-icons/ai';
+import { RiComputerLine } from 'react-icons/ri';
 
 export default function NotificationSettingsPage() {
   const { profile } = useProfile();
@@ -285,9 +290,43 @@ export default function NotificationSettingsPage() {
           endTime: "08:00",
           days: ["0", "1", "2", "3", "4", "5", "6"]
         },
-        newGamePost: { enabled: true },
-        participatingGame: { enabled: true },
-        myGamePost: { enabled: true },
+        newGamePost: { 
+          enabled: true,
+          mode: 'favorites',
+          customGameIds: []
+        },
+        participatingGame: { 
+          enabled: true,
+          fullMeeting: true,
+          memberJoin: true,
+          memberLeave: true,
+          timeChange: true,
+          gameCancelled: true,
+          beforeMeeting: {
+            enabled: true,
+            minutes: 30,
+            onlyFullMeeting: false
+          },
+          meetingStart: {
+            enabled: true,
+            onlyFullMeeting: false
+          }
+        },
+        myGamePost: { 
+          enabled: true,
+          fullMeeting: true,
+          memberJoin: true,
+          memberLeave: true,
+          beforeMeeting: {
+            enabled: true,
+            minutes: 30,
+            onlyFullMeeting: false
+          },
+          meetingStart: {
+            enabled: true,
+            onlyFullMeeting: false
+          }
+        },
         waitingList: { enabled: true }
       });
       setShowResetConfirm(false);
@@ -347,9 +386,9 @@ export default function NotificationSettingsPage() {
               ? 'bg-card hover:bg-card/80' 
               : 'bg-muted/50' // Only background is transparent
           }`}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🔔</span>
+                <Bell className="w-8 h-8 text-yellow-500" />
                 <div>
                   <h3 className={`font-semibold text-foreground ${!isMasterEnabled ? 'opacity-60' : ''}`}>알림 설정</h3>
                   <p className="text-sm text-muted-foreground">
@@ -397,7 +436,7 @@ export default function NotificationSettingsPage() {
         {allDeviceSubscriptions.length > 0 && (
           <div className="mb-6 p-6 bg-card rounded-2xl shadow-lg border border-border">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-2xl">📱</span>
+              <MdOutlineDevices className="w-6 h-6 text-primary" />
               <div>
                 <h3 className="font-semibold text-foreground">기기 구독 상태</h3>
                 <p className="text-sm text-muted-foreground">
@@ -428,34 +467,45 @@ export default function NotificationSettingsPage() {
                       ? 'bg-primary/10 border-primary/30' 
                       : 'bg-muted/50 border-border'
                   }`}>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-3">
-                        <span className="text-lg">
-                          {device.deviceType === 'mobile' ? '📱' : 
-                           device.deviceType === 'tablet' ? '📱' : '💻'}
-                        </span>
+                        {deviceName === 'Android 기기' ? (
+                          <FaAndroid className="w-5 h-5 text-green-500" />
+                        ) : deviceName === 'iOS 기기' ? (
+                          <FaApple className="w-5 h-5 text-gray-600" />
+                        ) : deviceName === 'Mac' ? (
+                          <AiOutlineMacCommand className="w-5 h-5 text-gray-600" />
+                        ) : deviceName === 'Windows PC' ? (
+                          <FaWindows className="w-5 h-5 text-blue-500" />
+                        ) : deviceName === 'Linux PC' ? (
+                          <FaLinux className="w-5 h-5 text-orange-500" />
+                        ) : (
+                          device.deviceType === 'mobile' || device.deviceType === 'tablet' ? (
+                            <MdSmartphone className="w-5 h-5 text-gray-500" />
+                          ) : (
+                            <RiComputerLine className="w-5 h-5 text-gray-500" />
+                          )
+                        )}
                         <div>
                           <p className="font-medium text-foreground">
                             {deviceName} ({deviceInfo})
-                            {isCurrentDevice && (
-                              <span className="ml-2 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
-                                현재 기기
+                            {device.isEnabled && (
+                              <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                활성
                               </span>
                             )}
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            구독일: {new Date(device.createdAt).toLocaleDateString('ko-KR')}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            {isCurrentDevice && (
+                              <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
+                                현재 기기
+                              </span>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              구독일: {new Date(device.createdAt).toLocaleDateString('ko-KR')}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          device.isEnabled 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {device.isEnabled ? '활성' : '비활성'}
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -475,15 +525,15 @@ export default function NotificationSettingsPage() {
         {/* 설정 목록 */}
         <div className="space-y-4">
           {/* 방해 금지 시간 설정 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors ${
+          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
             settings.doNotDisturb.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between w-full">
               <div className="flex-1">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">🌙</span>
+                  <Moon className="w-6 h-6 text-primary" />
                   <div>
                     <h3 className="font-semibold text-foreground">방해 금지 시간</h3>
                     <p className="text-sm text-muted-foreground">
@@ -498,9 +548,10 @@ export default function NotificationSettingsPage() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowDoNotDisturbDetail(!showDoNotDisturbDetail)}
-                  className="text-primary hover:text-primary/80 text-sm font-medium cursor-pointer"
+                  className="text-primary hover:text-primary/80 cursor-pointer p-1 rounded-md hover:bg-primary/10 transition-colors"
+                  title="상세 설정"
                 >
-                  상세 설정
+                  <Settings className="w-5 h-5" />
                 </button>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -583,25 +634,25 @@ export default function NotificationSettingsPage() {
           )}
 
           {/* 신규 게임메이트 글 알림 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors ${
+          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
             settings.newGamePost.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🎮</span>
+                <Gamepad2 className="w-6 h-6 text-primary" />
                 <div>
                   <h3 className="font-semibold text-foreground">신규 게임메이트 글 알림</h3>
-                  <p className="text-sm text-muted-foreground">새로운 게임메이트 모집글이 올라올 때 알림</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Link 
                   href="/notifications/settings/new-game-post"
-                  className="text-primary hover:text-primary/80 text-sm font-medium"
+                  className="text-primary hover:text-primary/80 cursor-pointer p-1 rounded-md hover:bg-primary/10 transition-colors"
+                  title="상세 설정"
                 >
-                  상세 설정
+                  <Settings className="w-5 h-5" />
                 </Link>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -617,25 +668,25 @@ export default function NotificationSettingsPage() {
           </div>
 
           {/* 참여중인 모임 알림 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors ${
+          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
             settings.participatingGame.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">👥</span>
+                <Users className="w-6 h-6 text-green-500" />
                 <div>
                   <h3 className="font-semibold text-foreground">참여중인 모임 알림</h3>
-                  <p className="text-sm text-muted-foreground">내가 참여한 게임 모임 관련 알림</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Link 
                   href="/notifications/settings/participating-game"
-                  className="text-primary hover:text-primary/80 text-sm font-medium"
+                  className="text-primary hover:text-primary/80 cursor-pointer p-1 rounded-md hover:bg-primary/10 transition-colors"
+                  title="상세 설정"
                 >
-                  상세 설정
+                  <Settings className="w-5 h-5" />
                 </Link>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -651,25 +702,25 @@ export default function NotificationSettingsPage() {
           </div>
 
           {/* 내가 작성한 모임 알림 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors ${
+          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
             settings.myGamePost.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">✍️</span>
+                <PenTool className="w-6 h-6 text-primary" />
                 <div>
                   <h3 className="font-semibold text-foreground">내가 작성한 모임 알림</h3>
-                  <p className="text-sm text-muted-foreground">내가 작성한 게임 모임 관련 알림</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Link 
                   href="/notifications/settings/my-game-post"
-                  className="text-primary hover:text-primary/80 text-sm font-medium"
+                  className="text-primary hover:text-primary/80 cursor-pointer p-1 rounded-md hover:bg-primary/10 transition-colors"
+                  title="상세 설정"
                 >
-                  상세 설정
+                  <Settings className="w-5 h-5" />
                 </Link>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -684,15 +735,43 @@ export default function NotificationSettingsPage() {
             </div>
           </div>
 
+          {/* 공지사항 알림 */}
+          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
+            settings.notice?.enabled 
+              ? 'bg-card hover:bg-card/80' 
+              : 'bg-card hover:bg-card/80'
+          }`}>
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <Megaphone className="w-6 h-6 text-blue-500" />
+                <div>
+                  <h3 className="font-semibold text-foreground">공지사항 알림</h3>
+                  <p className="text-sm text-muted-foreground">새로운 공지사항 알림</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.notice?.enabled ?? true}
+                    onChange={() => toggleCategory('notice')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-card-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-card-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
           {/* 예비 참여 알림 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors ${
+          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
             settings.waitingList.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">⏳</span>
+                <Clock className="w-6 h-6 text-orange-500" />
                 <div>
                   <h3 className="font-semibold text-foreground">예비로 참여중인 모임 알림</h3>
                   <p className="text-sm text-muted-foreground">참여 요청이 왔을때 알림</p>
@@ -713,12 +792,12 @@ export default function NotificationSettingsPage() {
           </div>
 
           {/* 기본값 초기화 섹션 */}
-          <div className="p-6 rounded-2xl shadow-lg border border-border bg-card hover:bg-card/80 transition-colors">
-            <div className="flex items-center justify-between">
+          <div className="p-6 rounded-2xl shadow-lg border border-border bg-card hover:bg-card/80 transition-colors min-h-[5rem] flex items-center">
+            <div className="flex items-center justify-between w-full">
               <div>
                 <h3 className="font-medium text-foreground">설정 초기화</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  모든 알림 설정을 기본값으로 되돌립니다
+                  모든 설정을 기본값으로 되돌립니다
                 </p>
               </div>
               <button
@@ -734,8 +813,9 @@ export default function NotificationSettingsPage() {
 
         {/* 푸터 */}
         <div className="mt-6 p-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            💡 상세 설정에서 더 세밀한 알림 조건을 설정할 수 있습니다.
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            설정에서 더 세밀한 알림 조건을 설정 가능합니다.
           </p>
         </div>
       </div>

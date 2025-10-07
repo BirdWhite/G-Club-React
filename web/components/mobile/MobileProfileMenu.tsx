@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/database/supabase';
+import { Gamepad2 } from 'lucide-react';
 import type { FullUserProfile } from '@/lib/user';
 
 interface MobileProfileMenuProps {
@@ -45,17 +47,9 @@ export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
       )
     },
     {
-      href: '/my-games',
-      label: '내 게임 내역',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <line x1="6" x2="10" y1="11" y2="11"/>
-          <line x1="8" x2="8" y1="9" y2="13"/>
-          <line x1="15" x2="15.01" y1="12" y2="12"/>
-          <line x1="18" x2="18.01" y1="10" y2="10"/>
-          <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/>
-        </svg>
-      )
+      href: '/profile/game-mate-history',
+      label: '게임메이트 내역',
+      icon: <Gamepad2 className="w-5 h-5" />
     },
     {
       href: '/profile/favorite-games',
@@ -90,7 +84,7 @@ export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
   ];
 
   return (
-    <div className="bg-cyber-black-200 md:hidden grid grid-rows-[auto_1fr] h-full">
+    <div className="bg-background md:hidden grid grid-rows-[auto_1fr] h-full">
       {/* 상단 프로필 섹션 */}
       <div className="px-6 py-8">
         <div className="flex flex-col items-center text-center">
@@ -101,9 +95,11 @@ export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
               className="w-24 h-24 rounded-full overflow-hidden border-4 border-cyber-blue/30 bg-white hover:border-cyber-blue/50 transition-colors duration-200"
             >
               {profile?.image ? (
-                <img
+                <Image
                   src={profile.image}
                   alt={profile.name || '프로필 이미지'}
+                  width={96}
+                  height={96}
                   className="w-full h-full object-cover"
                 />
               ) : (

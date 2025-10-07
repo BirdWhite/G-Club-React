@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { PencilIcon, TrashIcon, PlusIcon, XMarkIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import { PencilIcon, TrashIcon, PlusIcon, XMarkIcon, PhotoIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import type { Game } from '@/types/models';
 
@@ -21,6 +22,7 @@ export function GameManager() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [reordering, setReordering] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -181,6 +183,33 @@ export function GameManager() {
     setPreviewUrl(URL.createObjectURL(file));
   };
 
+  const handleReorder = async (gameId: string, direction: 'up' | 'down') => {
+    setReordering(gameId);
+    
+    try {
+      const response = await fetch('/api/games/reorder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ gameId, direction })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '게임 순서 변경에 실패했습니다.');
+      }
+
+      toast.success('게임 순서가 변경되었습니다.');
+      fetchGames(); // 목록 새로고침
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '게임 순서 변경 중 오류가 발생했습니다.');
+    } finally {
+      setReordering(null);
+    }
+  };
+
   if (loading) return <div>로딩 중...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
 
@@ -202,6 +231,7 @@ export function GameManager() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">순서</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">아이콘</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명</th>
@@ -210,11 +240,29 @@ export function GameManager() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {games.map((game) => (
+            {games.map((game, index) => (
               <tr key={game.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex flex-col space-y-1">
+                    <button
+                      onClick={() => handleReorder(game.id, 'up')}
+                      disabled={index === 0 || reordering === game.id}
+                      className="text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronUpIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleReorder(game.id, 'down')}
+                      disabled={index === games.length - 1 || reordering === game.id}
+                      className="text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronDownIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
                   {game.iconUrl && (
-                    <img className="h-10 w-10 rounded-full" src={game.iconUrl} alt={game.name} />
+                    <Image className="h-10 w-10 rounded-full" src={game.iconUrl} alt={game.name} width={40} height={40} />
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{game.name}</td>
@@ -264,9 +312,9 @@ export function GameManager() {
                 <div className="mt-1 flex items-center">
                   <span className="inline-block h-12 w-12 rounded-full overflow-hidden bg-gray-100">
                     {previewUrl ? (
-                      <img src={previewUrl} alt="미리보기" className="h-full w-full object-cover" />
+                      <Image src={previewUrl} alt="미리보기" className="h-full w-full object-cover" width={48} height={48} />
                     ) : formData.iconUrl ? (
-                      <img src={formData.iconUrl} alt={formData.name} className="h-full w-full object-cover" />
+                      <Image src={formData.iconUrl} alt={formData.name} className="h-full w-full object-cover" width={48} height={48} />
                     ) : (
                       <PhotoIcon className="h-full w-full text-gray-300" />
                     )}

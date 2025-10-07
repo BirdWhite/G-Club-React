@@ -7,10 +7,10 @@ interface MobileHomePageProps {
   onLearnMoreClick: () => void;
 }
 
-export function MobileHomePage({ onStartClick, onLearnMoreClick }: MobileHomePageProps) {
+export function MobileHomePage({}: MobileHomePageProps) {
   return (
     <div className="h-full bg-background">
-      <HeroSection onStartClick={onStartClick} onLearnMoreClick={onLearnMoreClick} />
+      <HeroSection />
     </div>
   );
 }

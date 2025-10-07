@@ -18,7 +18,7 @@ const WaitingList: React.FC<WaitingListProps> = ({ waitingList }) => {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       {waitingList.map((participant) => {
         const isInvited = participant.status === 'INVITED';
-        const isTimeWaiting = participant.status === 'TIME_WAITING';
+        // const isTimeWaiting = participant.status === 'TIME_WAITING'; // 현재 미사용
         
         return (
           <div key={participant.id} className="flex items-center p-3 bg-card border border-border rounded-lg shadow-lg">
@@ -40,11 +40,6 @@ const WaitingList: React.FC<WaitingListProps> = ({ waitingList }) => {
                     초대됨
                   </span>
                 )}
-                {isTimeWaiting && (
-                  <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full flex-shrink-0">
-                    시간 대기
-                  </span>
-                )}
               </div>
               {participant.availableTime && (
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
@@ -53,11 +48,11 @@ const WaitingList: React.FC<WaitingListProps> = ({ waitingList }) => {
                     {(() => {
                       const date = new Date(participant.availableTime);
                       if (isToday(date)) {
-                        return format(date, 'a h:mm', { locale: ko });
+                        return format(date, 'HH:mm', { locale: ko });
                       } else if (isTomorrow(date)) {
-                        return `내일 ${format(date, 'a h:mm', { locale: ko })}`;
+                        return `내일 ${format(date, 'HH:mm', { locale: ko })}`;
                       } else {
-                        return format(date, 'M월 d일 a h:mm', { locale: ko });
+                        return format(date, 'M월 d일 HH:mm', { locale: ko });
                       }
                     })()}
                   </span>

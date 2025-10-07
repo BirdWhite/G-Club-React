@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { Check, ChevronDownIcon, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils/common';
 import { Button } from '@/components/ui/button';
@@ -93,9 +94,11 @@ export function GameSearchSelect({
           ) : selectedGame ? (
             <div className="flex items-center gap-2">
               {selectedGame.iconUrl && (
-                <img
+                <Image
                   src={selectedGame.iconUrl}
                   alt=""
+                  width={24}
+                  height={24}
                   className="h-6 w-6 rounded-sm"
                 />
               )}
@@ -151,9 +154,11 @@ export function GameSearchSelect({
                  >
                   <div className="flex items-center gap-3 w-full">
                     {game.iconUrl && (
-                      <img
+                      <Image
                         src={game.iconUrl}
                         alt=""
+                        width={24}
+                        height={24}
                         className="h-6 w-6 rounded-sm flex-shrink-0"
                       />
                     )}

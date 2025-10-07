@@ -17,17 +17,18 @@ export async function GET(
   { params }: { params: Promise<RouteContext['params']> }
 ) {
   try {
+    // 로그인하지 않은 사용자에게는 401 에러 반환
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    }
+
     const { id } = await params;
-    console.log('게임글 조회 요청 - ID:', id);
+    const userId = user.id;
     
     const { searchParams } = new URL(request.url);
     const isList = searchParams.get('list') === 'true';
-    
-    // 현재 사용자 정보 가져오기
-    const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id;
-    console.log('사용자 ID:', userId);
 
     const post = await prisma.gamePost.findUnique({
       where: { 
@@ -53,6 +54,11 @@ export async function GET(
           orderBy: { joinedAt: 'asc' },
         },
         waitingList: {
+          where: {
+            status: {
+              not: 'CANCELED'
+            }
+          },
           include: {
             user: {
               select: {
@@ -69,14 +75,14 @@ export async function GET(
     });
 
     if (!post) {
-      console.log('게임글을 찾을 수 없음 - ID:', id);
       return NextResponse.json(
         { error: '모집글을 찾을 수 없습니다.' },
         { status: 404 }
       );
     }
+
+    // 조회수 증가는 별도 API로 처리 (POST /api/game-posts/[id]/view)
     
-    console.log('게임글 찾음 - 제목:', post.title, '상태:', post.status);
 
     // 참여자 정보를 별도로 조회 (게스트 참여자 포함)
     const participants = await prisma.gameParticipant.findMany({
@@ -96,12 +102,17 @@ export async function GET(
 
     // 목록용 응답인 경우 _count 추가
     if (isList) {
+      // content 필드는 이미 string이므로 그대로 사용
+      const contentString = String(post.content || '');
+
       const responseData = {
         ...post,
+        content: contentString, // string으로 변환된 content
         participants: participants,
+        waitingList: Array.isArray(post.waitingList) ? post.waitingList : [], // waitingList 명시적 설정
         _count: {
           participants: participants.filter(p => p.status === 'ACTIVE').length,
-          waitingList: Array.isArray(post.waitingList) ? post.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED').length : 0,
+          waitingList: Array.isArray(post.waitingList) ? post.waitingList.length : 0,
         },
         startTime: post.startTime.toISOString(),
         createdAt: post.createdAt.toISOString(),
@@ -109,7 +120,7 @@ export async function GET(
         // 사용자 상태 정보 추가
         isOwner: userId === post.author.userId,
         isParticipating: userId ? participants.some((p) => p.userId === userId && p.status === 'ACTIVE') : false,
-        isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w) => w.userId === userId && w.status === 'WAITING') : false,
+        isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w) => w.userId === userId && w.status !== 'CANCELED') : false,
       };
       return NextResponse.json(responseData);
     }
@@ -118,13 +129,21 @@ export async function GET(
     const activeParticipantsCount = participants.filter(p => p.status === 'ACTIVE').length;
     const isFull = activeParticipantsCount >= post.maxParticipants;
     
+    
+    const isWaiting = userId ? Array.isArray(post.waitingList) && post.waitingList.some((w) => w.userId === userId && w.status !== 'CANCELED') : false;
+    
+    // content 필드는 이미 string이므로 그대로 사용
+    const contentString = String(post.content || '');
+
     const responseData = {
       ...post,
+      content: contentString, // string으로 변환된 content
       participants: participants,
+      waitingList: Array.isArray(post.waitingList) ? post.waitingList : [], // waitingList 명시적 설정
       isFull: isFull,
       _count: {
         participants: activeParticipantsCount,
-        waitingList: Array.isArray(post.waitingList) ? post.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED').length : 0,
+        waitingList: Array.isArray(post.waitingList) ? post.waitingList.length : 0,
       },
       startTime: post.startTime.toISOString(),
       createdAt: post.createdAt.toISOString(),
@@ -132,8 +151,10 @@ export async function GET(
       // 사용자 상태 정보 추가
       isOwner: userId === post.author.userId,
       isParticipating: userId ? participants.some((p) => p.userId === userId && p.status === 'ACTIVE') : false,
-      isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w) => w.userId === userId && w.status === 'WAITING') : false,
+      isWaiting: isWaiting,
     };
+    
+    
     return NextResponse.json(responseData);
   } catch (error) {
     console.error('모집글 상세 조회 오류:', error);
@@ -162,15 +183,12 @@ export async function PATCH(
 
   try {
     const { id } = await params;
-    console.log('게임글 수정 요청 - ID:', id);
     
     const requestBody = await request.json();
-    console.log('요청 본문:', requestBody);
     
     const { title, content, maxParticipants, startDate, startTime, participants = [] } = requestBody;
 
     if (!title || !content || maxParticipants === undefined || !startDate || !startTime) {
-      console.log('필수 항목 누락:', { title: !!title, content: !!content, maxParticipants, startDate: !!startDate, startTime: !!startTime });
       return NextResponse.json({ error: '모든 필수 항목을 입력해주세요.' }, { status: 400 });
     }
     
@@ -187,21 +205,16 @@ export async function PATCH(
       timeOnly.getSeconds()
     );
     
-    console.log('합쳐진 날짜시간:', combinedDateTime.toISOString());
 
     // content 필드 검증
-    if (typeof content !== 'object' || content === null) {
-      console.log('content 검증 실패:', typeof content, content);
-      return NextResponse.json({ error: '내용 형식이 올바르지 않습니다.' }, { status: 400 });
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      return NextResponse.json({ error: '내용을 입력해주세요.' }, { status: 400 });
     }
     
-    console.log('content 검증 통과:', content);
     if (maxParticipants < 2 || maxParticipants > 100) {
-      console.log('maxParticipants 검증 실패:', maxParticipants);
       return NextResponse.json({ error: '인원수는 2명 이상 100명 이하로 설정해주세요.' }, { status: 400 });
     }
     
-    console.log('maxParticipants 검증 통과:', maxParticipants);
 
     const existingPost = await prisma.gamePost.findUnique({ 
       where: { 
@@ -209,23 +222,36 @@ export async function PATCH(
         status: { not: 'DELETED' } // 삭제된 게시글 제외
       },
       include: {
-        participants: true,
+        participants: {
+          include: {
+            user: {
+              select: {
+                userId: true,
+                name: true,
+              },
+            },
+          },
+        },
+        game: {
+          select: {
+            name: true,
+          },
+        },
       }
     });
 
     if (!existingPost) {
-      console.log('게시글을 찾을 수 없음:', id);
       return NextResponse.json({ error: '모집글을 찾을 수 없습니다.' }, { status: 404 });
     }
     
-    console.log('기존 게시글 찾음:', existingPost.title);
     
     if (existingPost.authorId !== user.id) {
-      console.log('권한 없음 - 작성자:', existingPost.authorId, '현재 사용자:', user.id);
       return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 });
     }
     
-    console.log('권한 확인 통과');
+    // 시간 변경 감지
+    const isTimeChanged = existingPost.startTime.getTime() !== combinedDateTime.getTime();
+    
 
     // 추가하려는 참여자 수가 최대인원을 초과하는지 확인
     const validParticipants = participants.filter((p: { userId?: string; name?: string }) => {
@@ -240,11 +266,9 @@ export async function PATCH(
     
     
     if (totalParticipantsAfterUpdate > maxParticipants) {
-      console.log('총 참여자 수 초과:', totalParticipantsAfterUpdate, '>', maxParticipants);
       return NextResponse.json({ error: `최대 인원(${maxParticipants}명)을 초과하여 참여자를 추가할 수 없습니다. 현재 추가 가능한 인원: ${maxParticipants}명` }, { status: 400 });
     }
     
-    console.log('총 참여자 수 검증 통과:', totalParticipantsAfterUpdate, '<=', maxParticipants);
 
     const updatedPost = await prisma.$transaction(async (prisma) => {
       // 게시글 업데이트
@@ -355,6 +379,32 @@ export async function PATCH(
       return post;
     });
 
+    // 시간이 변경된 경우 참여자들에게 알림 발송
+    if (isTimeChanged) {
+      try {
+        const participantUserIds = existingPost.participants
+          .filter(p => p.userId && p.userId !== user.id) // 게스트와 작성자 제외
+          .map(p => p.userId!);
+
+        if (participantUserIds.length > 0) {
+          await notificationService.sendGameTimeChangedNotification(
+            participantUserIds,
+            {
+              gamePostId: id,
+              gameName: existingPost.game?.name || '게임',
+              authorName: '작성자', // author 정보는 별도로 조회하지 않음
+              title: existingPost.title,
+              oldStartTime: existingPost.startTime,
+              newStartTime: combinedDateTime,
+            }
+          );
+        }
+      } catch (notificationError) {
+        console.error('게임 시간 변경 알림 발송 실패:', notificationError);
+        // 알림 실패해도 수정은 성공으로 처리
+      }
+    }
+
     return NextResponse.json({ data: updatedPost, message: '게시글이 성공적으로 수정되었습니다.' });
   } catch (error) {
     console.error('모집글 수정 오류:', error);
@@ -430,12 +480,11 @@ export async function DELETE(
     if (participants.length > 0) {
       try {
         const participantUserIds = participants
-          .filter(p => p.userId) // 게스트 제외
+          .filter(p => p.userId && p.userId !== post.authorId) // 게스트 제외, 작성자 제외
           .map(p => p.userId!);
 
         if (participantUserIds.length > 0) {
-          console.log(`게임메이트 취소 알림 발송 시작: ${participantUserIds.length}명에게 발송`);
-          const result = await notificationService.sendGamePostCancelledNotification(
+          await notificationService.sendGamePostCancelledNotification(
             participantUserIds,
             {
               gamePostId: id,
@@ -444,7 +493,6 @@ export async function DELETE(
               title: post.title,
             }
           );
-          console.log(`게임메이트 취소 알림 발송 완료:`, result);
         }
       } catch (notificationError) {
         console.error('게임메이트 취소 알림 발송 실패:', notificationError);
@@ -458,7 +506,6 @@ export async function DELETE(
       data: { status: 'DELETED' }
     });
 
-    console.log(`게임포스트 삭제 완료: ${id} (${post.title})`);
     return NextResponse.json({ message: '게시글이 삭제되었습니다.' });
   } catch (error) {
     console.error('모집글 삭제 오류:', error);

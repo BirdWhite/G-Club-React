@@ -121,29 +121,21 @@ export async function createAndSendNotification(notificationData: CreateNotifica
         );
       }
       // 그룹 발송인 경우 - 이미 필터링된 사용자들에게만 발송
-      else if (isGroupSend) {
-        const finalTargetUserIds = await NotificationFilter.filterUsersForNotification(
-          targetUserIds,
-          type,
-          context
-        );
-        
-        if (finalTargetUserIds.length > 0) {
-          await sendPushNotificationToUsers(
-            notification.id, 
-            finalTargetUserIds, 
-            {
-              title,
-              body,
-              icon,
-              data: {
-                notificationId: notification.id,
-                actionUrl,
-                ...data
-              }
+      else if (isGroupSend && targetUserIds.length > 0) {
+        await sendPushNotificationToUsers(
+          notification.id, 
+          targetUserIds, 
+          {
+            title,
+            body,
+            icon,
+            data: {
+              notificationId: notification.id,
+              actionUrl,
+              ...data
             }
-          );
-        }
+          }
+        );
       }
 
       // 알림 상태 업데이트
@@ -789,6 +781,90 @@ export const GamePostNotifications = {
         eventType: 'PROMOTED'
       }
     });
+  },
+
+  // 게임 시간 변경 알림
+  async sendGameTimeChangedNotification(
+    recipientIds: string[],
+    data: {
+      gamePostId: string;
+      gameName: string;
+      authorName: string;
+      title: string;
+      oldStartTime: Date;
+      newStartTime: Date;
+    }
+  ) {
+    const { gamePostId, gameName, oldStartTime, newStartTime } = data;
+
+    // 각 수신자에 대해 알림 설정 확인 및 발송
+    for (const recipientId of recipientIds) {
+      try {
+        // 알림 설정 확인
+        const shouldSend = await NotificationFilter.shouldSendNotification(
+          recipientId,
+          'GAME_TIME_CHANGED',
+          {
+            gameId: undefined, // 게임 ID는 별도로 전달되지 않음
+            eventType: 'TIME_CHANGED'
+          }
+        );
+
+        if (!shouldSend) {
+          console.log(`사용자 ${recipientId}는 게임 시간 변경 알림을 받지 않습니다.`);
+          continue;
+        }
+
+        // 시간 포맷팅
+        const formatTime = (date: Date) => {
+          return date.toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            weekday: 'short'
+          });
+        };
+
+        const oldTimeStr = formatTime(oldStartTime);
+        const newTimeStr = formatTime(newStartTime);
+
+        const content = {
+          title: '⏰ 게임 시간이 변경되었습니다',
+          body: `${gameName} 게임 시간이 변경되었습니다.\n이전: ${oldTimeStr}\n변경: ${newTimeStr}`,
+          icon: '/icons/game-icon.png',
+          actionUrl: `/game-mate/${gamePostId}`
+        };
+
+        await createAndSendNotification({
+          type: 'GAME_TIME_CHANGED',
+          title: content.title,
+          body: content.body,
+          icon: content.icon,
+          actionUrl: content.actionUrl,
+          priority: 'HIGH',
+          recipientId,
+          gamePostId,
+          context: {
+            gameId: undefined,
+            eventType: 'TIME_CHANGED'
+          }
+        });
+
+        // 푸시 알림도 발송
+        await sendPushNotificationInternal({
+          userId: recipientId,
+          title: content.title,
+          body: content.body,
+          url: content.actionUrl,
+          tag: 'game-time-changed'
+        });
+
+      } catch (error) {
+        console.error(`사용자 ${recipientId}에게 게임 시간 변경 알림 발송 실패:`, error);
+      }
+    }
   }
 };
 

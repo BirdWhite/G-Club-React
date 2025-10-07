@@ -52,8 +52,8 @@ export async function sendPushNotificationInternal({
     const payload = JSON.stringify({
       title,
       body,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-192x192.png',
+      icon: '/icons/maskable_icon_x192.png',
+      badge: '/icons/maskable_icon_x192.png',
       tag,
       data: {
         url,

@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { Lightbulb } from 'lucide-react';
+import { FaWindows, FaAndroid, FaApple } from 'react-icons/fa';
+import { MdInstallDesktop } from 'react-icons/md';
 
 export default function PWAInstallPage() {
   const searchParams = useSearchParams();
@@ -17,9 +20,9 @@ export default function PWAInstallPage() {
   }, [searchParams]);
 
   const tabs = [
-    { id: 'windows' as const, label: 'Windows', icon: '🪟' },
-    { id: 'android' as const, label: 'Android', icon: '📱' },
-    { id: 'ios' as const, label: 'iOS', icon: '📱' }
+    { id: 'windows' as const, label: 'Windows', icon: FaWindows },
+    { id: 'android' as const, label: 'Android', icon: FaAndroid },
+    { id: 'ios' as const, label: 'iOS', icon: FaApple }
   ];
 
   const installInstructions = {
@@ -37,7 +40,7 @@ export default function PWAInstallPage() {
       {
         step: '2-1',
         title: '방법 1: 주소창 옆 설치 아이콘',
-        description: '주소창 오른쪽에 있는 설치 아이콘(📥)을 클릭하세요.'
+        description: '주소창 오른쪽에 있는 설치 아이콘을 클릭하세요.'
       },
       {
         step: '2-2',
@@ -96,7 +99,7 @@ export default function PWAInstallPage() {
       {
         step: 2,
         title: '공유 버튼 탭',
-        description: 'Safari 하단의 공유 버튼(⬆️)을 탭하세요.'
+        description: 'Safari 하단의 공유 버튼을 탭하세요.'
       },
       {
         step: 3,
@@ -156,7 +159,7 @@ export default function PWAInstallPage() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <span className="text-lg">{tab.icon}</span>
+                <tab.icon className="w-5 h-5" />
                 <span>{tab.label}</span>
               </button>
             ))}
@@ -191,6 +194,12 @@ export default function PWAInstallPage() {
                   <p className="text-muted-foreground">
                     {instruction.description}
                   </p>
+                  {instruction.step === '2-1' && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">설치 아이콘:</span>
+                      <MdInstallDesktop className="w-6 h-6 text-primary" />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -199,7 +208,10 @@ export default function PWAInstallPage() {
 
         {/* 추가 정보 */}
         <div className="mt-8 bg-muted/50 rounded-lg p-6">
-          <h3 className="font-semibold text-foreground mb-3">💡 PWA 앱의 장점</h3>
+          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Lightbulb className="w-5 h-5" />
+            PWA 앱의 장점
+          </h3>
           <ul className="space-y-2 text-muted-foreground">
             <li className="flex items-start gap-2">
               <span className="text-primary">•</span>

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DateTimeDisplay } from '@/components/common/DateTimeDisplay';
+import { Bell, Megaphone } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -178,7 +180,6 @@ export default function NotificationsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">알림</h1>
               <p className="text-muted-foreground">
                 {unreadCount > 0 ? `${unreadCount}개의 읽지 않은 알림` : '모든 알림을 확인했습니다'}
               </p>
@@ -239,7 +240,7 @@ export default function NotificationsPage() {
         <div className="space-y-4">
           {notifications.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">🔔</div>
+              <Bell className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-xl font-semibold text-foreground mb-2">
                 {showUnreadOnly ? '읽지 않은 알림이 없습니다' : '알림이 없습니다'}
               </h3>
@@ -261,15 +262,21 @@ export default function NotificationsPage() {
                 <div className="flex items-start gap-4">
                   {/* 아이콘 */}
                   <div className="flex-shrink-0">
-                    {notification.icon ? (
-                      <img
+                    {notification.type === 'NOTICE_NEW' ? (
+                      <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                        <Megaphone className="w-6 h-6" />
+                      </div>
+                    ) : notification.icon ? (
+                      <Image
                         src={notification.icon}
                         alt="알림 아이콘"
+                        width={48}
+                        height={48}
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xl">
-                        🔔
+                      <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
+                        <Bell className="w-6 h-6" />
                       </div>
                     )}
                   </div>
@@ -295,9 +302,11 @@ export default function NotificationsPage() {
                     {notification.sender && (
                       <div className="flex items-center gap-2 mb-3">
                         {notification.sender.profileImage ? (
-                          <img
+                          <Image
                             src={notification.sender.profileImage}
                             alt={notification.sender.nickname}
+                            width={24}
+                            height={24}
                             className="w-6 h-6 rounded-full object-cover"
                           />
                         ) : (

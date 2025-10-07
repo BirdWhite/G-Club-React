@@ -31,8 +31,15 @@ export default function GameMatePage() {
     return undefined;
   };
 
-  // 게임 포스트 데이터 - 최상위에서 한 번만 호출
-  const { posts, setFilters } = useGamePostListSubscription({
+  // 게임 포스트 데이터 - 최상위에서 한 번만 호출 (무한 스크롤 지원)
+  const { 
+    posts, 
+    loading: postsLoading, 
+    loadingMore, 
+    hasMore, 
+    loadMore, 
+    setFilters 
+  } = useGamePostListSubscription({
     status: getApiStatus(urlState.status),
     gameId: urlState.gameId === 'all' ? undefined : urlState.gameId,
   });
@@ -63,6 +70,7 @@ export default function GameMatePage() {
     return <LoadingSpinner />;
   }
 
+
   // NONE 역할 사용자는 리다이렉트되므로 여기까지 오지 않음
   if (profile.role?.name === 'NONE') {
     return null;
@@ -72,6 +80,10 @@ export default function GameMatePage() {
   const commonProps = {
     userId: profile?.userId || '',
     posts,
+    loading: postsLoading,
+    loadingMore,
+    hasMore,
+    onLoadMore: loadMore,
     urlState,
     onGameChange: handleGameChange,
     onStatusChange: handleStatusChange,
@@ -82,7 +94,7 @@ export default function GameMatePage() {
       {isMobile ? (
         <div className="h-full bg-background overflow-y-auto scrollbar-visible relative mobile-overscroll">
           {/* 모바일용 콘텐츠 */}
-          <main className="px-4 py-6">
+          <main className="px-4 py-4">
             <MobileGamePostList {...commonProps} />
           </main>
           
@@ -113,16 +125,8 @@ export default function GameMatePage() {
         </div>
       ) : (
         <div className="h-full bg-background overflow-y-auto scrollbar-visible">
-          {/* 데스크톱용 헤더 */}
-          <div className="bg-card border-b border-border">
-            <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-              <h1 className="text-3xl font-bold text-foreground">게임메이트 찾기</h1>
-              <p className="mt-1 text-sm text-muted-foreground">함께 게임을 즐길 파티원을 찾아보세요!</p>
-            </div>
-          </div>
-          
           {/* 데스크톱용 콘텐츠 */}
-          <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
+          <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <DesktopGamePostList {...commonProps} />
           </main>
         </div>

@@ -33,9 +33,9 @@ export default function FavoriteGamesPage() {
   };
 
   // 게임 제거
-  const handleRemoveGame = async (gameId: string) => {
+  const handleRemoveGame = async (favoriteGameId: string) => {
     if (confirm('이 게임을 관심 게임에서 제거하시겠습니까?')) {
-      const result = await removeFavoriteGame(gameId);
+      const result = await removeFavoriteGame(favoriteGameId);
       if (!result.success) {
         alert(result.error || '게임 제거에 실패했습니다.');
       }
@@ -236,7 +236,7 @@ export default function FavoriteGamesPage() {
 
                         {/* 삭제 버튼 */}
                         <button
-                          onClick={() => handleRemoveGame(favoriteGame.gameId)}
+                          onClick={() => handleRemoveGame(favoriteGame.id)}
                           disabled={isUpdating}
                           className="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="관심 게임에서 제거"

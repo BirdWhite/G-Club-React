@@ -64,6 +64,7 @@ export async function updateSession(request: NextRequest) {
       '/',
       '/auth/login',
       '/auth/register',
+      '/auth/terms',
       '/profile/register',
     ];
     
@@ -98,6 +99,7 @@ export async function updateSession(request: NextRequest) {
     }
     
     // 인증된 사용자의 경우 모든 경로 접근 허용
+    // 이용약관 동의 상태는 클라이언트 사이드에서 확인
     // 역할 기반 제어는 클라이언트 사이드에서 처리
     
   } catch (error) {

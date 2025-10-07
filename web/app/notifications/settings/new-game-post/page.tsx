@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { useFavoriteGames } from '@/hooks/useFavoriteGames';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { GameSearchModal } from '@/components/notifications/GameSearchModal';
+import { Star } from 'lucide-react';
 
 interface GameFilter {
   mode: 'all' | 'favorites' | 'custom';
@@ -14,10 +16,6 @@ interface GameFilter {
     name: string;
     iconUrl?: string;
   }>;
-}
-
-interface NewGamePostSettings {
-  gameFilters?: GameFilter;
 }
 
 export default function NewGamePostNotificationSettings() {
@@ -60,46 +58,33 @@ export default function NewGamePostNotificationSettings() {
 
   // 초기 설정 로드
   useEffect(() => {
-    if (settings.newGamePost.settings) {
-      const savedSettings = settings.newGamePost.settings as NewGamePostSettings | undefined;
-      const savedFilter = savedSettings?.gameFilters;
-      
-      if (savedFilter) {
-        const mode = savedFilter.mode || 'all';
-        
-        if (mode === 'custom' && settings.customGameIds && settings.customGameIds.length > 0) {
-          // 커스텀 모드인 경우 customGameIds에서 게임 정보 로드
-          // 관심 게임처럼 필요할 때마다 최신 정보를 가져옴
-          loadGameInfo(settings.customGameIds).then(customGames => {
-            setGameFilter({
-              mode: 'custom',
-              selectedGames: customGames
-            });
-          });
-        } else {
-          // 다른 모드인 경우에도 selectedGames는 유지
-          setGameFilter({
-            mode,
-            selectedGames: savedFilter.selectedGames || []
-          });
-        }
-      }
+    const mode = settings.newGamePost.mode || 'all';
+    
+    if (mode === 'custom' && settings.newGamePost.customGameIds && settings.newGamePost.customGameIds.length > 0) {
+      // 커스텀 모드인 경우 customGameIds에서 게임 정보 로드
+      loadGameInfo(settings.newGamePost.customGameIds).then(customGames => {
+        setGameFilter({
+          mode: 'custom',
+          selectedGames: customGames
+        });
+      });
+    } else {
+      setGameFilter({
+        mode: mode as 'all' | 'favorites' | 'custom',
+        selectedGames: []
+      });
     }
   }, [settings]);
 
   // 설정 저장
   const saveSettings = async () => {
-    const newSettings = {
-      gameFilters: gameFilter
-    };
-    
     // 커스텀 모드인 경우 커스텀 게임 배열도 저장
     if (gameFilter.mode === 'custom') {
       const customGameIds = gameFilter.selectedGames.map(game => game.id);
       await updateCustomGameIds(customGameIds);
     }
     
-    await updateNewGamePost(settings.newGamePost.enabled, newSettings);
+    await updateNewGamePost(settings.newGamePost.enabled, gameFilter.mode, gameFilter.mode === 'custom' ? gameFilter.selectedGames.map(g => g.id) : undefined);
     router.back();
   };
 
@@ -266,9 +251,11 @@ export default function NewGamePostNotificationSettings() {
                       className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg relative group"
                     >
                       {game.iconUrl ? (
-                        <img
+                        <Image
                           src={game.iconUrl}
                           alt={game.name}
+                          width={40}
+                          height={40}
                           className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                         />
                       ) : (
@@ -282,7 +269,7 @@ export default function NewGamePostNotificationSettings() {
                         <div className="font-medium text-foreground truncate flex items-center gap-1">
                           {game.name}
                           {favoriteGames.some(fav => fav.game.id === game.id) && (
-                            <span className="text-primary">⭐</span>
+                            <Star className="w-4 h-4 text-primary" />
                           )}
                         </div>
                       </div>
@@ -334,9 +321,11 @@ export default function NewGamePostNotificationSettings() {
                       className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg"
                     >
                       {fav.game.iconUrl ? (
-                        <img
+                        <Image
                           src={fav.game.iconUrl}
                           alt={fav.game.name}
+                          width={40}
+                          height={40}
                           className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                         />
                       ) : (
@@ -349,7 +338,7 @@ export default function NewGamePostNotificationSettings() {
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-foreground truncate flex items-center gap-1">
                           {fav.game.name}
-                          <span className="text-primary">⭐</span>
+                          <Star className="w-4 h-4 text-primary" />
                         </div>
                       </div>
                     </div>

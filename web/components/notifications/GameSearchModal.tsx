@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import type { Game } from '@/types/models';
 
 interface GameSearchModalProps {
@@ -21,7 +22,7 @@ export function GameSearchModal({
   const [isLoading, setIsLoading] = useState(false);
 
   // 게임 검색
-  const searchGames = async (searchQuery: string) => {
+  const searchGames = useCallback(async (searchQuery: string) => {
     setIsLoading(true);
     try {
       const res = await fetch('/api/games');
@@ -56,7 +57,7 @@ export function GameSearchModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [excludeGameIds]);
 
   // 모달이 열릴 때 기본 게임들 로드
   useEffect(() => {
@@ -144,9 +145,11 @@ export function GameSearchModal({
                   className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors text-left"
                 >
                   {game.iconUrl && (
-                    <img
+                    <Image
                       src={game.iconUrl}
                       alt={game.name}
+                      width={40}
+                      height={40}
                       className="w-10 h-10 rounded object-cover"
                     />
                   )}

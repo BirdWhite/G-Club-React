@@ -87,7 +87,7 @@ export function MobileTimePicker({
               <div className="space-y-2">
                 <label className="text-sm font-medium">시간</label>
                 <Select value={currentHour.toString()} onValueChange={handleHourChange}>
-                  <SelectTrigger className="w-20 bg-cyber-black-100 border-cyber-black-300">
+                  <SelectTrigger className="w-20 bg-background border-border">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-80">
@@ -105,7 +105,7 @@ export function MobileTimePicker({
               <div className="space-y-2">
                 <label className="text-sm font-medium">분</label>
                 <Select value={currentMinute.toString()} onValueChange={handleMinuteChange}>
-                  <SelectTrigger className="w-20 bg-cyber-black-100 border-cyber-black-300">
+                  <SelectTrigger className="w-20 bg-background border-border">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

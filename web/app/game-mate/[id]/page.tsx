@@ -1,89 +1,84 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { getCurrentUser } from '@/lib/database/supabase';
 import { GamePost } from '@/types/models';
 import { notFound } from 'next/navigation';
 import { GamePostDetailClient } from '@/components/game-mate/GamePostDetailClient';
-import prisma from '@/lib/database/prisma';
+import { MobileGamePostDetailClient } from '@/components/game-mate/mobile/MobileGamePostDetailClient';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import type { User } from '@supabase/supabase-js';
 
-async function getPost(id: string): Promise<GamePost | null> {
-  try {
-    const post = await prisma.gamePost.findUnique({
-      where: { id },
-      include: {
-        game: {
-          select: {
-            id: true,
-            name: true,
-            iconUrl: true,
-          },
-        },
-        author: {
-          select: {
-            id: true,
-            userId: true,
-            name: true,
-            image: true,
-          },
-        },
-        participants: {
-          orderBy: { joinedAt: 'asc' },
-          include: {
-            user: {
-              select: {
-                id: true,
-                userId: true,
-                name: true,
-                image: true,
-              },
-            },
-          },
-        },
-        waitingList: {
-          orderBy: { requestedAt: 'asc' },
-          include: {
-            user: {
-              select: {
-                id: true,
-                userId: true,
-                name: true,
-                image: true,
-              },
-            },
-          },
-        },
-      },
-    });
+type ExtendedUser = Omit<User, 'role'> & {
+  role: string | null;
+  profile?: {
+    id: string;
+    userId: string;
+    name: string;
+    birthDate: Date | null;
+    image: string | null;
+    role: {
+      name: string;
+    } | null;
+  };
+};
 
-    if (!post) return null;
+export default function GamePostDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const [post, setPost] = useState<GamePost | null>(null);
+  const [user, setUser] = useState<ExtendedUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
-    const postWithCounts = {
-      ...post,
-      _count: {
-        participants: post.participants.length,
-        waitingList: post.waitingList.length,
-      },
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const { id } = await params;
+        const [postResponse, userData] = await Promise.all([
+          fetch(`/api/game-posts/${id}`),
+          getCurrentUser()
+        ]);
+
+        if (!postResponse.ok) {
+          notFound();
+          return;
+        }
+
+        let postData;
+        try {
+          postData = await postResponse.json();
+        } catch (jsonError) {
+          console.error('JSON Parse Error:', jsonError);
+          console.error('Response text:', await postResponse.text());
+          notFound();
+          return;
+        }
+
+        setPost(postData);
+        setUser(userData);
+      } catch (error) {
+        console.error('데이터 로딩 실패:', error);
+        notFound();
+      } finally {
+        setLoading(false);
+      }
     };
 
-    return postWithCounts as unknown as GamePost;
+    loadData();
+  }, [params]);
 
-  } catch (error) {
-    console.error(`Failed to fetch post ${id} from DB:`, error);
-    return null;
+  if (loading) {
+    return <LoadingSpinner />;
   }
-}
 
-export default async function GamePostDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const post = await getPost(id);
-  const user = await getCurrentUser();
-
-  if (!post) {
+  if (!post || !user) {
     notFound();
   }
 
   const userId = user?.id;
   const isOwner = userId === post.author.userId;
   const isParticipating = post.participants?.some(p => p.userId === userId && p.status === 'ACTIVE');
-  const isWaiting = post.waitingList?.some(w => w.userId === userId && w.status === 'WAITING');
+  const isWaiting = post.waitingList?.some(w => w.userId === userId && w.status !== 'CANCELED');
 
   const initialPostState = {
     ...post,
@@ -93,8 +88,14 @@ export default async function GamePostDetailPage({ params }: { params: Promise<{
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <GamePostDetailClient initialPost={initialPostState} userId={userId} />
-    </div>
+    <>
+      {isMobile ? (
+        <MobileGamePostDetailClient initialPost={initialPostState} userId={userId} />
+      ) : (
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <GamePostDetailClient initialPost={initialPostState} userId={userId} />
+        </div>
+      )}
+    </>
   );
 }

@@ -4,7 +4,7 @@ import type { GamePost } from '@/types/models';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { formatRelativeTime } from '@/lib/utils/date';
-import { RichTextViewer } from '@/components/editor/RichTextViewer';
+// RichTextViewer 제거 - 단순 텍스트 표시로 변경
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 import { useEffect, useState } from 'react';
 
@@ -20,7 +20,7 @@ export function GamePostContent({ post }: GamePostContentProps) {
   }, []);
   
   return (
-    <div className="bg-card border border-border shadow-lg overflow-hidden sm:rounded-lg">
+    <div className="bg-card border border-border shadow-lg overflow-hidden rounded-lg">
       <div className="px-4 py-5 sm:p-6">
         <div className="flex items-center mb-6">
           <div className="flex-shrink-0">
@@ -63,8 +63,10 @@ export function GamePostContent({ post }: GamePostContentProps) {
           </div>
         )}
         
-        <div className="prose prose-sm sm:prose-base max-w-none mt-6">
-          <RichTextViewer content={post.content} />
+        <div className="mt-6">
+          <div className="text-foreground whitespace-pre-wrap break-words">
+            {post.content}
+          </div>
         </div>
       </div>
     </div>

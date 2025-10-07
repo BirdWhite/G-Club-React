@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
-import type { DoNotDisturbSettings, NotificationSetting } from '@/types/models';
-
-interface CategorySettings {
-  enabled: boolean;
-  settings?: Record<string, unknown>; // 세부 설정은 나중에 타입 정의
-}
+import type { 
+  DoNotDisturbSettings, 
+  NotificationSetting,
+  NewGamePostSettings,
+  ParticipatingGameSettings,
+  MyGamePostSettings,
+  WaitingListSettings
+} from '@/types/models';
 
 interface NotificationSettings {
   id?: string;
   doNotDisturb: DoNotDisturbSettings;
-  newGamePost: CategorySettings;
-  participatingGame: CategorySettings;
-  myGamePost: CategorySettings;
-  waitingList: CategorySettings;
-  customGameIds: string[];
+  newGamePost: NewGamePostSettings;
+  participatingGame: ParticipatingGameSettings;
+  myGamePost: MyGamePostSettings;
+  waitingList: WaitingListSettings;
+  notice: { enabled: boolean };
   updatedAt?: string;
 }
 
@@ -25,11 +27,45 @@ export function useNotificationSettings() {
       endTime: "08:00",
       days: ["0", "1", "2", "3", "4", "5", "6"]
     },
-    newGamePost: { enabled: true },
-    participatingGame: { enabled: true },
-    myGamePost: { enabled: true },
+    newGamePost: { 
+      enabled: true,
+      mode: 'all',
+      customGameIds: []
+    },
+    participatingGame: { 
+      enabled: true,
+      fullMeeting: true,
+      memberJoin: false,
+      memberLeave: false,
+      timeChange: true,
+      gameCancelled: true,
+      beforeMeeting: {
+        enabled: true,
+        minutes: 10,
+        onlyFullMeeting: true
+      },
+      meetingStart: {
+        enabled: true,
+        onlyFullMeeting: true
+      }
+    },
+    myGamePost: { 
+      enabled: true,
+      fullMeeting: true,
+      memberJoin: false,
+      memberLeave: false,
+      beforeMeeting: {
+        enabled: true,
+        minutes: 10,
+        onlyFullMeeting: true
+      },
+      meetingStart: {
+        enabled: true,
+        onlyFullMeeting: true
+      }
+    },
     waitingList: { enabled: true },
-    customGameIds: []
+    notice: { enabled: true }
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -94,33 +130,34 @@ export function useNotificationSettings() {
   };
 
   // 신규 게임메이트 글 알림 설정 업데이트
-  const updateNewGamePost = async (enabled: boolean, detailSettings?: Record<string, unknown>) => {
+  const updateNewGamePost = async (enabled: boolean, mode?: 'all' | 'favorites' | 'custom', customGameIds?: string[]) => {
     return updateSettings({ 
       newGamePost: { 
-        enabled, 
-        settings: detailSettings 
-      },
-      // customGameIds는 현재 값 유지 (undefined로 전달하지 않음)
-      customGameIds: settings.customGameIds
+        enabled,
+        mode: mode || settings.newGamePost.mode,
+        customGameIds: customGameIds || settings.newGamePost.customGameIds
+      }
     });
   };
 
   // 참여중인 모임 알림 설정 업데이트
-  const updateParticipatingGame = async (enabled: boolean, detailSettings?: Record<string, unknown>) => {
+  const updateParticipatingGame = async (enabled: boolean, detailSettings?: Partial<ParticipatingGameSettings>) => {
     return updateSettings({ 
       participatingGame: { 
-        enabled, 
-        settings: detailSettings 
+        ...settings.participatingGame,
+        enabled,
+        ...detailSettings
       } 
     });
   };
 
   // 내가 작성한 모임 알림 설정 업데이트
-  const updateMyGamePost = async (enabled: boolean, detailSettings?: Record<string, unknown>) => {
+  const updateMyGamePost = async (enabled: boolean, detailSettings?: Partial<MyGamePostSettings>) => {
     return updateSettings({ 
       myGamePost: { 
-        enabled, 
-        settings: detailSettings 
+        ...settings.myGamePost,
+        enabled,
+        ...detailSettings
       } 
     });
   };
@@ -132,24 +169,38 @@ export function useNotificationSettings() {
     });
   };
 
+  // 공지사항 알림 설정 업데이트
+  const updateNotice = async (enabled: boolean) => {
+    return updateSettings({ 
+      notice: { enabled } 
+    });
+  };
+
   // 커스텀 게임 배열 업데이트
   const updateCustomGameIds = async (customGameIds: string[]) => {
-    return updateSettings({ customGameIds });
+    return updateSettings({ 
+      newGamePost: {
+        ...settings.newGamePost,
+        customGameIds
+      }
+    });
   };
 
   // 특정 카테고리 토글
-  const toggleCategory = async (category: 'newGamePost' | 'participatingGame' | 'myGamePost' | 'waitingList') => {
+  const toggleCategory = async (category: 'newGamePost' | 'participatingGame' | 'myGamePost' | 'waitingList' | 'notice') => {
     const currentEnabled = settings[category].enabled;
     
     switch (category) {
       case 'newGamePost':
-        return updateNewGamePost(!currentEnabled, settings[category].settings);
+        return updateNewGamePost(!currentEnabled);
       case 'participatingGame':
-        return updateParticipatingGame(!currentEnabled, settings[category].settings);
+        return updateParticipatingGame(!currentEnabled);
       case 'myGamePost':
-        return updateMyGamePost(!currentEnabled, settings[category].settings);
+        return updateMyGamePost(!currentEnabled);
       case 'waitingList':
         return updateWaitingList(!currentEnabled);
+      case 'notice':
+        return updateNotice(!currentEnabled);
     }
   };
 

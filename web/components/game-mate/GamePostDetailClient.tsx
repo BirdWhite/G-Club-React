@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { GamePost } from '@/types/models';
 import toast from 'react-hot-toast';
@@ -12,6 +12,7 @@ import { GamePostContent } from '@/components/game-mate/GamePostContent';
 import { ParticipantList } from '@/components/game-mate/ParticipantList';
 import { WaitingList } from '@/components/game-mate/WaitingList';
 import { ActionButtons } from '@/components/game-mate/ActionButtons';
+import { CommentSection } from '@/components/game-mate/CommentSection';
 
 interface GamePostDetailClientProps {
   initialPost: GamePost;
@@ -23,6 +24,27 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
   const { post, loading: isSubmitting, refresh } = useGamePostDetailSubscription(initialPost.id, initialPost);
   const [isWaitingListExpanded, setIsWaitingListExpanded] = useState(false);
   
+  // 조회수 증가 (페이지 로드 시 한 번만)
+  const viewCountIncremented = useRef(false);
+  
+  useEffect(() => {
+    if (!viewCountIncremented.current) {
+      viewCountIncremented.current = true;
+      
+      const incrementViewCount = async () => {
+        try {
+          await fetch(`/api/game-posts/${initialPost.id}/view`, { 
+            method: 'POST' 
+          });
+        } catch (error) {
+          console.error('조회수 증가 실패:', error);
+        }
+      };
+      
+      incrementViewCount();
+    }
+  }, [initialPost.id]);
+
   // 게시글이 삭제된 경우 리다이렉트
   useEffect(() => {
     if (post === null) {
@@ -38,9 +60,20 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
     
     try {
       const response = await action();
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('JSON Parse Error:', jsonError);
+        data = { error: '서버 응답을 파싱할 수 없습니다.' };
+      }
 
       if (!response.ok) {
+        console.error('API Error:', { 
+          status: response.status, 
+          statusText: response.statusText,
+          data
+        });
         throw new Error(data.error || errorMessage);
       }
       
@@ -48,14 +81,15 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
       refresh(); // Re-fetch data using the hook's method
 
     } catch (error: unknown) {
+      console.error('Action Error:', error);
       toast.error(error instanceof Error ? error.message : errorMessage);
     }
   };
 
   const handleParticipate = () => handleAction(
     () => fetch(`/api/game-posts/${currentPost.id}/participate`, { method: 'POST' }),
-    '게임 참여가 완료되었습니다.',
-    '게임 참여 중 오류가 발생했습니다.'
+    '게임 참가가 완료되었습니다.',
+    '게임 참가 중 오류가 발생했습니다.'
   );
 
   const handleCancelParticipation = () => handleAction(
@@ -114,6 +148,7 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
   const isOwner = currentPost.isOwner; // Use server-provided value
   const isParticipating = currentPost.isParticipating; // Use server-provided value
   const isWaiting = currentPost.isWaiting; // Use server-provided value
+  
 
   return (
     <>
@@ -125,7 +160,7 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
         loading={isSubmitting}
       />
 
-      <div className="mt-6">
+      <div className="mt-2">
         <GamePostContent post={currentPost} />
       </div>
 
@@ -147,7 +182,7 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
         />
       </div>
 
-      {currentPost.waitingList && currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED').length > 0 && (
+      {currentPost.waitingList && currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING').length > 0 && (
          <div className="mt-8">
             <div 
               className="flex items-center mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors w-fit"
@@ -156,7 +191,7 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
               <Clock className="h-5 w-5 text-foreground mr-2" />
               <h3 className="text-xl font-bold text-cyber-gray mr-3">예비 목록</h3>
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30">
-                {currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED').length}명
+                {currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING').length}명
               </span>
               <div className="ml-3">
                 {isWaitingListExpanded ? (
@@ -167,7 +202,7 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
               </div>
             </div>
             {isWaitingListExpanded && (
-              <WaitingList waitingList={currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED')} />
+              <WaitingList waitingList={currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING')} />
             )}
          </div>
       )}
@@ -182,7 +217,7 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
             isOwner={isOwner || false}
             gamePostId={currentPost.id}
             gameStartTime={currentPost.startTime}
-            waitingList={currentPost.waitingList?.filter(w => w.userId === userId && (w.status === 'WAITING' || w.status === 'INVITED')) || []}
+            waitingList={currentPost.waitingList || []}
             onParticipate={handleParticipate}
             onCancelParticipation={handleCancelParticipation}
             onLeaveEarly={handleLeaveEarly}
@@ -193,6 +228,12 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
           />
         </div>
       )}
+
+      {/* 댓글 섹션 */}
+      <div className="mt-8">
+        <h3 className="text-xl font-bold text-cyber-gray mb-4">댓글</h3>
+        <CommentSection gamePostId={currentPost.id} />
+      </div>
     </>
   );
 }

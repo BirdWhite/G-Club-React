@@ -8,6 +8,7 @@ import { useProfile } from '@/contexts/ProfileProvider'; // 1. useProfile 훅 �
 import type { Session } from '@supabase/supabase-js';
 import { MobileNavigation } from '@/components/layout/MobileNavigation';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
+import { useNotificationSubscription } from '@/hooks/useRealtimeSubscription';
 
 
 export function Header() {
@@ -21,6 +22,9 @@ export function Header() {
   const isAdmin = profile?.role?.name === 'ADMIN' || profile?.role?.name === 'SUPER_ADMIN'; // 3. isAdmin 변수 생성
   const isPendingMember = profile?.role?.name === 'NONE'; // 4. NONE 역할 사용자 확인
 
+  // 실시간 알림 구독
+  const { unreadCount: unreadNotificationCount } = useNotificationSubscription(session?.user?.id || null);
+
   // 현재 페이지 제목을 반환하는 함수
   const getPageTitle = () => {
     if (pathname === '/') return '홈';
@@ -32,6 +36,10 @@ export function Header() {
     if (pathname === '/auth/login') return '로그인';
     if (pathname.startsWith('/admin/')) return '관리자';
     if (pathname.startsWith('/game-mate/')) return '게임메이트';
+    if (pathname === '/notices') return '공지사항';
+    if (pathname === '/notices/new') return '공지사항 작성';
+    if (pathname.startsWith('/notices/') && pathname.includes('/edit')) return '공지사항 수정';
+    if (pathname.startsWith('/notices/')) return '공지사항';
     if (pathname.startsWith('/channels/')) return '채널';
     if (pathname.startsWith('/notifications')) return '알림';
     return 'G-Club';
@@ -143,18 +151,28 @@ export function Header() {
   }, [isProfileMenuOpen]);
   
   // 클라이언트 사이드에서만 실행되는 NavLink 컴포넌트
-  const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
+  const NavLink = ({ href, children, showBadge = false, badgeCount = 0 }: { 
+    href: string; 
+    children: React.ReactNode;
+    showBadge?: boolean;
+    badgeCount?: number;
+  }) => {
     const pathname = usePathname();
     const isActive = href === '/' ? pathname === href : pathname?.startsWith(href);
     
     return (
       <Link 
         href={href}
-        className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+        className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium relative ${
           isActive ? 'nav-link-active' : 'nav-link'
         }`}
       >
         {children}
+        {showBadge && badgeCount > 0 && (
+          <span className="absolute -top-1 -right-4 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+            {badgeCount > 99 ? '99+' : badgeCount}
+          </span>
+        )}
       </Link>
     );
   };
@@ -283,7 +301,7 @@ export function Header() {
                 {session && !isPendingMember && (
                   <>
                     <NavLink href="/game-mate">게임메이트</NavLink>
-                    <NavLink href="/notifications">알림</NavLink>
+                    <NavLink href="/notifications" showBadge={true} badgeCount={unreadNotificationCount}>알림</NavLink>
                     {isAdmin && (
                       <NavLink href="/admin/dashboard">
                         관리자 대시보드

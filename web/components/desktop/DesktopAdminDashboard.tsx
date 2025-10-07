@@ -45,7 +45,7 @@ export function DesktopAdminDashboard({ initialTab, onTabChange }: DesktopAdminD
                     : 'border-transparent text-cyber-gray hover:text-cyber-blue hover:border-cyber-gray'
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
-                권한 관리
+                권한 관리 (미구현)
               </button>
               <button
                 onClick={() => handleTabChange('games')}

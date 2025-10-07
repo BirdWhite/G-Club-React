@@ -61,6 +61,23 @@ export async function POST(
     }
 
     await prisma.$transaction(async (tx) => {
+      // 예비 신청 상태인지 확인하고 제거
+      const existingWaiting = await tx.waitingParticipant.findFirst({
+        where: {
+          gamePostId,
+          userId,
+          status: { in: ['WAITING', 'TIME_WAITING', 'INVITED'] }
+        }
+      });
+
+      if (existingWaiting) {
+        // 예비 신청을 CANCELED로 변경 (완전 삭제하지 않고 상태만 변경)
+        await tx.waitingParticipant.update({
+          where: { id: existingWaiting.id },
+          data: { status: 'CANCELED' }
+        });
+      }
+
       // 기존 LEFT_EARLY 상태의 참여자가 있는지 확인
       const existingParticipant = await tx.gameParticipant.findFirst({
         where: {

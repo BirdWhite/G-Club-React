@@ -103,6 +103,13 @@ model UserProfile {
   image              String?
   roleId             String?
   role               Role?                @relation(fields: [roleId], references: [id])
+  
+  // 이용약관 동의 관련
+  termsAgreed        Boolean              @default(false)  // 이용약관 동의 여부
+  termsAgreedAt      DateTime?            // 이용약관 동의 시간
+  privacyAgreed      Boolean              @default(false)  // 개인정보처리방침 동의 여부
+  privacyAgreedAt    DateTime?            // 개인정보처리방침 동의 시간
+  
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
@@ -115,6 +122,13 @@ model UserProfile {
   // 채팅 관련
   chatMessages       ChatMessage[]         @relation("UserProfileChatMessages")
   chatRooms          ChatParticipant[]     @relation("UserProfileChatRooms")
+  
+  // 댓글 관련
+  comments           Comment[]             @relation("UserProfileComments")
+  
+  // 공지사항 관련
+  notices            Notice[]              @relation("UserProfileNotices")
+  modifiedNotices    Notice[]              @relation("UserProfileNoticeModifications")
   
   // 푸시 알림 관련
   pushSubscriptions  PushSubscription[]    @relation("UserProfilePushSubscriptions")
@@ -189,6 +203,7 @@ model Game {
   name        String        @unique
   description String?
   iconUrl     String?
+  order       Int           @default(autoincrement()) // 정렬 순서 (자동 증가)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   aliases     String[]
@@ -196,6 +211,8 @@ model Game {
   
   // 좋아하는 게임 관련
   favoritedBy UserFavoriteGame[]    @relation("GameFavorites")
+  
+  @@index([order])
 }
 
 model GamePost {
@@ -217,9 +234,12 @@ model GamePost {
   status        GamePostStatus @default(OPEN)
   isFull        Boolean   @default(false) // 인원 마감 여부
   
+  viewCount     Int       @default(0)     // 조회수
+  
   participants      GameParticipant[]
   waitingList       WaitingParticipant[]
   chatRoom          ChatRoom?
+  comments          Comment[] @relation("GamePostComments")
   
   // 알림 관련
   notifications     Notification[]    @relation("GamePostNotifications")
@@ -439,7 +459,7 @@ enum NotificationPriority {
   URGENT
 }
 
-// 사용자별 알림 설정
+// 사용자별 알림 설정 - 개별 컬럼 버전
 model NotificationSetting {
   id                String      @id @default(cuid())
   userId            String      @unique
@@ -453,23 +473,116 @@ model NotificationSetting {
   
   // 신규 게임메이트 글 알림 설정
   newGamePostEnabled  Boolean   @default(true)
-  newGamePostSettings Json?     // 세부 설정을 JSON으로 저장
+  newGamePostMode     String    @default("favorites") // "all", "favorites", "custom"
   customGameIds       String[]  @default([]) // 커스텀으로 선택한 게임 ID 배열
   
   // 참여중인 모임 알림 설정
-  participatingGameEnabled Boolean @default(true)
-  participatingGameSettings Json?  // 세부 설정을 JSON으로 저장
+  participatingGameEnabled     Boolean @default(true)
+  participatingGameFullMeeting Boolean @default(true) // 다 모였을때 알람
+  participatingGameMemberJoin  Boolean @default(false) // 모임 참여 알람
+  participatingGameMemberLeave Boolean @default(false) // 모임 참여 취소 알람
+  participatingGameTimeChange  Boolean @default(true) // 모임 시간 변경시 알람
+  participatingGameCancelled   Boolean @default(true) // 게임메이트 취소 알람
+  
+  // 참여중인 모임 - 모임 전 알람 설정
+  participatingGameBeforeMeetingEnabled     Boolean @default(true) // 모임 전 알람
+  participatingGameBeforeMeetingMinutes     Int     @default(10) // 몇 분 전 (10, 30, 60)
+  participatingGameBeforeMeetingOnlyFull    Boolean @default(true) // 모임이 다 모였을때만
+  
+  // 참여중인 모임 - 모임 시작 알람 설정
+  participatingGameMeetingStartEnabled      Boolean @default(true) // 모임 시작 알람
+  participatingGameMeetingStartOnlyFull     Boolean @default(true) // 모임이 다 모였을때만
   
   // 내가 작성한 모임 알림 설정
-  myGamePostEnabled   Boolean   @default(true)
-  myGamePostSettings  Json?     // 세부 설정을 JSON으로 저장
+  myGamePostEnabled     Boolean @default(true)
+  myGamePostFullMeeting Boolean @default(true) // 다 모였을때 알람
+  myGamePostMemberJoin  Boolean @default(false) // 모임 참여 알람
+  myGamePostMemberLeave Boolean @default(false) // 모임 참여 취소 알람
+  
+  // 내가 작성한 모임 - 모임 전 알람 설정
+  myGamePostBeforeMeetingEnabled     Boolean @default(true) // 모임 전 알람
+  myGamePostBeforeMeetingMinutes     Int     @default(10) // 몇 분 전 (10, 30, 60)
+  myGamePostBeforeMeetingOnlyFull    Boolean @default(true) // 모임이 다 모였을때만
+  
+  // 내가 작성한 모임 - 모임 시작 알람 설정
+  myGamePostMeetingStartEnabled      Boolean @default(true) // 모임 시작 알람
+  myGamePostMeetingStartOnlyFull     Boolean @default(true) // 모임이 다 모였을때만
   
   // 예비 참여 알림 설정
   waitingListEnabled  Boolean   @default(true)
+  
+  // 공지사항 알림 설정
+  noticeEnabled       Boolean   @default(true) // 공지사항 알림 받기
   
   // 메타데이터
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   
   @@index([userId])
+  
+  // 크론 잡에서 사용할 인덱스들
+  @@index([participatingGameBeforeMeetingEnabled, participatingGameBeforeMeetingMinutes])
+  @@index([myGamePostBeforeMeetingEnabled, myGamePostBeforeMeetingMinutes])
+  @@index([participatingGameMeetingStartEnabled])
+  @@index([myGamePostMeetingStartEnabled])
+}
+
+// 통합 댓글 모델 (게임메이트 포스트와 공지사항 모두 사용)
+model Comment {
+  id        String   @id @default(cuid())
+  
+  // 다형성 관계 - 게임메이트 포스트 또는 공지사항
+  gamePostId String?
+  gamePost   GamePost? @relation("GamePostComments", fields: [gamePostId], references: [id], onDelete: Cascade)
+  
+  noticeId   String?
+  notice     Notice?  @relation("NoticeComments", fields: [noticeId], references: [id], onDelete: Cascade)
+  
+  authorId  String
+  author    UserProfile @relation("UserProfileComments", fields: [authorId], references: [userId])
+  
+  content   String   // 단순 텍스트 댓글
+  isDeleted Boolean  @default(false) // 삭제된 댓글 표시
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 제약 조건: gamePostId 또는 noticeId 중 하나만 설정되어야 함
+  @@index([gamePostId, createdAt])
+  @@index([noticeId, createdAt])
+  @@index([authorId])
+}
+
+// 공지사항 모델
+model Notice {
+  id        String   @id @default(cuid())
+  title     String   // 공지사항 제목
+  content   Json     // 공지사항 내용 (리치텍스트 JSON)
+  summary   String?  // 요약 (선택사항)
+  
+  authorId  String
+  author    UserProfile @relation("UserProfileNotices", fields: [authorId], references: [userId])
+  
+  // 수정자 정보
+  lastModifiedById String?
+  lastModifiedBy   UserProfile? @relation("UserProfileNoticeModifications", fields: [lastModifiedById], references: [userId])
+  
+  isPublished Boolean @default(false) // 발행 여부
+  isPinned    Boolean @default(false) // 상단 고정 여부
+  isDeleted   Boolean @default(false) // 삭제 여부
+  allowComments Boolean @default(true) // 댓글 허용 여부
+  
+  viewCount  Int      @default(0)     // 조회수
+  priority   Int      @default(0)     // 우선순위 (높을수록 먼저 표시)
+  
+  publishedAt DateTime? // 발행일시
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 댓글 관련
+  comments   Comment[] @relation("NoticeComments")
+  
+  @@index([isPublished, isPinned, priority, createdAt])
+  @@index([authorId])
+  @@index([isDeleted])
 }

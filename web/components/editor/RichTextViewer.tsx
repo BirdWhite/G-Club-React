@@ -7,6 +7,7 @@ import Link from '@tiptap/extension-link';
 import Youtube from '@tiptap/extension-youtube';
 import { JsonValue } from '@prisma/client/runtime/library';
 import { useEffect, useState } from 'react';
+import { ResizableImage } from './ResizableImage';
 
 interface RichTextViewerProps {
   content: JsonValue;
@@ -33,6 +34,7 @@ export function RichTextViewer({ content }: RichTextViewerProps) {
         HTMLAttributes: {
           class: 'max-w-full h-auto rounded-lg',
         },
+        inline: true,
       }),
       Link.configure({
         openOnClick: true,
@@ -43,12 +45,25 @@ export function RichTextViewer({ content }: RichTextViewerProps) {
         },
       }),
       Youtube.configure({
-        width: 640,
+        addPasteHandler: true,
+        allowFullscreen: true,
+        autoplay: false,
+        ccLanguage: 'ko',
+        controls: true,
         height: 480,
+        width: 640,
         HTMLAttributes: {
           class: 'youtube-video mx-auto rounded-lg',
+          allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+          allowfullscreen: 'true',
+          frameborder: '0',
         },
+        inline: false,
+        modestBranding: true,
+        nocookie: false,
+        progressBarColor: 'red',
       }),
+      ResizableImage,
     ],
     // 유효한 Tiptap JSON일 경우에만 content로 전달, 아닐 경우 빈 문서 렌더링
     content: isValidTiptapJson(content) ? content : { type: 'doc', content: [] },
@@ -60,7 +75,19 @@ export function RichTextViewer({ content }: RichTextViewerProps) {
   }
 
   return (
-    <EditorContent editor={editor} className="prose prose-sm sm:prose-base max-w-none" />
+    <div className="prose prose-sm sm:prose-base max-w-none 
+      prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-em:text-foreground
+      prose-blockquote:border-l-primary prose-blockquote:bg-muted prose-blockquote:text-foreground
+      prose-code:bg-muted prose-code:text-foreground prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+      prose-pre:bg-muted prose-pre:text-foreground prose-pre:border prose-pre:border-border
+      prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+      prose-img:rounded-lg prose-img:shadow-sm
+      prose-hr:border-border">
+      <EditorContent 
+        editor={editor} 
+        className="[&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_li]:marker:text-foreground" 
+      />
+    </div>
   );
 };
 

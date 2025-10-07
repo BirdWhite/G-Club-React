@@ -1,35 +1,60 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/database/supabase';
-import type { GamePost } from '@/types/models';
+import type { GamePost, Comment } from '@/types/models';
 
-// 게임메이트 목록을 위한 실시간 구독 훅
+// 게임메이트 목록을 위한 실시간 구독 훅 (무한 스크롤 지원)
 export function useGamePostListSubscription(
   initialFilters: { status?: string; gameId?: string } = {}
 ) {
   const [posts, setPosts] = useState<GamePost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState(initialFilters);
   const supabase = useMemo(() => createClient(), []);
   
   // 참여자 정보 캐시 (DELETE 이벤트 시 postId 찾기용)
   const participantCache = useMemo(() => new Map<string, string>(), []);
 
-  // API를 통해 게시글 목록을 가져오는 함수
-  const fetchPosts = useCallback(async (currentFilters: { status?: string; gameId?: string }) => {
-    setLoading(true);
+  // API를 통해 게시글 목록을 가져오는 함수 (초기 로드)
+  const fetchPosts = useCallback(async (currentFilters: { status?: string; gameId?: string }, page: number = 1, append: boolean = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    
     try {
       const query = new URLSearchParams();
       if (currentFilters.status) query.append('status', currentFilters.status);
       if (currentFilters.gameId) query.append('gameId', currentFilters.gameId);
+      query.append('page', page.toString());
+      query.append('limit', '20'); // 페이지당 20개
       
       const response = await fetch(`/api/game-posts?${query.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch posts');
       
       const data = await response.json();
-      setPosts(data);
+      
+      if (append) {
+        // 무한 스크롤: 기존 데이터에 추가 (중복 방지)
+        setPosts(prev => {
+          const existingIds = new Set(prev.map(post => post.id));
+          const newPosts = (data.posts || []).filter((post: GamePost) => !existingIds.has(post.id));
+          return [...prev, ...newPosts];
+        });
+      } else {
+        // 초기 로드: 데이터 교체
+        setPosts(data.posts || []);
+      }
+      
+      // hasMore 상태 업데이트
+      setHasMore(data.pagination.page < data.pagination.totalPages);
+      setCurrentPage(page);
       
       // 참여자 정보 캐시 업데이트
-      data.forEach((post: GamePost) => {
+      (data.posts || []).forEach((post: GamePost) => {
         post.participants?.forEach((participant) => {
           if (participant.userId) {
             participantCache.set(participant.userId, post.id);
@@ -45,8 +70,16 @@ export function useGamePostListSubscription(
       console.error('Error fetching posts:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, [participantCache]);
+
+  // 더 많은 게시글을 로드하는 함수 (무한 스크롤)
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchPosts(filters, currentPage + 1, true);
+    }
+  }, [fetchPosts, filters, currentPage, loadingMore, hasMore]);
 
   // 개별 게시글을 가져오는 함수 (부분 업데이트용)
   const fetchSinglePost = useCallback(async (postId: string) => {
@@ -110,17 +143,27 @@ export function useGamePostListSubscription(
       }
       
       if (shouldAdd) {
-        setPosts(prevPosts => [newPost, ...prevPosts]);
+        setPosts(prevPosts => {
+          // 중복 방지: 이미 존재하는 게시글인지 확인
+          const exists = prevPosts.some(post => post.id === newPost.id);
+          if (exists) {
+            return prevPosts;
+          }
+          return [newPost, ...prevPosts];
+        });
       }
     } catch (error) {
       console.error('Error adding new post:', error);
     }
   }, [filters]);
 
-  // 필터가 변경될 때마다 데이터를 다시 가져옴
+  // 필터가 변경될 때마다 데이터를 다시 가져옴 (상태 리셋)
   useEffect(() => {
-    fetchPosts(filters);
-  }, [filters]); // fetchPosts 의존성 제거
+    setPosts([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchPosts(filters, 1, false);
+  }, [filters, fetchPosts]);
 
   // 실시간 구독 설정 - 부분 업데이트 방식
   useEffect(() => {
@@ -244,7 +287,15 @@ export function useGamePostListSubscription(
     };
   }, [supabase, fetchSinglePost, addNewPost, filters, debouncedFetchSinglePost]); // fetchPosts 의존성 제거
 
-  return { posts, loading, filters, setFilters };
+  return { 
+    posts, 
+    loading, 
+    loadingMore, 
+    hasMore, 
+    loadMore, 
+    filters, 
+    setFilters 
+  };
 }
 
 // 게임메이트 상세 페이지를 위한 실시간 구독 훅 (기존 로직 유지)
@@ -255,9 +306,31 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
   
   // 참여자 캐시 추가
   const participantCache = useMemo(() => new Map<string, string>(), []);
+  
+  // 디바운싱을 위한 ref
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 디바운싱된 새로고침 함수
+  const debouncedRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    
+    refreshTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/game-posts/${postId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setPost(data);
+        }
+      } catch (error) {
+        console.error('Error fetching post after debounced refresh:', error);
+      }
+    }, 500); // 500ms 디바운싱
+  }, [postId]);
 
   const fetchPost = useCallback(async () => {
-    if (!loading) setLoading(true);
+    setLoading(true);
     try {
       const response = await fetch(`/api/game-posts/${postId}`);
       if (!response.ok) {
@@ -286,11 +359,40 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
     } finally {
       setLoading(false);
     }
-  }, [postId, loading, participantCache]);
+  }, [postId, participantCache]);
 
   useEffect(() => {
     if (!initialPost) {
-      fetchPost();
+      const loadPost = async () => {
+        setLoading(true);
+        try {
+          const response = await fetch(`/api/game-posts/${postId}`);
+          if (!response.ok) {
+            if (response.status === 404) {
+              setPost(null);
+              return;
+            }
+            throw new Error('Failed to fetch post');
+          }
+          const data = await response.json();
+          
+          // 참여자 캐시 업데이트
+          if (data.participants) {
+            data.participants.forEach((participant: { userId?: string }) => {
+              if (participant.userId) {
+                participantCache.set(participant.userId, postId);
+              }
+            });
+          }
+          
+          setPost(data);
+        } catch (error) {
+          console.error('Error fetching post:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadPost();
     } else {
       // initialPost가 있을 때도 캐시 초기화
       if (initialPost.participants) {
@@ -301,7 +403,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
         });
       }
     }
-  }, [fetchPost, initialPost, participantCache, postId]);
+  }, [initialPost, participantCache, postId]);
 
   // 실시간 구독 설정 - 개별 필드 업데이트 방식
   useEffect(() => {
@@ -317,13 +419,14 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'GameParticipant',
           filter: `gamePostId=eq.${postId}`,
         },
-        (payload: { new?: { userId: string } }) => {
+        async (payload: { new?: { userId: string } }) => {
           console.log('GameParticipant INSERT for post:', postId, payload);
           // 캐시에 새 참여자 추가
           if (payload.new && payload.new.userId) {
             participantCache.set(payload.new.userId, postId);
           }
-          fetchPost();
+          // 디바운싱된 새로고침
+          debouncedRefresh();
         }
       )
       .on(
@@ -334,7 +437,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'GameParticipant',
           filter: `gamePostId=eq.${postId}`,
         },
-        (payload: { old?: { userId: string }; new?: { userId: string }; eventType?: string }) => {
+        async (payload: { old?: { userId: string }; new?: { userId: string }; eventType?: string }) => {
           console.log('GameParticipant DELETE for post:', postId, payload);
           console.log('DELETE payload details:', {
             old: payload.old,
@@ -345,9 +448,8 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           if (payload.old && payload.old.userId) {
             participantCache.delete(payload.old.userId);
           }
-          // 즉시 새로고침
-          console.log('Fetching post after DELETE event...');
-          fetchPost();
+          // 디바운싱된 새로고침
+          debouncedRefresh();
         }
       )
       .on(
@@ -360,7 +462,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
         },
         () => {
           console.log('WaitingParticipant INSERT for post:', postId);
-          fetchPost();
+          debouncedRefresh();
         }
       )
       .on(
@@ -373,7 +475,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
         },
         () => {
           console.log('WaitingParticipant UPDATE for post:', postId);
-          fetchPost();
+          debouncedRefresh();
         }
       )
       .on(
@@ -386,7 +488,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
         },
         () => {
           console.log('WaitingParticipant DELETE for post:', postId);
-          fetchPost();
+          debouncedRefresh();
         }
       )
       .on(
@@ -400,7 +502,68 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
         (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
           // 게시글 정보 변경 시 전체 데이터 새로고침 (참여자 정보 포함)
           console.log('GamePost updated:', payload);
-          fetchPost();
+          debouncedRefresh();
+        }
+      )
+      // 댓글 실시간 구독 추가
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'Comment',
+          filter: `gamePostId=eq.${postId}`,
+        },
+        async () => {
+          try {
+            const response = await fetch(`/api/game-posts/${postId}`);
+            if (response.ok) {
+              const data = await response.json();
+              setPost(data);
+            }
+          } catch (error) {
+            console.error('Error fetching post after Comment INSERT:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'Comment',
+          filter: `gamePostId=eq.${postId}`,
+        },
+        async () => {
+          try {
+            const response = await fetch(`/api/game-posts/${postId}`);
+            if (response.ok) {
+              const data = await response.json();
+              setPost(data);
+            }
+          } catch (error) {
+            console.error('Error fetching post after Comment UPDATE:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'Comment',
+          filter: `gamePostId=eq.${postId}`,
+        },
+        async () => {
+          try {
+            const response = await fetch(`/api/game-posts/${postId}`);
+            if (response.ok) {
+              const data = await response.json();
+              setPost(data);
+            }
+          } catch (error) {
+            console.error('Error fetching post after Comment DELETE:', error);
+          }
         }
       )
       // 백업: 모든 GameParticipant 이벤트 감지 (필터 없이)
@@ -429,13 +592,26 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           if (isForOurPost) {
             console.log('This event is for our post, updating...');
             
+            // 모든 이벤트에 대해 직접 API 호출
+            const refreshPost = async () => {
+              try {
+                const response = await fetch(`/api/game-posts/${postId}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  setPost(data);
+                }
+              } catch (error) {
+                console.error('Error fetching post after GameParticipant ANY event:', error);
+              }
+            };
+            
             if (payload.eventType === 'DELETE') {
               // DELETE 이벤트의 경우 전체 새로고침 (안전한 방법)
               console.log('Handling DELETE event, refreshing post data...');
-              fetchPost();
+              refreshPost();
             } else {
               // 다른 이벤트의 경우 전체 새로고침
-              fetchPost();
+              refreshPost();
             }
           }
         }
@@ -448,6 +624,82 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
   }, [postId, supabase, fetchPost]);
 
   return { post, loading, refresh: fetchPost };
+}
+
+// 댓글 실시간 구독 훅
+export function useCommentSubscription(gamePostId: string) {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = useMemo(() => createClient(), []);
+
+  const fetchComments = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/game-posts/${gamePostId}/comments`);
+      if (!response.ok) throw new Error('Failed to fetch comments');
+      
+      const data = await response.json();
+      setComments(data);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [gamePostId]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  // 실시간 구독 설정
+  useEffect(() => {
+    const channel = supabase
+      .channel(`comments_${gamePostId}_${Date.now()}`, {
+        config: { broadcast: { self: false } },
+      })
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'Comment',
+          filter: `gamePostId=eq.${gamePostId}`,
+        },
+        () => {
+          fetchComments();
+        }
+      )
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'Comment',
+          filter: `gamePostId=eq.${gamePostId}`,
+        },
+        () => {
+          fetchComments();
+        }
+      )
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'Comment',
+          filter: `gamePostId=eq.${gamePostId}`,
+        },
+        () => {
+          fetchComments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gamePostId, supabase, fetchComments]);
+
+  return { comments, loading, refresh: fetchComments };
 }
 
 // 범용 실시간 구독 훅 (향후 확장용)
@@ -545,5 +797,111 @@ export function useRealtimeSubscription<T extends { id: string }>(
     addItem,
     updateItem,
     removeItem,
+  };
+}
+
+// 알림 실시간 구독 훅
+export function useNotificationSubscription(userId: string | null) {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const supabase = useMemo(() => createClient(), []);
+
+  // 읽지 않은 알림 수 가져오기
+  const fetchUnreadCount = useCallback(async () => {
+    if (!userId) return;
+    
+    try {
+      const response = await fetch('/api/notifications?unreadOnly=true&limit=1');
+      const data = await response.json();
+      if (data.success) {
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error('읽지 않은 알림 수 조회 실패:', error);
+    }
+  }, [userId]);
+
+  // 초기 알림 수 로드
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
+
+  // 실시간 구독 설정
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel(`notifications_${userId}`, {
+        config: { broadcast: { self: false } },
+      })
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'NotificationReceipt',
+          filter: `userId=eq.${userId}`,
+        },
+        (payload) => {
+          console.log('새 알림 수신:', payload);
+          // 새 알림이 추가되면 읽지 않은 수 증가
+          setUnreadCount(prev => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'NotificationReceipt',
+          filter: `userId=eq.${userId}`,
+        },
+        (payload) => {
+          console.log('알림 상태 변경:', payload);
+          // 알림이 읽음 처리되면 읽지 않은 수 감소
+          if (payload.new?.isRead && !payload.old?.isRead) {
+            setUnreadCount(prev => Math.max(0, prev - 1));
+          }
+          // 알림이 읽지 않음으로 변경되면 읽지 않은 수 증가
+          else if (!payload.new?.isRead && payload.old?.isRead) {
+            setUnreadCount(prev => prev + 1);
+          }
+        }
+      )
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'NotificationReceipt',
+          filter: `userId=eq.${userId}`,
+        },
+        (payload) => {
+          console.log('알림 삭제:', payload);
+          // 알림이 삭제되면 읽지 않은 수 감소 (삭제된 알림이 읽지 않았던 경우)
+          if (!payload.old?.isRead) {
+            setUnreadCount(prev => Math.max(0, prev - 1));
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.error('알림 실시간 구독 실패, 폴링으로 대체');
+          // 실시간 연결 실패 시 폴링으로 대체
+          const interval = setInterval(() => {
+            fetchUnreadCount();
+          }, 10000); // 10초마다 폴링
+          
+          return () => clearInterval(interval);
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, supabase, fetchUnreadCount]);
+
+  return {
+    unreadCount,
+    refreshUnreadCount: fetchUnreadCount,
   };
 } 

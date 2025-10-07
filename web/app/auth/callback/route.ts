@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 // The client you created from the Server-Side Auth instructions
-import { createServerClient } from '@/lib/database/supabase'
+import { createServerClient } from '@/lib/database/supabase/server'
+import prisma from '@/lib/database/prisma'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -32,16 +33,36 @@ export async function GET(request: Request) {
       }
 
       if (data.session) {
-        console.log('인증 성공, 리다이렉트:', next)
-        const forwardedHost = request.headers.get('x-forwarded-host')
-        const isLocalEnv = process.env.NODE_ENV === 'development'
-        
-        if (isLocalEnv) {
-          return NextResponse.redirect(`${origin}${next}`)
-        } else if (forwardedHost) {
-          return NextResponse.redirect(`https://${forwardedHost}${next}`)
-        } else {
-          return NextResponse.redirect(`${origin}${next}`)
+        // 이용약관 동의 상태 확인
+        try {
+          const userProfile = await prisma.userProfile.findUnique({
+            where: {
+              userId: data.session.user.id
+            },
+            select: {
+              termsAgreed: true,
+              privacyAgreed: true
+            }
+          });
+
+          // 이용약관에 동의하지 않은 경우 약관 동의 페이지로 리다이렉트
+          if (!userProfile || !userProfile.termsAgreed || !userProfile.privacyAgreed) {
+            return NextResponse.redirect(`${origin}/auth/terms`)
+          }
+          const forwardedHost = request.headers.get('x-forwarded-host')
+          const isLocalEnv = process.env.NODE_ENV === 'development'
+          
+          if (isLocalEnv) {
+            return NextResponse.redirect(`${origin}${next}`)
+          } else if (forwardedHost) {
+            return NextResponse.redirect(`https://${forwardedHost}${next}`)
+          } else {
+            return NextResponse.redirect(`${origin}${next}`)
+          }
+        } catch (profileError) {
+          console.error('사용자 프로필 확인 중 에러:', profileError)
+          // 프로필 확인 실패 시에도 약관 동의 페이지로 이동
+          return NextResponse.redirect(`${origin}/auth/terms`)
         }
       }
     } catch (error) {

@@ -311,25 +311,8 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
     return () => clearInterval(intervalId);
   }, [isInitialized, subscription, permission, validateSubscription, checkExistingSubscription]);
 
-  // 마스터 토글 상태에 따른 구독/구독 취소 처리
-  useEffect(() => {
-    if (!isInitialized || masterEnabled === undefined) return; // 초기화 완료 전이거나 초기 로딩 중이면 무시
-    
-    if (masterEnabled) {
-      // 마스터 토글이 켜지면 구독
-      if (permission === 'granted' && !subscription) {
-        subscribeUser();
-      }
-    } else {
-      // 마스터 토글이 꺼지면 구독 취소
-      if (subscription) {
-        unsubscribe();
-      }
-    }
-  }, [masterEnabled, permission, subscription, isInitialized]);
 
-
-  const subscribeUser = async () => {
+  const subscribeUser = useCallback(async () => {
     
     try {
       const registration = await navigator.serviceWorker.ready;
@@ -370,9 +353,9 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
       setSubscription(null);
       onPermissionChangeRef.current?.(permission, null);
     }
-  };
+  }, [userId, permission]);
 
-  const unsubscribe = async () => {
+  const unsubscribe = useCallback(async () => {
     try {
       if (subscription) {
         await subscription.unsubscribe();
@@ -393,7 +376,22 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
     } catch {
       // 구독 해제 실패 무시
     }
-  };
+  }, [subscription, permission, userId]);
+
+  // Update the useEffect to include the functions after they're declared
+  useEffect(() => {
+    if (!isInitialized || masterEnabled === undefined) return;
+    
+    if (masterEnabled) {
+      if (permission === 'granted' && !subscription) {
+        subscribeUser();
+      }
+    } else {
+      if (subscription) {
+        unsubscribe();
+      }
+    }
+  }, [masterEnabled, permission, subscription, isInitialized, subscribeUser, unsubscribe]);
 
   if (!isSupported) {
     return null;

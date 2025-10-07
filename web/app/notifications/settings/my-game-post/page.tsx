@@ -4,27 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-
-interface MyGamePostSettings {
-  fullMeeting: boolean; // 다 모였을때 알람
-  memberJoin: boolean; // 모임 참여 알람  
-  memberLeave: boolean; // 모임 참여 취소 알람
-  beforeMeeting: {
-    enabled: boolean; // 모임 전 알람
-    minutes: number; // 몇 분 전 (기본 30분)
-    onlyFullMeeting: boolean; // 모임이 다 모였을때만
-  };
-  meetingStart: {
-    enabled: boolean; // 모임 시작 알람
-    onlyFullMeeting: boolean; // 모임이 다 모였을때만
-  };
-}
+import { Clock, Hand, HeartCrack, Rocket, UserRoundCheck } from 'lucide-react';
+import type { MyGamePostSettings } from '@/types/models';
 
 export default function MyGamePostNotificationSettings() {
   const router = useRouter();
   const { settings, updateMyGamePost, isLoading } = useNotificationSettings();
   
   const [gameSettings, setGameSettings] = useState<MyGamePostSettings>({
+    enabled: true,
     fullMeeting: true,
     memberJoin: true,
     memberLeave: true,
@@ -41,17 +29,15 @@ export default function MyGamePostNotificationSettings() {
 
   // 초기 설정 로드
   useEffect(() => {
-    if (settings.myGamePost.settings) {
-      setGameSettings(prev => ({
-        ...prev,
-        ...settings.myGamePost.settings
-      }));
-    }
+    setGameSettings(prev => ({
+      ...prev,
+      ...settings.myGamePost
+    }));
   }, [settings]);
 
   // 설정 저장
   const saveSettings = async () => {
-    await updateMyGamePost(settings.myGamePost.enabled, gameSettings as unknown as Record<string, unknown>);
+    await updateMyGamePost(settings.myGamePost.enabled, gameSettings);
     router.back();
   };
 
@@ -110,12 +96,12 @@ export default function MyGamePostNotificationSettings() {
       {/* 설정 내용 */}
       <div className="space-y-6">
           
-          {/* 다 모였을때 알람 */}
+          {/* 다 모였을때 알림 */}
           <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">✅</span>
+              <UserRoundCheck className="w-6 h-6 text-green-500" />
               <div>
-                <h3 className="font-semibold text-foreground">다 모였을때 알람</h3>
+                <h3 className="font-semibold text-foreground">다 모였을때 알림</h3>
                 <p className="text-sm text-muted-foreground">내 모임 인원이 가득 찼을 때 알림을 받습니다</p>
               </div>
             </div>
@@ -130,12 +116,12 @@ export default function MyGamePostNotificationSettings() {
             </label>
           </div>
 
-          {/* 모임 참여 알람 */}
+          {/* 모임 참여 알림 */}
           <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">👋</span>
+              <Hand className="w-6 h-6 text-primary" />
               <div>
-                <h3 className="font-semibold text-foreground">모임 참여 알람</h3>
+                <h3 className="font-semibold text-foreground">모임 참여 알림</h3>
                 <p className="text-sm text-muted-foreground">누군가가 내 모임에 참여할 때마다 알림을 받습니다</p>
               </div>
             </div>
@@ -150,12 +136,12 @@ export default function MyGamePostNotificationSettings() {
             </label>
           </div>
 
-          {/* 모임 참여 취소 알람 */}
+          {/* 모임 참여 취소 알림 */}
           <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">💔</span>
+              <HeartCrack className="w-6 h-6 text-red-500" />
               <div>
-                <h3 className="font-semibold text-foreground">모임 참여 취소 알람</h3>
+                <h3 className="font-semibold text-foreground">모임 참여 취소 알림</h3>
                 <p className="text-sm text-muted-foreground">누군가가 내 모임 참여를 취소할 때마다 알림을 받습니다</p>
               </div>
             </div>
@@ -170,13 +156,13 @@ export default function MyGamePostNotificationSettings() {
             </label>
           </div>
 
-          {/* 모임 전 알람 */}
+          {/* 모임 전 알림 */}
           <div className="p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">⏰</span>
+                <Clock className="w-6 h-6 text-primary" />
                 <div>
-                  <h3 className="font-semibold text-foreground">모임 전 알람</h3>
+                  <h3 className="font-semibold text-foreground">모임 전 알림</h3>
                   <p className="text-sm text-muted-foreground">내 모임 시작 전 미리 알림을 받습니다</p>
                 </div>
               </div>
@@ -221,13 +207,13 @@ export default function MyGamePostNotificationSettings() {
             )}
           </div>
 
-          {/* 모임 시작 알람 */}
+          {/* 모임 시작 알림 */}
           <div className="p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🚀</span>
+                <Rocket className="w-6 h-6 text-primary" />
                 <div>
-                  <h3 className="font-semibold text-foreground">모임 시작 알람</h3>
+                  <h3 className="font-semibold text-foreground">모임 시작 알림</h3>
                   <p className="text-sm text-muted-foreground">내 모임 시작 시간에 알림을 받습니다</p>
                 </div>
               </div>

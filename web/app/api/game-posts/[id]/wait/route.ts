@@ -82,21 +82,26 @@ export async function POST(
       return NextResponse.json({ error: '이미 참여하고 있는 모집글입니다.' }, { status: 400 });
     }
 
-    const isAlreadyWaiting = post.waitingList.some(w => w.userId === userId && (w.status === 'WAITING' || w.status === 'TIME_WAITING' || w.status === 'INVITED'));
-    if (isAlreadyWaiting) {
-      return NextResponse.json({ error: '이미 예비 명단에 등록되어 있습니다.' }, { status: 400 });
+    // 기존 예비 참여자 레코드 찾기 (데이터베이스에서 직접 조회, 모든 상태 포함)
+    const existingWaiting = await prisma.waitingParticipant.findFirst({
+      where: {
+        gamePostId,
+        userId
+      }
+    });
+    
+    // INVITED 상태인 경우는 업데이트 불가 (승인 대기 중)
+    if (existingWaiting && existingWaiting.status === 'INVITED') {
+      return NextResponse.json({ error: '승인 대기 중인 예비 신청이 있습니다. 기존 신청을 취소한 후 다시 신청해주세요.' }, { status: 400 });
     }
-
-    // CANCELED 상태인 기존 레코드가 있는지 확인
-    const canceledParticipant = post.waitingList.find(w => w.userId === userId && w.status === 'CANCELED');
     
     // 상태 결정: availableTime이 있으면 TIME_WAITING, 없으면 WAITING
     const waitingStatus = availableTime ? 'TIME_WAITING' : 'WAITING';
     
-    if (canceledParticipant) {
-      // 기존 CANCELED 레코드를 적절한 상태로 업데이트
+    if (existingWaiting) {
+      // 기존 예비 참여자 레코드 업데이트
       await prisma.waitingParticipant.update({
-        where: { id: canceledParticipant.id },
+        where: { id: existingWaiting.id },
         data: {
           status: waitingStatus,
           availableTime,

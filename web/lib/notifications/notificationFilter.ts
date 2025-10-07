@@ -27,13 +27,29 @@ export class NotificationFilter {
           doNotDisturbEnd: true,
           doNotDisturbDays: true,
           newGamePostEnabled: true,
-          newGamePostSettings: true,
+          newGamePostMode: true,
+          customGameIds: true,
           participatingGameEnabled: true,
-          participatingGameSettings: true,
+          participatingGameFullMeeting: true,
+          participatingGameMemberJoin: true,
+          participatingGameMemberLeave: true,
+          participatingGameTimeChange: true,
+          participatingGameCancelled: true,
+          participatingGameBeforeMeetingEnabled: true,
+          participatingGameBeforeMeetingMinutes: true,
+          participatingGameBeforeMeetingOnlyFull: true,
+          participatingGameMeetingStartEnabled: true,
+          participatingGameMeetingStartOnlyFull: true,
           myGamePostEnabled: true,
-          myGamePostSettings: true,
-          waitingListEnabled: true,
-          customGameIds: true
+          myGamePostFullMeeting: true,
+          myGamePostMemberJoin: true,
+          myGamePostMemberLeave: true,
+          myGamePostBeforeMeetingEnabled: true,
+          myGamePostBeforeMeetingMinutes: true,
+          myGamePostBeforeMeetingOnlyFull: true,
+          myGamePostMeetingStartEnabled: true,
+          myGamePostMeetingStartOnlyFull: true,
+          waitingListEnabled: true
         }
       });
       
@@ -102,13 +118,29 @@ export class NotificationFilter {
   private static async checkCategorySettings(
     settings: {
       newGamePostEnabled: boolean;
-      newGamePostSettings: unknown;
+      newGamePostMode: string;
+      customGameIds: string[];
       participatingGameEnabled: boolean;
-      participatingGameSettings: unknown;
+      participatingGameFullMeeting: boolean;
+      participatingGameMemberJoin: boolean;
+      participatingGameMemberLeave: boolean;
+      participatingGameTimeChange: boolean;
+      participatingGameCancelled: boolean;
+      participatingGameBeforeMeetingEnabled: boolean;
+      participatingGameBeforeMeetingMinutes: number;
+      participatingGameBeforeMeetingOnlyFull: boolean;
+      participatingGameMeetingStartEnabled: boolean;
+      participatingGameMeetingStartOnlyFull: boolean;
       myGamePostEnabled: boolean;
-      myGamePostSettings: unknown;
+      myGamePostFullMeeting: boolean;
+      myGamePostMemberJoin: boolean;
+      myGamePostMemberLeave: boolean;
+      myGamePostBeforeMeetingEnabled: boolean;
+      myGamePostBeforeMeetingMinutes: number;
+      myGamePostBeforeMeetingOnlyFull: boolean;
+      myGamePostMeetingStartEnabled: boolean;
+      myGamePostMeetingStartOnlyFull: boolean;
       waitingListEnabled: boolean;
-      customGameIds?: string[];
     },
     notificationType: string,
     context?: NotificationContext
@@ -116,15 +148,25 @@ export class NotificationFilter {
     switch (notificationType) {
       case 'NEW_GAME_POST':
         if (!settings.newGamePostEnabled) return false;
-        return await this.checkNewGamePostSettings(settings.newGamePostSettings, context, settings.customGameIds);
+        return await this.checkNewGamePostSettings(settings.newGamePostMode, context, settings.customGameIds);
         
       case 'PARTICIPATING_GAME_UPDATE':
         if (!settings.participatingGameEnabled) return false;
-        return this.checkParticipatingGameSettings(settings.participatingGameSettings, context);
+        return this.checkParticipatingGameSettings(settings, context);
+        
+      case 'GAME_TIME_CHANGED':
+        if (!settings.participatingGameEnabled) return false;
+        return this.checkParticipatingGameSettings(settings, context);
         
       case 'MY_GAME_POST_UPDATE':
         if (!settings.myGamePostEnabled) return false;
-        return this.checkMyGamePostSettings(settings.myGamePostSettings, context);
+        return this.checkMyGamePostSettings(settings, context);
+        
+      case 'GAME_BEFORE_START':
+        return this.checkGameBeforeStartSettings(settings, context);
+        
+      case 'GAME_START':
+        return this.checkGameStartSettings(settings, context);
         
       case 'WAITING_LIST_UPDATE':
         return settings.waitingListEnabled;
@@ -138,15 +180,10 @@ export class NotificationFilter {
    * 새 게임 포스트 알림 설정 확인
    */
   private static async checkNewGamePostSettings(
-    settings: unknown,
+    mode: string,
     context?: NotificationContext,
     customGameIds?: string[]
   ): Promise<boolean> {
-    const settingsObj = settings as { gameFilters?: { mode?: string } } | null;
-    if (!settingsObj?.gameFilters) return true;
-    
-    const { mode } = settingsObj.gameFilters;
-    
     if (mode === 'all') return true;
     
     if (mode === 'favorites') {
@@ -176,35 +213,34 @@ export class NotificationFilter {
    * 참여 중인 게임 설정 확인
    */
   private static checkParticipatingGameSettings(
-    settings: unknown,
+    settings: {
+      participatingGameFullMeeting: boolean;
+      participatingGameMemberJoin: boolean;
+      participatingGameMemberLeave: boolean;
+      participatingGameTimeChange: boolean;
+      participatingGameCancelled: boolean;
+      participatingGameBeforeMeetingEnabled: boolean;
+      participatingGameMeetingStartEnabled: boolean;
+    },
     context?: NotificationContext
   ): boolean {
-    if (!settings) return true;
-    
-    const settingsObj = settings as {
-      memberJoin?: boolean;
-      memberLeave?: boolean;
-      timeChange?: boolean;
-      fullMeeting?: boolean;
-      beforeMeeting?: { enabled?: boolean };
-      meetingStart?: { enabled?: boolean };
-    };
-    
     const eventType = context?.eventType;
     
     switch (eventType) {
       case 'MEMBER_JOIN':
-        return settingsObj.memberJoin !== false;
+        return settings.participatingGameMemberJoin;
       case 'MEMBER_LEAVE':
-        return settingsObj.memberLeave !== false;
+        return settings.participatingGameMemberLeave;
       case 'TIME_CHANGE':
-        return settingsObj.timeChange !== false;
+        return settings.participatingGameTimeChange;
       case 'GAME_FULL':
-        return settingsObj.fullMeeting !== false;
+        return settings.participatingGameFullMeeting;
+      case 'GAME_CANCELLED':
+        return settings.participatingGameCancelled;
       case 'BEFORE_MEETING':
-        return settingsObj.beforeMeeting?.enabled !== false;
+        return settings.participatingGameBeforeMeetingEnabled;
       case 'MEETING_START':
-        return settingsObj.meetingStart?.enabled !== false;
+        return settings.participatingGameMeetingStartEnabled;
       default:
         return true;
     }
@@ -214,32 +250,28 @@ export class NotificationFilter {
    * 내 게임 포스트 설정 확인
    */
   private static checkMyGamePostSettings(
-    settings: unknown,
+    settings: {
+      myGamePostFullMeeting: boolean;
+      myGamePostMemberJoin: boolean;
+      myGamePostMemberLeave: boolean;
+      myGamePostBeforeMeetingEnabled: boolean;
+      myGamePostMeetingStartEnabled: boolean;
+    },
     context?: NotificationContext
   ): boolean {
-    if (!settings) return true;
-    
-    const settingsObj = settings as {
-      memberJoin?: boolean;
-      memberLeave?: boolean;
-      fullMeeting?: boolean;
-      beforeMeeting?: { enabled?: boolean };
-      meetingStart?: { enabled?: boolean };
-    };
-    
     const eventType = context?.eventType;
     
     switch (eventType) {
       case 'MEMBER_JOIN':
-        return settingsObj.memberJoin !== false;
+        return settings.myGamePostMemberJoin;
       case 'MEMBER_LEAVE':
-        return settingsObj.memberLeave !== false;
+        return settings.myGamePostMemberLeave;
       case 'GAME_FULL':
-        return settingsObj.fullMeeting !== false;
+        return settings.myGamePostFullMeeting;
       case 'BEFORE_MEETING':
-        return settingsObj.beforeMeeting?.enabled !== false;
+        return settings.myGamePostBeforeMeetingEnabled;
       case 'MEETING_START':
-        return settingsObj.meetingStart?.enabled !== false;
+        return settings.myGamePostMeetingStartEnabled;
       default:
         return true;
     }
@@ -255,117 +287,6 @@ export class NotificationFilter {
     return userFavoriteGames.some(fav => fav.gameId === gameId);
   }
   
-  /**
-   * 이벤트 타입별 설정 확인 (배치 처리용 - 동기)
-   */
-  private static checkEventTypeSettingsBatch(
-    settings: unknown,
-    context?: NotificationContext
-  ): boolean {
-    // settings가 null이면 기본값으로 허용
-    if (!settings) return true;
-    
-    const settingsObj = settings as {
-      memberJoin?: boolean;
-      memberLeave?: boolean;
-      fullMeeting?: boolean;
-      gameCancelled?: boolean;
-      beforeMeeting?: { enabled?: boolean };
-      meetingStart?: { enabled?: boolean };
-    };
-    
-    const eventType = context?.eventType;
-    
-    switch (eventType) {
-      case 'MEMBER_JOIN':
-        return settingsObj.memberJoin !== false;
-      case 'MEMBER_LEAVE':
-        return settingsObj.memberLeave !== false;
-      case 'GAME_FULL':
-        return settingsObj.fullMeeting !== false;
-      case 'BEFORE_MEETING':
-        return settingsObj.beforeMeeting?.enabled !== false;
-      case 'MEETING_START':
-        return settingsObj.meetingStart?.enabled !== false;
-      case 'GAME_CANCELLED':
-        return settingsObj.gameCancelled !== false;
-      default:
-        return true;
-    }
-  }
-  
-  /**
-   * 카테고리별 설정 확인 (배치 처리용 - 동기)
-   */
-  private static checkCategorySettingsBatch(
-    settings: {
-      newGamePostEnabled: boolean;
-      newGamePostSettings: unknown;
-      participatingGameEnabled: boolean;
-      participatingGameSettings: unknown;
-      myGamePostEnabled: boolean;
-      myGamePostSettings: unknown;
-      waitingListEnabled: boolean;
-      customGameIds: string[];
-      user: {
-        favoriteGames: { gameId: string }[];
-      };
-    },
-    notificationType: string,
-    context?: NotificationContext
-  ): boolean {
-    // settings가 null이면 기본값으로 허용
-    if (!settings) return true;
-    switch (notificationType) {
-      case 'NEW_GAME_POST':
-        if (!settings.newGamePostEnabled) return false;
-        
-        // 게임 필터 확인
-        if (context?.gameId) {
-          const gameSettings = settings.newGamePostSettings as {
-            gameFilters?: {
-              mode: string;
-            };
-          };
-          
-          const mode = gameSettings?.gameFilters?.mode;
-          
-          if (mode === 'all') {
-            return true;
-          }
-          
-          if (mode === 'favorites') {
-            // 현재 게임이 사용자의 관심 게임 목록에 포함되어 있는지 확인
-            return this.isFavoriteGame(settings.user.favoriteGames || [], context.gameId);
-          }
-          
-          if (mode === 'custom') {
-            // 커스텀으로 선택한 게임 배열에서 확인
-            return settings.customGameIds.includes(context.gameId);
-          }
-        }
-        return true;
-        
-      case 'PARTICIPATING_GAME_UPDATE':
-        if (!settings.participatingGameEnabled) return false;
-        return this.checkEventTypeSettingsBatch(settings.participatingGameSettings, context);
-        
-      case 'MY_GAME_POST_UPDATE':
-        if (!settings.myGamePostEnabled) return false;
-        return this.checkEventTypeSettingsBatch(settings.myGamePostSettings, context);
-        
-      case 'WAITING_LIST_UPDATE':
-        return settings.waitingListEnabled;
-        
-      case 'GAME_POST_CANCELLED':
-        // 게임메이트 취소는 PARTICIPATING_GAME_UPDATE 카테고리로 처리
-        if (!settings.participatingGameEnabled) return false;
-        return this.checkEventTypeSettingsBatch(settings.participatingGameSettings, context);
-        
-      default:
-        return true;
-    }
-  }
   
   /**
    * 여러 사용자의 알림 설정을 일괄 확인 (배치 처리)
@@ -385,18 +306,34 @@ export class NotificationFilter {
         },
         select: {
           userId: true,
-          newGamePostEnabled: true,
-          newGamePostSettings: true,
-          participatingGameEnabled: true,
-          participatingGameSettings: true,
-          myGamePostEnabled: true,
-          myGamePostSettings: true,
-          waitingListEnabled: true,
-          customGameIds: true,
           doNotDisturbEnabled: true,
           doNotDisturbStart: true,
           doNotDisturbEnd: true,
           doNotDisturbDays: true,
+          newGamePostEnabled: true,
+          newGamePostMode: true,
+          customGameIds: true,
+          participatingGameEnabled: true,
+          participatingGameFullMeeting: true,
+          participatingGameMemberJoin: true,
+          participatingGameMemberLeave: true,
+          participatingGameTimeChange: true,
+          participatingGameCancelled: true,
+          participatingGameBeforeMeetingEnabled: true,
+          participatingGameBeforeMeetingMinutes: true,
+          participatingGameBeforeMeetingOnlyFull: true,
+          participatingGameMeetingStartEnabled: true,
+          participatingGameMeetingStartOnlyFull: true,
+          myGamePostEnabled: true,
+          myGamePostFullMeeting: true,
+          myGamePostMemberJoin: true,
+          myGamePostMemberLeave: true,
+          myGamePostBeforeMeetingEnabled: true,
+          myGamePostBeforeMeetingMinutes: true,
+          myGamePostBeforeMeetingOnlyFull: true,
+          myGamePostMeetingStartEnabled: true,
+          myGamePostMeetingStartOnlyFull: true,
+          waitingListEnabled: true,
           user: {
             select: {
               favoriteGames: {
@@ -411,26 +348,36 @@ export class NotificationFilter {
       
       // 2. 메모리에서 필터링
       const filteredUserIds: string[] = [];
+      const settingsMap = new Map(userSettings.map(s => [s.userId, s]));
       
-      for (const setting of userSettings) {
+      for (const userId of userIds) {
         try {
+          const setting = settingsMap.get(userId);
+          
+          // 알림 설정이 없는 사용자는 기본값으로 허용
+          if (!setting) {
+            console.log(`사용자 ${userId}의 알림 설정이 없습니다. 기본값으로 허용합니다.`);
+            filteredUserIds.push(userId);
+            continue;
+          }
+          
           // 방해 금지 시간 확인
           if (this.isDoNotDisturbTime(setting)) {
             continue;
           }
           
           // 카테고리별 설정 확인
-          const shouldSend = this.checkCategorySettingsBatch(
+          const shouldSend = await this.checkCategorySettings(
             setting,
             notificationType,
             context
           );
           
           if (shouldSend) {
-            filteredUserIds.push(setting.userId);
+            filteredUserIds.push(userId);
           }
         } catch (error) {
-          console.error(`사용자 ${setting.userId} 알림 필터링 중 오류:`, error);
+          console.error(`사용자 ${userId} 알림 필터링 중 오류:`, error);
           // 오류 발생 시 해당 사용자는 알림을 받지 않음
           continue;
         }
@@ -442,6 +389,98 @@ export class NotificationFilter {
     } catch (error) {
       console.error('배치 알림 필터링 중 오류:', error);
       return [];
+    }
+  }
+
+  /**
+   * 게임 시작 전 알림 설정 확인
+   */
+  private static checkGameBeforeStartSettings(
+    settings: {
+      participatingGameEnabled: boolean;
+      participatingGameBeforeMeetingEnabled: boolean;
+      participatingGameBeforeMeetingMinutes: number;
+      participatingGameBeforeMeetingOnlyFull: boolean;
+      myGamePostEnabled: boolean;
+      myGamePostBeforeMeetingEnabled: boolean;
+      myGamePostBeforeMeetingMinutes: number;
+      myGamePostBeforeMeetingOnlyFull: boolean;
+    },
+    context?: NotificationContext
+  ): boolean {
+    const { isAuthor, minutesBefore, isFull } = context?.additionalData || {};
+    
+    if (isAuthor) {
+      // 작성자 알림 설정 확인
+      if (!settings.myGamePostEnabled || !settings.myGamePostBeforeMeetingEnabled) {
+        return false;
+      }
+      
+      if (settings.myGamePostBeforeMeetingMinutes !== minutesBefore) {
+        return false;
+      }
+      
+      if (settings.myGamePostBeforeMeetingOnlyFull && !isFull) {
+        return false;
+      }
+      
+      return true;
+    } else {
+      // 참여자 알림 설정 확인
+      if (!settings.participatingGameEnabled || !settings.participatingGameBeforeMeetingEnabled) {
+        return false;
+      }
+      
+      if (settings.participatingGameBeforeMeetingMinutes !== minutesBefore) {
+        return false;
+      }
+      
+      if (settings.participatingGameBeforeMeetingOnlyFull && !isFull) {
+        return false;
+      }
+      
+      return true;
+    }
+  }
+
+  /**
+   * 게임 시작 알림 설정 확인
+   */
+  private static checkGameStartSettings(
+    settings: {
+      participatingGameEnabled: boolean;
+      participatingGameMeetingStartEnabled: boolean;
+      participatingGameMeetingStartOnlyFull: boolean;
+      myGamePostEnabled: boolean;
+      myGamePostMeetingStartEnabled: boolean;
+      myGamePostMeetingStartOnlyFull: boolean;
+    },
+    context?: NotificationContext
+  ): boolean {
+    const { isAuthor, isFull } = context?.additionalData || {};
+    
+    if (isAuthor) {
+      // 작성자 알림 설정 확인
+      if (!settings.myGamePostEnabled || !settings.myGamePostMeetingStartEnabled) {
+        return false;
+      }
+      
+      if (settings.myGamePostMeetingStartOnlyFull && !isFull) {
+        return false;
+      }
+      
+      return true;
+    } else {
+      // 참여자 알림 설정 확인
+      if (!settings.participatingGameEnabled || !settings.participatingGameMeetingStartEnabled) {
+        return false;
+      }
+      
+      if (settings.participatingGameMeetingStartOnlyFull && !isFull) {
+        return false;
+      }
+      
+      return true;
     }
   }
 }

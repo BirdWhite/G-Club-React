@@ -6,7 +6,7 @@ import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Youtube from '@tiptap/extension-youtube';
 import Placeholder from '@tiptap/extension-placeholder';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { YoutubeMenu } from './YoutubeMenu';
 import { LinkMenu } from './LinkMenu';
 import { ResizableImage } from './ResizableImage';
@@ -23,19 +23,17 @@ interface RichTextEditorProps {
   content?: JsonValue;
   onChange: (content: JsonValue) => void;
   postId?: string;
-  onImageUpload?: (tempImages: string[]) => void;
   disabled?: boolean;
   showToolbar?: boolean;
   placeholder?: string;
   mobileStyle?: boolean;
 }
 
-export function RichTextEditor({ content, onChange, postId, onImageUpload, disabled = false, showToolbar = true, placeholder, mobileStyle = false }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, postId, disabled = false, showToolbar = true, placeholder, mobileStyle = false }: RichTextEditorProps) {
   // 에디터 상태 관리
   const [editorReady, setEditorReady] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [tempImages, setTempImages] = useState<string[]>([]);
-  const initialContentRef = useRef(content);
+  // const initialContentRef = useRef(content); // 현재 미사용
 
   // 링크 및 유튜브 상태
   const [linkUrl, setLinkUrl] = useState('');
@@ -55,8 +53,8 @@ export function RichTextEditor({ content, onChange, postId, onImageUpload, disab
         emptyEditorClass: 'is-editor-empty',
         emptyNodeClass: 'is-empty',
         showOnlyWhenEditable: true,
-        showOnlyCurrent: false,
-        includeChildren: true,
+        showOnlyCurrent: true,
+        includeChildren: false,
       }),
       Image.configure({
         HTMLAttributes: {
@@ -114,13 +112,25 @@ export function RichTextEditor({ content, onChange, postId, onImageUpload, disab
       setIsUploading(true);
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('isTemporary', 'true'); // 임시 업로드 플래그
       
+      // 공지사항 전용 - postId가 있으면 수정 모드, 없으면 새 글 작성 모드
       if (postId) {
-        formData.append('postId', postId);
+        // 수정 모드: 바로 정식 폴더에 업로드
+        formData.append('noticeId', postId);
+      } else {
+        // 새 글 작성 모드: 미리 생성된 ID 사용
+        let noticeId = localStorage.getItem('tempNoticeId');
+        if (!noticeId) {
+          // UUID 생성 및 검증
+          noticeId = await generateValidNoticeId();
+          localStorage.setItem('tempNoticeId', noticeId);
+        }
+        formData.append('noticeId', noticeId);
       }
 
-      const response = await fetch('/api/upload', {
+      const apiEndpoint = '/api/upload/notice-image'; // 공지사항 전용으로 단순화
+
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         body: formData,
       });
@@ -132,11 +142,6 @@ export function RichTextEditor({ content, onChange, postId, onImageUpload, disab
 
       const data = await response.json();
       
-      // 임시 이미지 URL 추적
-      if (data.isTemporary && data.url) {
-        setTempImages(prev => [...prev, data.url]);
-      }
-      
       return data.url;
     } catch (error) {
       console.error('이미지 업로드 오류:', error);
@@ -146,6 +151,39 @@ export function RichTextEditor({ content, onChange, postId, onImageUpload, disab
       setIsUploading(false);
     }
   }, [postId]);
+
+  // 유효한 공지사항 ID 생성 함수
+  const generateValidNoticeId = async (): Promise<string> => {
+    const maxAttempts = 10; // 최대 시도 횟수
+    
+    for (let i = 0; i < maxAttempts; i++) {
+      const noticeId = crypto.randomUUID();
+      
+      try {
+        // ID 유효성 검증 API 호출
+        const response = await fetch('/api/notices/validate-id', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ noticeId }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.isValid && !result.exists) {
+            return noticeId;
+          }
+        }
+      } catch (error) {
+        console.error('ID 검증 중 오류:', error);
+      }
+    }
+    
+    // 최대 시도 횟수 초과 시 에러 발생
+    console.error('유효한 ID 생성에 실패했습니다. 최대 시도 횟수를 초과했습니다.');
+    throw new Error('ID 생성에 실패했습니다. 페이지를 새로고침해주세요.');
+  };
 
   // 이미지 업로드 버튼 처리
   const handleImageUpload = useCallback(() => {
@@ -167,19 +205,9 @@ export function RichTextEditor({ content, onChange, postId, onImageUpload, disab
     input.click();
   }, [editor, uploadImage]);
 
-  // 임시 이미지 정보 부모 컴포넌트에 전달
-  useEffect(() => {
-    if (onImageUpload && tempImages.length > 0) {
-      onImageUpload(tempImages);
-    }
-  }, [tempImages, onImageUpload]);
+  // tempImages 관련 로직 제거 - 더 이상 필요하지 않음
   
-  // 에디터 내용이 초기화되면 임시 이미지 목록도 초기화
-  useEffect(() => {
-    if (content === '' || content !== initialContentRef.current) {
-      setTempImages([]);
-    }
-  }, [content]);
+  // tempImages 관련 로직 제거 - 더 이상 필요하지 않음
   
   // 링크 설정 함수
   const setLink = useCallback(() => {
@@ -300,13 +328,18 @@ export function RichTextEditor({ content, onChange, postId, onImageUpload, disab
       
       <style jsx global>{`
         /* Tiptap Placeholder 스타일 */
-        .ProseMirror p.is-empty.is-editor-empty::before {
+        .ProseMirror p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
           height: 0;
           pointer-events: none;
-          color: #6B7280;
-          opacity: 0.6;
+          color: #9CA3AF;
+          opacity: 0.8;
+        }
+        
+        /* 빈 단락에서 플레이스홀더가 여러 줄로 표시되지 않도록 */
+        .ProseMirror p.is-empty:not(:first-child)::before {
+          display: none;
         }
         
         .image-resizer-container {
@@ -381,13 +414,7 @@ export function RichTextEditor({ content, onChange, postId, onImageUpload, disab
           border: none !important;
           box-shadow: none !important;
         }
-        .ProseMirror p.is-editor-empty:first-child::before {
-          color: #adb5bd;
-          content: attr(data-placeholder);
-          float: left;
-          height: 0;
-          pointer-events: none;
-        }
+        /* 중복된 플레이스홀더 스타일 제거 - 위에서 이미 정의됨 */
         
         /* 리스트 스타일 */
         .ProseMirror ol {

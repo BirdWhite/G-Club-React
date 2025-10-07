@@ -35,13 +35,32 @@ export function MobileProfileEditPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cyber-black-200 py-6 px-4">
-      <div className="max-w-sm mx-auto bg-cyber-black-100 rounded-lg border border-cyber-black-300 p-6">
-        {/* 모바일용 헤더 */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-cyber-gray">프로필 수정</h1>
-          <p className="text-cyber-darkgray mt-2 text-sm">기본 정보를 수정해주세요</p>
-        </div>
+    <div className="bg-background">
+      {/* 모바일 헤더 - 카드 바깥에 배치 */}
+      <div className="flex items-center justify-between px-4 py-4 border-b border-border">
+        <button
+          type="button"
+          onClick={() => router.push('/')}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+        >
+          취소
+        </button>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="text-primary hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleSubmit}
+        >
+          {isLoading ? '저장 중...' : '저장'}
+        </button>
+      </div>
+
+      <div className="px-4 py-6">
+        <div className="max-w-sm mx-auto bg-card rounded-lg border border-border p-6">
+          {/* 설명 텍스트 */}
+          <div className="text-center mb-6">
+            <p className="text-muted-foreground text-sm">기본 정보를 수정해주세요</p>
+          </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 이름과 생년월일 입력 필드 */}
@@ -77,24 +96,8 @@ export function MobileProfileEditPage() {
             </div>
           )}
 
-          {/* 저장 버튼 - 모바일에서는 세로 배치 */}
-          <div className="flex flex-col space-y-3">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed py-3"
-            >
-              {isLoading ? '저장 중...' : '저장'}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push('/')}
-              className="w-full bg-cyber-black-100 text-cyber-gray py-3 px-4 rounded-md hover:bg-cyber-black-200 transition-colors border border-cyber-black-300 hover:border-cyber-gray"
-            >
-              취소
-            </button>
-          </div>
         </form>
+        </div>
       </div>
     </div>
   );

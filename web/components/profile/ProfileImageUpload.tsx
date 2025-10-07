@@ -18,7 +18,7 @@ export const ProfileImageUpload = ({
   return (
     <div>
       {/* 프로필 이미지 업로드 섹션 라벨 */}
-      <label htmlFor="profileImage" className="block text-sm font-medium text-cyber-gray mb-2">
+      <label htmlFor="profileImage" className="block text-sm font-medium text-foreground mb-2">
         프로필 사진
       </label>
       
@@ -28,7 +28,7 @@ export const ProfileImageUpload = ({
         id="profileImage"
         accept="image/*"
         onChange={onImageUpload}
-        className="mb-4 block w-full text-sm text-cyber-darkgray file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cyber-blue/20 file:text-cyber-blue hover:file:bg-cyber-blue/30"
+        className="mb-4 block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30"
       />
 
       {/* 이미지 미리보기 영역 */}
@@ -36,13 +36,13 @@ export const ProfileImageUpload = ({
         {/* 기존 프로필 이미지 표시 (편집 페이지에서만) */}
         {showCurrentImage && currentImage && !image && (
           <div className="text-center">
-            <p className="text-sm text-cyber-gray mb-2">현재 프로필</p>
+            <p className="text-sm text-foreground mb-2">현재 프로필</p>
             <Image 
               src={currentImage} 
               alt="현재 프로필" 
               width={96}
               height={96}
-              className="w-24 h-24 rounded-full object-cover border-2 border-cyber-black-300 bg-white" 
+              className="w-24 h-24 rounded-full object-cover border-2 border-border bg-background" 
             />
           </div>
         )}
@@ -50,13 +50,13 @@ export const ProfileImageUpload = ({
         {/* 크롭된 이미지 미리보기 */}
         {croppedImage && (
           <div className="text-center">
-            <p className="text-sm text-cyber-gray mb-2">새 프로필</p>
+            <p className="text-sm text-foreground mb-2">새 프로필</p>
             <Image 
               src={URL.createObjectURL(croppedImage)} 
               alt="프로필 미리보기" 
               width={96}
               height={96}
-              className="w-24 h-24 rounded-full object-cover border-2 border-cyber-blue" 
+              className="w-24 h-24 rounded-full object-cover border-2 border-primary" 
             />
           </div>
         )}

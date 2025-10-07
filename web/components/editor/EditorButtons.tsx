@@ -26,12 +26,12 @@ export function EditorButtons({
   const buttonClass = (isActive?: boolean) => 
     `p-2 rounded-sm transition-colors ${
       isActive
-        ? 'bg-cyber-blue text-white'
-        : 'text-cyber-gray hover:bg-cyber-black-600'
+        ? 'bg-primary text-primary-foreground'
+        : 'text-muted-foreground hover:bg-accent'
     } disabled:opacity-50 disabled:cursor-not-allowed`;
     
   return (
-    <div className="flex items-center p-2 border-b border-cyber-black-300 bg-cyber-black-300 flex-wrap gap-1">
+    <div className="flex items-center p-2 border-b border-border bg-muted flex-wrap gap-1">
       <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={buttonClass(editor.isActive('heading', { level: 2 }))} disabled={disabled}><strong>H2</strong></button>
       <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={buttonClass(editor.isActive('heading', { level: 3 }))} disabled={disabled}><strong>H3</strong></button>
       <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={buttonClass(editor.isActive('bold'))} disabled={disabled}><strong>B</strong></button>

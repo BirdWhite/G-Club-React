@@ -2,11 +2,16 @@
 
 import { GamePostCard } from '../GamePostCard';
 import { MobileGameFilter } from '../MobileGameFilter';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { GamePost } from '@/types/models';
 
 interface MobileGamePostListProps {
   userId?: string;
   posts: GamePost[];
+  loading?: boolean;
+  loadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
   urlState: {
     gameId: string;
     status: string;
@@ -20,6 +25,10 @@ type StatusFilterType = 'all' | 'recruiting' | 'open' | 'full' | 'completed_expi
 export function MobileGamePostList({ 
   userId, 
   posts, 
+  loading = false,
+  loadingMore = false,
+  hasMore = false,
+  onLoadMore,
   urlState, 
   onGameChange, 
   onStatusChange 
@@ -28,6 +37,13 @@ export function MobileGamePostList({
   const filteredPosts = posts;
 
   const renderPosts = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-12">
+          <LoadingSpinner />
+        </div>
+      );
+    }
 
     if (filteredPosts.length === 0) {
       return (
@@ -70,6 +86,25 @@ export function MobileGamePostList({
       <div className="pt-2">
         {renderPosts()}
       </div>
+      
+      {/* 무한 스크롤 로딩 및 더 보기 버튼 */}
+      {hasMore && (
+        <div className="mt-6 text-center px-4">
+          {loadingMore ? (
+            <div className="flex justify-center items-center py-4">
+              <LoadingSpinner />
+              <span className="ml-2 text-muted-foreground text-sm">더 많은 게임메이트를 불러오는 중...</span>
+            </div>
+          ) : (
+            <button
+              onClick={onLoadMore}
+              className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              더 많은 게임메이트 보기
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
