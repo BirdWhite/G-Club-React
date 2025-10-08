@@ -18,26 +18,22 @@ interface GlobalWithCronJobs {
 if (typeof window === 'undefined' && !(global as GlobalWithCronJobs).__cronJobsInitialized) {
   (global as GlobalWithCronJobs).__cronJobsInitialized = true;
   
-  // 환경 변수로 크론 작업 활성화/비활성화 제어
-  if (process.env.ENABLE_CRON_JOBS === 'true' || process.env.NODE_ENV === 'production') {
-    console.log('서버 시작: 크론 작업을 자동 초기화합니다...');
-    
-    // 게임 포스트 정리 크론 잡
-    startGamePostCleanup();
-    
-    // 알림 정리 크론 잡
-    startNotificationCleanup();
-    
-    // 게임 시작 전 알림 크론 잡
-    startGameStartNotification();
-    
-    // 게임 시작 시간 알림 크론 잡
-    startGameStartTimeNotification();
-    
-    console.log('서버 시작: 모든 크론 작업이 성공적으로 시작되었습니다.');
-  } else {
-    console.log('서버 시작: 크론 작업이 비활성화되어 있습니다. (ENABLE_CRON_JOBS=true로 설정하여 활성화)');
-  }
+  // 크론 작업 자동 초기화 (항상 활성화)
+  console.log('서버 시작: 크론 작업을 자동 초기화합니다...');
+  
+  // 게임 포스트 정리 크론 잡
+  startGamePostCleanup();
+  
+  // 알림 정리 크론 잡
+  startNotificationCleanup();
+  
+  // 게임 시작 전 알림 크론 잡
+  startGameStartNotification();
+  
+  // 게임 시작 시간 알림 크론 잡
+  startGameStartTimeNotification();
+  
+  console.log('서버 시작: 모든 크론 작업이 성공적으로 시작되었습니다.');
 }
 
 /**
@@ -55,28 +51,24 @@ export function initializeCronJobs(includeNotificationCleanup: boolean = true): 
     
     (global as GlobalWithCronJobs).__cronJobsInitialized = true;
     
-    // 환경 변수로 크론 작업 활성화/비활성화 제어
-    if (process.env.ENABLE_CRON_JOBS === 'true' || process.env.NODE_ENV === 'production') {
-      console.log('수동 크론 작업 초기화...');
-      
-      // 게임 포스트 정리 크론 잡
-      startGamePostCleanup();
-      
-      // 알림 정리 크론 잡 (선택적)
-      if (includeNotificationCleanup) {
-        startNotificationCleanup();
-      }
-      
-      // 게임 시작 전 알림 크론 잡
-      startGameStartNotification();
-      
-      // 게임 시작 시간 알림 크론 잡
-      startGameStartTimeNotification();
-      
-      console.log('수동 크론 작업이 성공적으로 시작되었습니다.');
-    } else {
-      console.log('크론 작업이 비활성화되어 있습니다. (ENABLE_CRON_JOBS=true로 설정하여 활성화)');
+    // 수동 크론 작업 초기화 (항상 활성화)
+    console.log('수동 크론 작업 초기화...');
+    
+    // 게임 포스트 정리 크론 잡
+    startGamePostCleanup();
+    
+    // 알림 정리 크론 잡 (선택적)
+    if (includeNotificationCleanup) {
+      startNotificationCleanup();
     }
+    
+    // 게임 시작 전 알림 크론 잡
+    startGameStartNotification();
+    
+    // 게임 시작 시간 알림 크론 잡
+    startGameStartTimeNotification();
+    
+    console.log('수동 크론 작업이 성공적으로 시작되었습니다.');
   }
 }
 

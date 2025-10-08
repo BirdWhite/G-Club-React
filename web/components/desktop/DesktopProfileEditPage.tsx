@@ -81,14 +81,31 @@ export function DesktopProfileEditPage() {
             <button
               type="button"
               onClick={() => router.push('/')}
-              className="flex-1 bg-cyber-black-100 text-cyber-gray py-3 px-6 rounded-md hover:bg-cyber-black-200 transition-colors border border-cyber-black-300 hover:border-cyber-gray"
+              className="flex-1 py-3 px-6 transition-colors font-medium"
+              style={{
+                backgroundColor: 'var(--secondary)',
+                color: 'var(--secondary-foreground)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--muted)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--secondary)';
+              }}
             >
               취소
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed py-3"
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed py-3 px-6 rounded-md transition-colors font-medium"
+              style={{
+                backgroundColor: 'var(--primary)',
+                color: 'var(--primary-foreground)',
+                borderRadius: 'var(--radius)'
+              }}
             >
               {isLoading ? '저장 중...' : '저장'}
             </button>

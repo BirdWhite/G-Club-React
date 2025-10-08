@@ -35,7 +35,7 @@ export function UserRoleManager() {
   const isSuperAdminUser = isSuperAdmin(profile?.role);
 
   // Fetch users and roles from the server
-  const fetchData = useCallback(async (page: number = currentPage, search: string = searchTerm, role: string = roleFilter, isInitialLoad: boolean = false) => {
+  const fetchData = useCallback(async (page: number = 1, search: string = searchTerm, role: string = roleFilter, isInitialLoad: boolean = false) => {
     if (isInitialLoad) {
       setIsLoading(true);
     } else {
@@ -81,7 +81,7 @@ export function UserRoleManager() {
         setIsSearching(false);
       }
     }
-  }, [currentPage, searchTerm, roleFilter, pageSize]);
+  }, [searchTerm, roleFilter, pageSize]);
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -100,13 +100,6 @@ export function UserRoleManager() {
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, roleFilter, fetchData]);
-
-  // 페이지 변경 시 데이터 로드
-  useEffect(() => {
-    if (currentPage > 1) {
-      fetchData(currentPage, searchTerm, roleFilter, false);
-    }
-  }, [currentPage, fetchData, searchTerm, roleFilter]);
 
   const handleRoleChange = async (userId: string, newRoleId: string) => {
     try {
@@ -210,6 +203,8 @@ export function UserRoleManager() {
   // 페이지네이션 핸들러
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    // 페이지 변경 시 즉시 데이터 로드
+    fetchData(page, searchTerm, roleFilter, false);
   };
 
   const handlePageSizeChange = (newPageSize: number) => {

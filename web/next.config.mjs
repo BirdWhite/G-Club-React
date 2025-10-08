@@ -1,12 +1,22 @@
 import withPWA from '@ducanh2912/next-pwa';
 
-// 서버 시작 시 크론 작업 초기화
-import('./lib/cron/cronManager.js').catch(() => {
-  // 서버 시작 시에만 실행되므로 오류 무시
-});
+// 크론 작업은 instrumentation.ts에서 자동 초기화됩니다
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Edge Runtime 경고 무시를 위한 webpack 설정
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+      };
+    }
+    return config;
+  },
   // 헤더 크기 최적화
   serverExternalPackages: ['@supabase/ssr'],
   // HTTPS 설정 (HSTS 헤더는 Nginx에서 처리)

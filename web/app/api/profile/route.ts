@@ -144,22 +144,35 @@ export async function GET() {
       }
     }
     
-    // 프로필이 없는 경우 기본 프로필 생성
+    // 프로필이 없는 경우 기본 프로필 생성 (동시성 문제 해결을 위해 upsert 사용)
     if (!userProfile) {
       // 기본 역할 조회 (NONE 권한)
       const defaultRole = await prisma.role.findFirst({
         where: { name: 'NONE' }
       });
       
-      // 기본 프로필 생성
-      userProfile = await prisma.userProfile.create({
-        data: {
+      if (!defaultRole) {
+        console.error("Default 'NONE' role not found in the database. Seeding might be required.");
+        return NextResponse.json(
+          { error: "기본 역할 설정을 찾을 수 없습니다. 관리자에게 문의하세요." },
+          { status: 500 }
+        );
+      }
+      
+      // upsert를 사용하여 동시성 문제 해결
+      userProfile = await prisma.userProfile.upsert({
+        where: { userId },
+        update: {
+          // 이미 존재하는 경우 업데이트할 데이터 (기본적으로는 변경하지 않음)
+          email: oauthEmail, // OAuth 이메일 정보만 업데이트
+        },
+        create: {
           userId,
           name: user.user_metadata?.full_name || `사용자_${userId.substring(0, 6)}`,
           email: oauthEmail, // OAuth 이메일 정보 (항상 포함)
           birthDate: new Date('2000-01-01'), // 기본 생년월일
           image: '',
-          roleId: defaultRole?.id
+          roleId: defaultRole.id
         },
         include: {
           role: true, // 생성된 프로필에도 역할 정보를 포함합니다.
