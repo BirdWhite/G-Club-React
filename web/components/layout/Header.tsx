@@ -294,11 +294,17 @@ export function Header() {
                 </Link>
               </div>
 
-              {/* 데스크톱 네비게이션 */}
+              {/* 데스크톱 네비게이션 - 스켈레톤 로딩으로 안정화 */}
               <nav className="hidden md:ml-6 md:flex md:space-x-6 lg:space-x-8">
                 <NavLink href="/">홈</NavLink>
-                {/* 로그인한 사용자만 게임메이트와 관리자 대시보드 접근 가능 */}
-                {session && !isPendingMember && (
+                {isLoading ? (
+                  // 로딩 중일 때 스켈레톤 표시
+                  <div className="flex items-center space-x-6 lg:space-x-8">
+                    <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
+                    <div className="h-4 w-12 bg-muted animate-pulse rounded"></div>
+                    <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
+                  </div>
+                ) : session && !isPendingMember ? (
                   <>
                     <NavLink href="/game-mate">게임메이트</NavLink>
                     <NavLink href="/notifications" showBadge={true} badgeCount={unreadNotificationCount}>알림</NavLink>
@@ -308,6 +314,16 @@ export function Header() {
                       </NavLink>
                     )}
                   </>
+                ) : (
+                  // 로그인하지 않은 사용자에게는 투명한 공간 제공 (레이아웃 유지)
+                  <div className="flex items-center space-x-6 lg:space-x-8">
+                    <div className="opacity-0 pointer-events-none">
+                      <span className="text-sm font-medium">게임메이트</span>
+                    </div>
+                    <div className="opacity-0 pointer-events-none">
+                      <span className="text-sm font-medium">알림</span>
+                    </div>
+                  </div>
                 )}
               </nav>
             </div>
@@ -323,7 +339,9 @@ export function Header() {
             <div className="flex items-center">
               {isLoading ? (
                 <div className="flex items-center space-x-2">
-                  {/* 로딩 스피너 */}
+                  {/* 프로필 스켈레톤 */}
+                  <div className="h-8 w-8 bg-muted animate-pulse rounded-full"></div>
+                  <div className="hidden md:block h-5 w-5 bg-muted animate-pulse rounded"></div>
                 </div>
               ) : session ? (
                     <div className="flex items-center space-x-2">
