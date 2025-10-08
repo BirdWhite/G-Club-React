@@ -42,6 +42,54 @@ export enum GamePostStatus {
   EXPIRED = 'EXPIRED'
 }
 
+// ========== 알림 관련 Enums ==========
+
+// 알림 카테고리 (대분류 - 알림 설정의 메인 카테고리)
+export enum NotificationCategory {
+  NEW_GAME_POST = 'NEW_GAME_POST',                    // 신규 게임메이트 글
+  PARTICIPATING_GAME = 'PARTICIPATING_GAME',          // 참여중인 모임
+  MY_GAME_POST = 'MY_GAME_POST',                      // 내가 작성한 모임
+  WAITING_LIST = 'WAITING_LIST',                      // 예비 참여
+  NOTICE = 'NOTICE'                                   // 공지사항
+}
+
+// 알림 이벤트 타입 (소분류 - 구체적인 이벤트)
+export enum NotificationEventType {
+  // 참여 관련
+  MEMBER_JOIN = 'MEMBER_JOIN',          // 멤버 참가
+  MEMBER_LEAVE = 'MEMBER_LEAVE',        // 멤버 탈퇴
+  GAME_FULL = 'GAME_FULL',              // 인원 마감
+  
+  // 시간 관련
+  TIME_CHANGE = 'TIME_CHANGE',          // 시간 변경
+  BEFORE_MEETING = 'BEFORE_MEETING',    // 모임 전 알림
+  MEETING_START = 'MEETING_START',      // 모임 시작
+  
+  // 상태 변경
+  GAME_CANCELLED = 'GAME_CANCELLED',    // 게임 취소
+  PROMOTED = 'PROMOTED',                // 대기자 승격
+  
+  // 공지사항
+  NOTICE_PUBLISHED = 'NOTICE_PUBLISHED' // 공지사항 발행
+}
+
+// 데이터베이스 저장용 알림 타입 (Prisma type 필드)
+export enum NotificationDatabaseType {
+  GAME_POST_NEW = 'GAME_POST_NEW',
+  GAME_POST_FULL = 'GAME_POST_FULL',
+  GAME_POST_MEMBER_JOIN = 'GAME_POST_MEMBER_JOIN',
+  GAME_POST_MEMBER_LEAVE = 'GAME_POST_MEMBER_LEAVE',
+  GAME_POST_TIME_CHANGE = 'GAME_POST_TIME_CHANGE',
+  GAME_POST_CANCELLED = 'GAME_POST_CANCELLED',
+  GAME_POST_BEFORE_START = 'GAME_POST_BEFORE_START',
+  GAME_POST_START = 'GAME_POST_START',
+  WAITING_LIST_PROMOTED = 'WAITING_LIST_PROMOTED',
+  WAITING_LIST_INVITED = 'WAITING_LIST_INVITED',
+  NOTICE_NEW = 'NOTICE_NEW',
+  NOTICE_UPDATED = 'NOTICE_UPDATED',
+  SYSTEM_ANNOUNCEMENT = 'SYSTEM_ANNOUNCEMENT'
+}
+
 // ========== Models ==========
 
 // 권한 모델

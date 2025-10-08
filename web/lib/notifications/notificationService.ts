@@ -2,7 +2,48 @@ import prisma from '@/lib/database/prisma';
 import { sendPushNotificationInternal } from './pushNotifications';
 import type { InputJsonValue } from '@prisma/client/runtime/library';
 import { NotificationFilter, NotificationContext } from './notificationFilter';
-import { NotificationContentGenerator, NotificationType, NotificationEventType } from './notificationContent';
+import { NotificationContentGenerator } from './notificationContent';
+import { NotificationDatabaseType, NotificationCategory, NotificationEventType } from '@/types/models';
+
+// 데이터베이스 타입을 알림 카테고리로 매핑
+function mapDatabaseTypeToCategory(dbType: string): string {
+  // GAME_POST_NEW → NEW_GAME_POST
+  if (dbType === NotificationDatabaseType.GAME_POST_NEW) {
+    return NotificationCategory.NEW_GAME_POST;
+  }
+  
+  // GAME_POST_MEMBER_JOIN, MEMBER_LEAVE, FULL, TIME_CHANGE, CANCELLED, BEFORE_START, START → PARTICIPATING_GAME
+  if ([
+    NotificationDatabaseType.GAME_POST_MEMBER_JOIN,
+    NotificationDatabaseType.GAME_POST_MEMBER_LEAVE,
+    NotificationDatabaseType.GAME_POST_FULL,
+    NotificationDatabaseType.GAME_POST_TIME_CHANGE,
+    NotificationDatabaseType.GAME_POST_CANCELLED,
+    NotificationDatabaseType.GAME_POST_BEFORE_START,
+    NotificationDatabaseType.GAME_POST_START
+  ].includes(dbType as NotificationDatabaseType)) {
+    return NotificationCategory.PARTICIPATING_GAME;
+  }
+  
+  // WAITING_LIST_* → WAITING_LIST
+  if ([
+    NotificationDatabaseType.WAITING_LIST_PROMOTED,
+    NotificationDatabaseType.WAITING_LIST_INVITED
+  ].includes(dbType as NotificationDatabaseType)) {
+    return NotificationCategory.WAITING_LIST;
+  }
+  
+  // NOTICE_* → NOTICE
+  if ([
+    NotificationDatabaseType.NOTICE_NEW,
+    NotificationDatabaseType.NOTICE_UPDATED
+  ].includes(dbType as NotificationDatabaseType)) {
+    return NotificationCategory.NOTICE;
+  }
+  
+  // 기본값: 그대로 반환
+  return dbType;
+}
 
 export interface CreateNotificationData {
   type: string;
@@ -83,10 +124,13 @@ export async function createAndSendNotification(notificationData: CreateNotifica
     if (isGroupSend) {
       targetUserIds = await getTargetUserIds(groupType, groupFilter, gamePostId);
       
+      // 데이터베이스 타입을 알림 카테고리로 매핑
+      const category = mapDatabaseTypeToCategory(type);
+      
       // 알림 설정에 따라 필터링 적용
       const filteredUserIds = await NotificationFilter.filterUsersForNotification(
         targetUserIds,
-        type,
+        category,
         context
       );
       
@@ -322,14 +366,14 @@ export const GamePostNotifications = {
 
     // NotificationContentGenerator를 사용하여 알림 콘텐츠 생성
     const notificationContent = NotificationContentGenerator.generateNotification(
-      NotificationType.NEW_GAME_POST,
+      NotificationCategory.NEW_GAME_POST,
       NotificationEventType.MEMBER_JOIN,
       gamePost,
       { authorName: gamePost.author?.name }
     );
 
     return createAndSendNotification({
-      type: 'GAME_POST_NEW',
+      type: NotificationDatabaseType.GAME_POST_NEW,
       title: notificationContent.title,
       body: notificationContent.body,
       icon: notificationContent.icon,
@@ -339,7 +383,11 @@ export const GamePostNotifications = {
       isGroupSend: true,
       groupType: 'ALL_USERS_EXCEPT_AUTHOR',
       groupFilter: { authorId },
-      gamePostId
+      gamePostId,
+      context: {
+        gameId: gamePost.gameId || undefined,
+        gamePostId: gamePost.id
+      }
     });
   },
 
@@ -362,7 +410,7 @@ export const GamePostNotifications = {
 
     // NotificationContentGenerator를 사용하여 알림 콘텐츠 생성
     const notificationContent = NotificationContentGenerator.generateNotification(
-      NotificationType.PARTICIPATING_GAME_UPDATE,
+      NotificationCategory.PARTICIPATING_GAME,
       NotificationEventType.MEMBER_JOIN,
       gamePost,
       { participantName: participant.user?.name || participant.guestName || '알 수 없음' }
@@ -481,7 +529,7 @@ export const GamePostNotifications = {
     }
 
     const content = NotificationContentGenerator.generateNotification(
-      NotificationType.MY_GAME_POST_UPDATE,
+      NotificationCategory.MY_GAME_POST,
       NotificationEventType.MEMBER_JOIN,
       gamePost,
       { participantName }
@@ -538,7 +586,7 @@ export const GamePostNotifications = {
     }
 
     const content = NotificationContentGenerator.generateNotification(
-      NotificationType.PARTICIPATING_GAME_UPDATE,
+      NotificationCategory.PARTICIPATING_GAME,
       NotificationEventType.MEMBER_JOIN,
       gamePost,
       { participantName }
@@ -595,7 +643,7 @@ export const GamePostNotifications = {
     }
 
     const content = NotificationContentGenerator.generateNotification(
-      NotificationType.PARTICIPATING_GAME_UPDATE,
+      NotificationCategory.PARTICIPATING_GAME,
       NotificationEventType.GAME_FULL,
       gamePost
     );
@@ -650,7 +698,7 @@ export const GamePostNotifications = {
     }
 
     const content = NotificationContentGenerator.generateNotification(
-      NotificationType.MY_GAME_POST_UPDATE,
+      NotificationCategory.MY_GAME_POST,
       NotificationEventType.MEMBER_LEAVE,
       gamePost,
       { participantName }
@@ -707,7 +755,7 @@ export const GamePostNotifications = {
     }
 
     const content = NotificationContentGenerator.generateNotification(
-      NotificationType.PARTICIPATING_GAME_UPDATE,
+      NotificationCategory.PARTICIPATING_GAME,
       NotificationEventType.MEMBER_LEAVE,
       gamePost,
       { participantName }
@@ -762,7 +810,7 @@ export const GamePostNotifications = {
     }
 
     const content = NotificationContentGenerator.generateNotification(
-      NotificationType.WAITING_LIST_UPDATE,
+      NotificationCategory.WAITING_LIST,
       NotificationEventType.PROMOTED,
       gamePost
     );

@@ -28,14 +28,11 @@ export function GamePostPreview() {
     const handleScroll = () => {
       const cardWidth = 320 + 16; // w-80 (320px) + gap-4 (16px)
       const scrollLeft = container.scrollLeft;
-      // const newIndex = Math.round(scrollLeft / cardWidth); // 현재 미사용
- 
-      
-      // 오른쪽 페이드 투명도 계산
       const actualMaxScroll = container.scrollWidth - container.clientWidth;
       
-      if (posts.length <= 3) {
-        // 3개 이하면 스크롤할 필요가 없으므로 페이드 숨김
+      // 오른쪽 페이드 투명도 계산
+      if (actualMaxScroll <= 0) {
+        // 스크롤이 필요 없으면 페이드 숨김
         setRightFadeOpacity(0);
       } else if (scrollLeft >= actualMaxScroll - 10) {
         // 실제 스크롤 끝에 도달하면 오른쪽 페이드 완전히 숨김
@@ -58,6 +55,9 @@ export function GamePostPreview() {
         setLeftFadeOpacity(0);
       }
     };
+
+    // 초기 로드 시에도 실행
+    handleScroll();
 
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);

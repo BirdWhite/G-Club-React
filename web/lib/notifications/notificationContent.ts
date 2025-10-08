@@ -1,29 +1,11 @@
 
+import { NotificationCategory, NotificationEventType } from '@/types/models';
+
 export interface NotificationContent {
   title: string;
   body: string;
   icon?: string;
   actionUrl?: string;
-}
-
-// 알림 타입 enum
-export enum NotificationType {
-  NEW_GAME_POST = 'NEW_GAME_POST',
-  MY_GAME_POST_UPDATE = 'MY_GAME_POST_UPDATE',
-  PARTICIPATING_GAME_UPDATE = 'PARTICIPATING_GAME_UPDATE',
-  WAITING_LIST_UPDATE = 'WAITING_LIST_UPDATE'
-}
-
-// 알림 이벤트 타입 enum
-export enum NotificationEventType {
-  MEMBER_JOIN = 'MEMBER_JOIN',
-  MEMBER_LEAVE = 'MEMBER_LEAVE',
-  GAME_FULL = 'GAME_FULL',
-  PROMOTED = 'PROMOTED',
-  TIME_CHANGE = 'TIME_CHANGE',
-  BEFORE_MEETING = 'BEFORE_MEETING',
-  MEETING_START = 'MEETING_START',
-  GAME_CANCELLED = 'GAME_CANCELLED'
 }
 
 
@@ -41,7 +23,7 @@ export class NotificationContentGenerator {
    * 통합된 알림 생성기 - 타입과 이벤트에 따라 알림 내용 생성
    */
   static generateNotification(
-    type: NotificationType,
+    type: NotificationCategory,
     eventType: NotificationEventType,
     gamePost: PrismaGamePost,
     additionalData?: {
@@ -57,8 +39,8 @@ export class NotificationContentGenerator {
     const baseIcon = gamePost.game?.iconUrl || '/icons/maskable_icon_x512.png';
 
     // 알림 내용 템플릿
-    const templates: Record<NotificationType, Partial<Record<NotificationEventType, NotificationContent>>> = {
-      [NotificationType.NEW_GAME_POST]: {
+    const templates: Record<NotificationCategory, Partial<Record<NotificationEventType, NotificationContent>>> = {
+      [NotificationCategory.NEW_GAME_POST]: {
         [NotificationEventType.MEMBER_JOIN]: {
           title: `${gamePost.title} - 새로운 모집`,
           body: `${additionalData?.authorName}님이 새로운 모집을 시작했어요`,
@@ -66,7 +48,7 @@ export class NotificationContentGenerator {
           actionUrl: baseUrl
         }
       },
-      [NotificationType.MY_GAME_POST_UPDATE]: {
+      [NotificationCategory.MY_GAME_POST]: {
         [NotificationEventType.MEMBER_JOIN]: {
           title: `${gamePost.title} - 새로운 참가자가 추가되었습니다`,
           body: `${gameName} 모임에 ${additionalData?.participantName}님이 참가했어요`,
@@ -86,7 +68,7 @@ export class NotificationContentGenerator {
           actionUrl: baseUrl
         }
       },
-      [NotificationType.PARTICIPATING_GAME_UPDATE]: {
+      [NotificationCategory.PARTICIPATING_GAME]: {
         [NotificationEventType.MEMBER_JOIN]: {
           title: `${gamePost.title} - 새로운 참가자가 추가되었습니다`,
           body: `${gameName} 모임에 ${additionalData?.participantName}님이 참가했어요`,
@@ -124,12 +106,20 @@ export class NotificationContentGenerator {
           actionUrl: baseUrl
         }
       },
-      [NotificationType.WAITING_LIST_UPDATE]: {
+      [NotificationCategory.WAITING_LIST]: {
         [NotificationEventType.PROMOTED]: {
           title: `${gamePost.title} - 모임 참여가 확정되었습니다`,
           body: `${gameName} 모임에 참여할 수 있게 되었어요`,
           icon: baseIcon,
           actionUrl: baseUrl
+        }
+      },
+      [NotificationCategory.NOTICE]: {
+        [NotificationEventType.NOTICE_PUBLISHED]: {
+          title: '새로운 공지사항',
+          body: '새로운 공지사항이 등록되었습니다',
+          icon: '/icons/maskable_icon_x512.png',
+          actionUrl: '/notices'
         }
       }
     };

@@ -1,4 +1,5 @@
 import prisma from '@/lib/database/prisma';
+import { NotificationCategory } from '@/types/models';
 
 export interface NotificationContext {
   gamePostId?: string;
@@ -49,7 +50,8 @@ export class NotificationFilter {
           myGamePostBeforeMeetingOnlyFull: true,
           myGamePostMeetingStartEnabled: true,
           myGamePostMeetingStartOnlyFull: true,
-          waitingListEnabled: true
+          waitingListEnabled: true,
+          noticeEnabled: true
         }
       });
       
@@ -141,35 +143,29 @@ export class NotificationFilter {
       myGamePostMeetingStartEnabled: boolean;
       myGamePostMeetingStartOnlyFull: boolean;
       waitingListEnabled: boolean;
+      noticeEnabled: boolean;
     },
     notificationType: string,
     context?: NotificationContext
   ): Promise<boolean> {
     switch (notificationType) {
-      case 'NEW_GAME_POST':
+      case NotificationCategory.NEW_GAME_POST:
         if (!settings.newGamePostEnabled) return false;
         return await this.checkNewGamePostSettings(settings.newGamePostMode, context, settings.customGameIds);
         
-      case 'PARTICIPATING_GAME_UPDATE':
+      case NotificationCategory.PARTICIPATING_GAME:
         if (!settings.participatingGameEnabled) return false;
         return this.checkParticipatingGameSettings(settings, context);
         
-      case 'GAME_TIME_CHANGED':
-        if (!settings.participatingGameEnabled) return false;
-        return this.checkParticipatingGameSettings(settings, context);
-        
-      case 'MY_GAME_POST_UPDATE':
+      case NotificationCategory.MY_GAME_POST:
         if (!settings.myGamePostEnabled) return false;
         return this.checkMyGamePostSettings(settings, context);
         
-      case 'GAME_BEFORE_START':
-        return this.checkGameBeforeStartSettings(settings, context);
-        
-      case 'GAME_START':
-        return this.checkGameStartSettings(settings, context);
-        
-      case 'WAITING_LIST_UPDATE':
+      case NotificationCategory.WAITING_LIST:
         return settings.waitingListEnabled;
+        
+      case NotificationCategory.NOTICE:
+        return settings.noticeEnabled;
         
       default:
         return true;
@@ -334,6 +330,7 @@ export class NotificationFilter {
           myGamePostMeetingStartEnabled: true,
           myGamePostMeetingStartOnlyFull: true,
           waitingListEnabled: true,
+          noticeEnabled: true,
           user: {
             select: {
               favoriteGames: {
@@ -366,11 +363,12 @@ export class NotificationFilter {
             continue;
           }
           
-          // 카테고리별 설정 확인
+          // 카테고리별 설정 확인 (userId를 context에 추가)
+          const userContext = { ...context, userId };
           const shouldSend = await this.checkCategorySettings(
             setting,
             notificationType,
-            context
+            userContext
           );
           
           if (shouldSend) {
