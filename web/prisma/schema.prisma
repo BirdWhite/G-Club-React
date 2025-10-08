@@ -221,7 +221,7 @@ model GamePost {
   author        UserProfile @relation("UserProfileGamePosts", fields: [authorId], references: [userId])
   
   title         String
-  content       Json
+  content       String   @db.Text  // Json에서 String으로 변경
   
   // 게임 정보
   gameId        String?

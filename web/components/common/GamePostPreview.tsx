@@ -4,63 +4,21 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { GamePostCard } from '@/components/game-mate/GamePostCard';
 import { ChevronRight, ChevronLeft, Gamepad2 } from 'lucide-react';
-import type { GamePost } from '@/types/models';
-
-interface GamePostResponse {
-  success: boolean;
-  posts: GamePost[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
+import { useGamePostListSubscription } from '@/hooks/useRealtimeSubscription';
 
 export function GamePostPreview() {
-  const [posts, setPosts] = useState<GamePost[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // 실시간 구독 훅 사용 (모집 중인 글만)
+  const { posts: allPosts, loading: isLoading } = useGamePostListSubscription({ 
+    status: 'OPEN',
+    limit: 10  // 여유있게 10개 가져오기
+  });
+  
   const [rightFadeOpacity, setRightFadeOpacity] = useState(1);
   const [leftFadeOpacity, setLeftFadeOpacity] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // 게임메이트 글 목록 조회 (모집 중인 최신 3개)
-  const fetchGamePosts = async () => {
-    try {
-      setIsLoading(true);
-      const params = new URLSearchParams({
-        page: '1',
-        limit: '5',
-        status: 'OPEN' // 모집 중인 글만
-      });
-
-      const response = await fetch(`/api/game-posts?${params}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(`서버 오류 (${response.status}): ${errorData.error || '알 수 없는 오류'}`);
-        return;
-      }
-      
-      const data: GamePostResponse = await response.json();
-
-      if (data.success) {
-        setPosts(data.posts);
-        setError(null);
-      } else {
-        setError('게임메이트 글을 불러오는데 실패했습니다');
-      }
-    } catch {
-      setError('서버 오류가 발생했습니다');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchGamePosts();
-  }, []);
+  // 최대 5개만 표시
+  const posts = allPosts.slice(0, 5);
 
   // 스크롤 이벤트 감지하여 현재 인덱스 업데이트
   useEffect(() => {
@@ -202,26 +160,6 @@ export function GamePostPreview() {
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex-shrink-0 w-80 animate-pulse bg-muted rounded-lg h-48"></div>
           ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <Link
-            href="/game-mate"
-            className="flex items-center gap-2 text-xl font-bold text-foreground hover:text-primary transition-colors group"
-          >
-            <Gamepad2 className="w-5 h-5" />
-            게임메이트
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-        <div className="text-center py-4">
-          <p className="text-muted-foreground text-sm">{error}</p>
         </div>
       </div>
     );

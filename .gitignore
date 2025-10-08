@@ -15,6 +15,11 @@ supabase/deno.lock
 web/.next/
 web/out/
 
+# PWA - 자동 생성 파일
+web/public/sw.js
+web/public/workbox-*.js
+web/public/worker-*.js
+
 # Dependencies
 web/node_modules/
 

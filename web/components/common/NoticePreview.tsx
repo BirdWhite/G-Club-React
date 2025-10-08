@@ -1,56 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { DateTimeDisplay } from '@/components/common/DateTimeDisplay';
 import { Eye, ChevronRight, Megaphone, Pin } from 'lucide-react';
-import type { Notice } from '@/types/models';
-
-interface NoticeResponse {
-  success: boolean;
-  notices: Notice[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
+import { useNoticeListSubscription } from '@/hooks/useRealtimeSubscription';
 
 export function NoticePreview() {
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // 공지사항 목록 조회 (최상단 5개)
-  const fetchNotices = async () => {
-    try {
-      setIsLoading(true);
-      const params = new URLSearchParams({
-        page: '1',
-        limit: '5'
-      });
-
-      const response = await fetch(`/api/notices?${params}`);
-      const data: NoticeResponse = await response.json();
-
-      if (data.success) {
-        setNotices(data.notices);
-        setError(null);
-      } else {
-        setError('공지사항을 불러오는데 실패했습니다');
-      }
-    } catch (error) {
-      console.error('공지사항 조회 실패:', error);
-      setError('서버 오류가 발생했습니다');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotices();
-  }, []);
+  // 실시간 구독 훅 사용
+  const { notices, loading: isLoading } = useNoticeListSubscription();
+  
+  // 최상단 5개만 표시
+  const displayNotices = notices.slice(0, 5);
 
   if (isLoading) {
     return (
@@ -77,25 +37,6 @@ export function NoticePreview() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <Link
-            href="/notices"
-            className="flex items-center gap-2 text-xl font-bold text-foreground hover:text-primary transition-colors group"
-          >
-            <Megaphone className="w-5 h-5" />
-            공지사항
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-        <div className="text-center py-4">
-          <p className="text-muted-foreground text-sm">{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6">
@@ -117,7 +58,7 @@ export function NoticePreview() {
         </div>
       ) : (
         <div className="space-y-3">
-          {notices.map((notice) => (
+          {displayNotices.map((notice) => (
             <Link
               key={notice.id}
               href={`/notices/${notice.id}`}

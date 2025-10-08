@@ -4,7 +4,7 @@ import type { GamePost, Comment } from '@/types/models';
 
 // 게임메이트 목록을 위한 실시간 구독 훅 (무한 스크롤 지원)
 export function useGamePostListSubscription(
-  initialFilters: { status?: string; gameId?: string } = {}
+  initialFilters: { status?: string; gameId?: string; limit?: number } = {}
 ) {
   const [posts, setPosts] = useState<GamePost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ export function useGamePostListSubscription(
   const participantCache = useMemo(() => new Map<string, string>(), []);
 
   // API를 통해 게시글 목록을 가져오는 함수 (초기 로드)
-  const fetchPosts = useCallback(async (currentFilters: { status?: string; gameId?: string }, page: number = 1, append: boolean = false) => {
+  const fetchPosts = useCallback(async (currentFilters: { status?: string; gameId?: string; limit?: number }, page: number = 1, append: boolean = false) => {
     if (append) {
       setLoadingMore(true);
     } else {
@@ -30,7 +30,7 @@ export function useGamePostListSubscription(
       if (currentFilters.status) query.append('status', currentFilters.status);
       if (currentFilters.gameId) query.append('gameId', currentFilters.gameId);
       query.append('page', page.toString());
-      query.append('limit', '20'); // 페이지당 20개
+      query.append('limit', (currentFilters.limit || 20).toString()); // 기본 20개, 커스텀 가능
       
       const response = await fetch(`/api/game-posts?${query.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch posts');
@@ -163,10 +163,12 @@ export function useGamePostListSubscription(
     setCurrentPage(1);
     setHasMore(true);
     fetchPosts(filters, 1, false);
-  }, [filters, fetchPosts]);
+  }, [filters]); // fetchPosts 의존성 제거
 
   // 실시간 구독 설정 - 부분 업데이트 방식
   useEffect(() => {
+    let pollingInterval: NodeJS.Timeout | null = null;
+
     const channel = supabase.channel(`game_post_list_${Date.now()}`, {
       config: { broadcast: { self: false } },
     });
@@ -275,18 +277,19 @@ export function useGamePostListSubscription(
         if (status === 'CHANNEL_ERROR') {
           console.log('게임 포스트 실시간 구독 실패, 폴링으로 대체');
           // 실시간 연결 실패 시 폴링으로 대체
-          const interval = setInterval(() => {
+          pollingInterval = setInterval(() => {
             fetchPosts(filters);
           }, 5000); // 5초마다 폴링
-          
-          return () => clearInterval(interval);
         }
       });
 
     return () => {
       supabase.removeChannel(channel);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     };
-  }, [supabase, fetchSinglePost, addNewPost, filters, debouncedFetchSinglePost]); // fetchPosts 의존성 제거
+  }, [supabase, filters, fetchPosts]); // 필요한 의존성만 유지
 
   return { 
     posts, 
@@ -408,6 +411,8 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
 
   // 실시간 구독 설정 - 개별 필드 업데이트 방식
   useEffect(() => {
+    let pollingInterval: NodeJS.Timeout | null = null;
+
     const channel = supabase
       .channel(`game_post:${postId}`, {
         config: { broadcast: { self: false } },
@@ -617,10 +622,21 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.log('게임 포스트 상세 실시간 구독 실패, 폴링으로 대체');
+          // 실시간 연결 실패 시 폴링으로 대체
+          pollingInterval = setInterval(() => {
+            fetchPost();
+          }, 15000); // 15초마다 폴링
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     };
   }, [postId, supabase, fetchPost]);
 
@@ -653,6 +669,8 @@ export function useCommentSubscription(gamePostId: string) {
 
   // 실시간 구독 설정
   useEffect(() => {
+    let pollingInterval: NodeJS.Timeout | null = null;
+
     const channel = supabase
       .channel(`comments_${gamePostId}_${Date.now()}`, {
         config: { broadcast: { self: false } },
@@ -693,10 +711,21 @@ export function useCommentSubscription(gamePostId: string) {
           fetchComments();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.log('댓글 실시간 구독 실패, 폴링으로 대체');
+          // 실시간 연결 실패 시 폴링으로 대체
+          pollingInterval = setInterval(() => {
+            fetchComments();
+          }, 10000); // 10초마다 폴링
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     };
   }, [gamePostId, supabase, fetchComments]);
 
@@ -741,6 +770,8 @@ export function useRealtimeSubscription<T extends { id: string }>(
   }, []);
 
   useEffect(() => {
+    let pollingInterval: NodeJS.Timeout | null = null;
+
     const channel = supabase
       .channel(`realtime_${table}_${Date.now()}`)
       .on(
@@ -785,10 +816,22 @@ export function useRealtimeSubscription<T extends { id: string }>(
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.log(`${table} 실시간 구독 실패, 폴링으로 대체`);
+          // 실시간 연결 실패 시 폴링으로 대체 (기본 30초)
+          pollingInterval = setInterval(() => {
+            // 폴링 로직은 각 훅에서 개별적으로 구현
+            console.log(`${table} 폴링 실행`);
+          }, 30000);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     };
   }, [supabase, table, options.event, options.schema, options.filter, options.onInsert, options.onUpdate, options.onDelete, addItem, updateItem, removeItem]);
 
@@ -798,6 +841,145 @@ export function useRealtimeSubscription<T extends { id: string }>(
     addItem,
     updateItem,
     removeItem,
+  };
+}
+
+// 공지사항 실시간 구독 훅
+export function useNoticeListSubscription() {
+  const [notices, setNotices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = useMemo(() => createClient(), []);
+
+  // 공지사항 목록 가져오기
+  const fetchNotices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/notices?page=1&limit=10');
+      const data = await response.json();
+      
+      if (data.success) {
+        setNotices(data.notices || []);
+      }
+    } catch (error) {
+      console.error('공지사항 조회 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 새 공지사항 추가
+  const addNewNotice = useCallback(async (noticeId: string) => {
+    try {
+      const response = await fetch(`/api/notices/${noticeId}`);
+      
+      // 404 에러: 이미 삭제된 공지사항 (조용히 무시)
+      if (response.status === 404) {
+        return;
+      }
+      
+      const data = await response.json();
+      
+      // API는 notice 객체를 직접 반환함
+      if (data && data.id) {
+        setNotices(prevNotices => [data, ...prevNotices]);
+      }
+    } catch (error) {
+      console.error('새 공지사항 조회 실패:', error);
+    }
+  }, []);
+
+  // 공지사항 업데이트
+  const updateNotice = useCallback(async (noticeId: string) => {
+    try {
+      const response = await fetch(`/api/notices/${noticeId}`);
+      
+      // 404 에러: 공지사항이 삭제됨 → 목록에서 제거
+      if (response.status === 404) {
+        setNotices(prevNotices => 
+          prevNotices.filter(notice => notice.id !== noticeId)
+        );
+        return;
+      }
+      
+      const data = await response.json();
+      
+      // API는 notice 객체를 직접 반환함
+      if (data && data.id) {
+        setNotices(prevNotices => 
+          prevNotices.map(notice => 
+            notice.id === noticeId ? data : notice
+          )
+        );
+      }
+    } catch (error) {
+      console.error('공지사항 업데이트 실패:', error);
+    }
+  }, []);
+
+  // 초기 데이터 로드 (한 번만 실행)
+  useEffect(() => {
+    fetchNotices();
+  }, []); // fetchNotices 의존성 제거
+
+  // 실시간 구독 설정 (한 번만 실행)
+  useEffect(() => {
+    let pollingInterval: NodeJS.Timeout | null = null;
+
+    const channel = supabase
+      .channel(`notice_list_${Date.now()}`, {
+        config: { broadcast: { self: false } },
+      })
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'Notice' 
+      }, (payload) => {
+        if (payload.new) {
+          addNewNotice(payload.new.id);
+        }
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'Notice' 
+      }, (payload) => {
+        if (payload.new) {
+          updateNotice(payload.new.id);
+        }
+      })
+      .on('postgres_changes', { 
+        event: 'DELETE', 
+        schema: 'public', 
+        table: 'Notice' 
+      }, (payload) => {
+        if (payload.old) {
+          setNotices(prevNotices => 
+            prevNotices.filter(notice => notice.id !== payload.old!.id)
+          );
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.log('공지사항 실시간 구독 실패, 폴링으로 대체');
+          // 실시간 연결 실패 시 폴링으로 대체
+          pollingInterval = setInterval(() => {
+            fetchNotices();
+          }, 30000); // 30초마다 폴링
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [supabase, addNewNotice, updateNotice, fetchNotices]); // 의존성 추가
+
+  return {
+    notices,
+    loading,
+    refetch: fetchNotices,
   };
 }
 
@@ -829,6 +1011,8 @@ export function useNotificationSubscription(userId: string | null) {
   // 실시간 구독 설정
   useEffect(() => {
     if (!userId) return;
+
+    let pollingInterval: NodeJS.Timeout | null = null;
 
     const channel = supabase
       .channel(`notifications_${userId}`, {
@@ -888,18 +1072,19 @@ export function useNotificationSubscription(userId: string | null) {
         if (status === 'CHANNEL_ERROR') {
           console.log('알림 실시간 구독 실패, 폴링으로 대체');
           // 실시간 연결 실패 시 폴링으로 대체
-          const interval = setInterval(() => {
+          pollingInterval = setInterval(() => {
             fetchUnreadCount();
           }, 10000); // 10초마다 폴링
-          
-          return () => clearInterval(interval);
         }
       });
 
     return () => {
       supabase.removeChannel(channel);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     };
-  }, [userId, supabase, fetchUnreadCount]);
+  }, [userId, supabase, fetchUnreadCount]); // fetchUnreadCount 의존성 추가
 
   return {
     unreadCount,
