@@ -122,10 +122,11 @@ export const useProfileRegister = () => {
       return;
     }
 
-    if (!croppedImage && !image) {
-      alert('프로필 사진을 업로드해 주세요.');
-      return;
-    }
+    // 프로필 사진은 선택사항으로 변경
+    // if (!croppedImage && !image) {
+    //   alert('프로필 사진을 업로드해 주세요.');
+    //   return;
+    // }
     
     try {
       setIsLoading(true);

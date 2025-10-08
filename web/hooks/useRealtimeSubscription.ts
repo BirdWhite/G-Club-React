@@ -273,6 +273,7 @@ export function useGamePostListSubscription(
       })
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR') {
+          console.log('게임 포스트 실시간 구독 실패, 폴링으로 대체');
           // 실시간 연결 실패 시 폴링으로 대체
           const interval = setInterval(() => {
             fetchPosts(filters);
@@ -885,7 +886,7 @@ export function useNotificationSubscription(userId: string | null) {
       )
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR') {
-          console.error('알림 실시간 구독 실패, 폴링으로 대체');
+          console.log('알림 실시간 구독 실패, 폴링으로 대체');
           // 실시간 연결 실패 시 폴링으로 대체
           const interval = setInterval(() => {
             fetchUnreadCount();

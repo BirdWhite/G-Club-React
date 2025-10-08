@@ -19,7 +19,7 @@ export const ProfileImageUpload = ({
     <div>
       {/* 프로필 이미지 업로드 섹션 라벨 */}
       <label htmlFor="profileImage" className="block text-sm font-medium text-foreground mb-2">
-        프로필 사진
+        프로필 사진 <span className="text-muted-foreground text-xs">(선택사항)</span>
       </label>
       
       {/* 파일 업로드 입력 필드 */}
