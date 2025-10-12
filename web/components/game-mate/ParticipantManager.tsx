@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Users } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { UserSearchSelect } from '@/components/game-mate/UserSearchSelect';
@@ -70,18 +70,20 @@ export function ParticipantManager({
   return (
     <Card className="bg-input border-border">
       <CardHeader>
-        <CardTitle className="flex items-center text-card-foreground">
-          <Users className="h-5 w-5 mr-2" />
-          참여자 관리
-        </CardTitle>
-        <CardDescription>
-          미리 참여자를 추가하거나 수정할 수 있습니다. ({participants.length}/{maxParticipants}명)
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center text-card-foreground">
+            <Users className="h-5 w-5 mr-2" />
+            참여자 관리
+          </CardTitle>
+          <div className="text-sm font-bold px-3 py-1 rounded-full bg-primary/20 text-primary">
+            {participants.length}/{maxParticipants}명
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 참여자 추가 폼 */}
         <div className="space-y-4 p-4 bg-muted rounded-lg border border-border">
-          <div>
+          <div className="space-y-2">
             <Label>사용자 검색</Label>
             <UserSearchSelect
               onUserSelect={handleUserSelect}
@@ -99,7 +101,7 @@ export function ParticipantManager({
               {participants.map((participant, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center gap-2 p-3 bg-muted rounded-lg border border-border"
+                  className="flex items-center gap-2 p-3 bg-card rounded-lg border border-border"
                 >
                   <div className="flex-1">
                     <div className="flex items-center justify-between">

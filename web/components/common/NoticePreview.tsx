@@ -14,7 +14,7 @@ export function NoticePreview() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="px-0 py-6">
         <div className="flex items-center justify-between mb-4">
           <Link
             href="/notices"
@@ -39,7 +39,7 @@ export function NoticePreview() {
 
 
   return (
-    <div className="p-6">
+    <div className="px-0 py-6">
       <div className="flex items-center justify-between mb-4">
         <Link
           href="/notices"

@@ -68,18 +68,20 @@ export function MobileParticipantManager({
   return (
     <>
       <div className="">
-        <div className="flex items-center text-foreground mb-1">
-          <Users className="h-5 w-5 mr-2" />
-          <h3 className="font-semibold">참여자 관리</h3>
+        <div className="flex items-center justify-between text-foreground mb-4">
+          <div className="flex items-center">
+            <Users className="h-5 w-5 mr-2" />
+            <h3 className="font-semibold">참여자 관리</h3>
+          </div>
+          <div className="text-sm font-bold px-3 py-1 rounded-full bg-primary/20 text-primary">
+            {participants.length}/{maxParticipants}명
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground">
-          미리 참여자를 추가하거나 수정할 수 있습니다. ({participants.length}/{maxParticipants}명)
-        </p>
       </div>
       
       <div className="space-y-4">
         {/* 참여자 추가 폼 */}
-        <div>
+        <div className="space-y-2">
             <Label>사용자 검색</Label>
             <UserSearchSelect
               onUserSelect={handleUserSelect}
@@ -96,7 +98,7 @@ export function MobileParticipantManager({
               {participants.map((participant, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center gap-2 p-3 bg-background rounded-lg border border-border"
+                  className="flex items-center gap-2 p-3 bg-card rounded-lg border border-border"
                 >
                   <div className="flex-1">
                     <div className="flex items-center justify-between">

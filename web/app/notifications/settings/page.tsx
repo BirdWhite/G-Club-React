@@ -342,29 +342,27 @@ export default function NotificationSettingsPage() {
 
   return (
     <div className="bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-8 py-8 max-w-4xl">
         {/* 헤더 */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => window.history.back()}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-foreground">알림 설정</h1>
-              <p className="text-muted-foreground mt-2">
-                원하는 알림만 받아보세요
-              </p>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">알림 설정</h1>
             </div>
             <Link
               href="/notifications"
-              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
+              className="px-3 sm:px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors text-sm whitespace-nowrap"
             >
-              알림 보기
+              <span className="hidden sm:inline">알림 보기</span>
+              <span className="sm:hidden">알림</span>
             </Link>
           </div>
         </div>
@@ -380,42 +378,43 @@ export default function NotificationSettingsPage() {
 
 
         {/* 마스터 알림 토글 */}
-        <div className="mb-8">
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors ${
+        <div className="mb-6 sm:mb-8">
+          <div className={`p-4 sm:p-6 rounded-2xl shadow-lg border border-border transition-colors ${
             isMasterEnabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-muted/50' // Only background is transparent
           }`}>
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <Bell className="w-8 h-8 text-yellow-500" />
-                <div>
-                  <h3 className={`font-semibold text-foreground ${!isMasterEnabled ? 'opacity-60' : ''}`}>알림 설정</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {!isPWA
-                      ? (
-                        <span className={!isMasterEnabled ? 'text-foreground font-medium' : ''}>
-                          PWA 앱을 설치해야 알림을 활성화할 수 있습니다.{' '}
-                          <Link 
-                            href="/pwa-install" 
-                            className="text-primary hover:text-primary/80 underline font-medium cursor-pointer"
-                          >
-                            PWA 설치 방법 보기
-                          </Link>
-                        </span>
-                      )
-                      : isMasterEnabled 
-                        ? '모든 알림이 활성화되어 있습니다' 
-                        : pushPermission === 'granted' && pushSubscription
-                          ? '알림을 받으려면 토글을 켜주세요'
-                          : '푸시 알림 권한이 필요합니다'
-                    }
-                  </p>
+            <div className="flex items-center justify-between w-full gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <Bell className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h3 className={`font-semibold text-sm sm:text-base text-foreground ${!isMasterEnabled ? 'opacity-60' : ''}`}>알림 설정</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      {!isPWA
+                        ? (
+                          <span className={!isMasterEnabled ? 'text-foreground font-medium' : ''}>
+                            PWA 앱을 설치해야 알림을 활성화할 수 있습니다.{' '}
+                            <br />
+                            <Link 
+                              href="/pwa-install" 
+                              className="text-primary hover:text-primary/80 underline font-medium cursor-pointer"
+                            >
+                              PWA 설치 방법 보기
+                            </Link>
+                          </span>
+                        )
+                        : isMasterEnabled 
+                          ? '모든 알림이 활성화되어 있습니다' 
+                          : pushPermission === 'granted' && pushSubscription
+                            ? '알림을 받으려면 토글을 켜주세요'
+                            : '푸시 알림 권한이 필요합니다'
+                      }
+                    </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 {(isToggling || isLoadingSubscription) && (
-                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                 )}
                 <label className={`relative inline-flex items-center ${(isToggling || isLoadingSubscription || !isPWA) ? 'cursor-wait' : 'cursor-pointer'} ${!isMasterEnabled ? 'opacity-60' : ''}`}>
                   <input
@@ -434,12 +433,12 @@ export default function NotificationSettingsPage() {
 
         {/* 기기 구독 상태 */}
         {allDeviceSubscriptions.length > 0 && (
-          <div className="mb-6 p-6 bg-card rounded-2xl shadow-lg border border-border">
-            <div className="flex items-center gap-3 mb-4">
-              <MdOutlineDevices className="w-6 h-6 text-primary" />
-              <div>
-                <h3 className="font-semibold text-foreground">기기 구독 상태</h3>
-                <p className="text-sm text-muted-foreground">
+          <div className="mb-6 p-4 sm:p-6 bg-card rounded-2xl shadow-lg border border-border">
+            <div className="flex items-center gap-2 sm:gap-3 mb-4">
+              <MdOutlineDevices className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm sm:text-base text-foreground">기기 구독 상태</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   현재 계정으로 구독된 기기의 알림 상태입니다
                 </p>
               </div>
@@ -525,18 +524,18 @@ export default function NotificationSettingsPage() {
         {/* 설정 목록 */}
         <div className="space-y-4">
           {/* 방해 금지 시간 설정 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
+          <div className={`p-4 sm:p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[5rem] sm:min-h-[6rem] flex items-center ${
             settings.doNotDisturb.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between w-full">
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <Moon className="w-6 h-6 text-primary" />
-                  <div>
-                    <h3 className="font-semibold text-foreground">방해 금지 시간</h3>
-                    <p className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-between w-full gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm sm:text-base text-foreground">방해 금지 시간</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       {settings.doNotDisturb.enabled 
                         ? `${settings.doNotDisturb.startTime} - ${settings.doNotDisturb.endTime}`
                         : '설정 안함'
@@ -545,7 +544,7 @@ export default function NotificationSettingsPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <button
                   onClick={() => setShowDoNotDisturbDetail(!showDoNotDisturbDetail)}
                   className="text-primary hover:text-primary/80 cursor-pointer p-1 rounded-md hover:bg-primary/10 transition-colors"
@@ -568,7 +567,7 @@ export default function NotificationSettingsPage() {
 
           {/* 방해 금지 시간 상세 설정 */}
           {showDoNotDisturbDetail && (
-            <div className="p-6 bg-card rounded-2xl shadow-lg border border-border border-l-4 border-l-primary">
+            <div className="p-4 sm:p-6 bg-card rounded-2xl shadow-lg border border-border border-l-4 border-l-primary">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
@@ -581,7 +580,7 @@ export default function NotificationSettingsPage() {
                       ...settings.doNotDisturb,
                       startTime: e.target.value
                     })}
-                    className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:invert"
                   />
                 </div>
                 <div>
@@ -595,7 +594,7 @@ export default function NotificationSettingsPage() {
                       ...settings.doNotDisturb,
                       endTime: e.target.value
                     })}
-                    className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    className="w-full px-3 py-2 bg-background border border-border text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:invert"
                   />
                 </div>
               </div>
@@ -634,19 +633,19 @@ export default function NotificationSettingsPage() {
           )}
 
           {/* 신규 게임메이트 글 알림 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
+          <div className={`p-4 sm:p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[5rem] sm:min-h-[6rem] flex items-center ${
             settings.newGamePost.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <Gamepad2 className="w-6 h-6 text-primary" />
-                <div>
-                  <h3 className="font-semibold text-foreground">신규 게임메이트 글 알림</h3>
+            <div className="flex items-center justify-between w-full gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <Gamepad2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base text-foreground">신규 모임 알림</h3>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <Link 
                   href="/notifications/settings/new-game-post"
                   className="text-primary hover:text-primary/80 cursor-pointer p-1 rounded-md hover:bg-primary/10 transition-colors"
@@ -668,19 +667,19 @@ export default function NotificationSettingsPage() {
           </div>
 
           {/* 참여중인 모임 알림 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
+          <div className={`p-4 sm:p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[5rem] sm:min-h-[6rem] flex items-center ${
             settings.participatingGame.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <Users className="w-6 h-6 text-green-500" />
-                <div>
-                  <h3 className="font-semibold text-foreground">참여중인 모임 알림</h3>
+            <div className="flex items-center justify-between w-full gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base text-foreground">참여중인 모임 알림</h3>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <Link 
                   href="/notifications/settings/participating-game"
                   className="text-primary hover:text-primary/80 cursor-pointer p-1 rounded-md hover:bg-primary/10 transition-colors"
@@ -702,19 +701,19 @@ export default function NotificationSettingsPage() {
           </div>
 
           {/* 내가 작성한 모임 알림 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
+          <div className={`p-4 sm:p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[5rem] sm:min-h-[6rem] flex items-center ${
             settings.myGamePost.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <PenTool className="w-6 h-6 text-primary" />
-                <div>
-                  <h3 className="font-semibold text-foreground">내가 작성한 모임 알림</h3>
+            <div className="flex items-center justify-between w-full gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <PenTool className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base text-foreground">작성한 모임 알림</h3>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <Link 
                   href="/notifications/settings/my-game-post"
                   className="text-primary hover:text-primary/80 cursor-pointer p-1 rounded-md hover:bg-primary/10 transition-colors"
@@ -736,20 +735,20 @@ export default function NotificationSettingsPage() {
           </div>
 
           {/* 공지사항 알림 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
+          <div className={`p-4 sm:p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[5rem] sm:min-h-[6rem] flex items-center ${
             settings.notice?.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <Megaphone className="w-6 h-6 text-blue-500" />
-                <div>
-                  <h3 className="font-semibold text-foreground">공지사항 알림</h3>
-                  <p className="text-sm text-muted-foreground">새로운 공지사항 알림</p>
+            <div className="flex items-center justify-between w-full gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <Megaphone className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base text-foreground">공지사항 알림</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">새로운 공지사항 알림</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -764,20 +763,20 @@ export default function NotificationSettingsPage() {
           </div>
 
           {/* 예비 참여 알림 */}
-          <div className={`p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[6rem] flex items-center ${
+          <div className={`p-4 sm:p-6 rounded-2xl shadow-lg border border-border transition-colors min-h-[5rem] sm:min-h-[6rem] flex items-center ${
             settings.waitingList.enabled 
               ? 'bg-card hover:bg-card/80' 
               : 'bg-card hover:bg-card/80'
           }`}>
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <Clock className="w-6 h-6 text-orange-500" />
-                <div>
-                  <h3 className="font-semibold text-foreground">예비로 참여중인 모임 알림</h3>
-                  <p className="text-sm text-muted-foreground">참여 요청이 왔을때 알림</p>
+            <div className="flex items-center justify-between w-full gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base text-foreground">예비 참가중인 모임 알림</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">참가 요청이 왔을때 알림</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -792,17 +791,17 @@ export default function NotificationSettingsPage() {
           </div>
 
           {/* 기본값 초기화 섹션 */}
-          <div className="p-6 rounded-2xl shadow-lg border border-border bg-card hover:bg-card/80 transition-colors min-h-[5rem] flex items-center">
-            <div className="flex items-center justify-between w-full">
-              <div>
-                <h3 className="font-medium text-foreground">설정 초기화</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  모든 설정을 기본값으로 되돌립니다
+          <div className="p-4 sm:p-6 rounded-2xl shadow-lg border border-border bg-card hover:bg-card/80 transition-colors min-h-[4rem] sm:min-h-[5rem] flex items-center">
+            <div className="flex items-center justify-between w-full gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-sm sm:text-base text-foreground">설정 초기화</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  모든 값을 기본값으로 되돌립니다
                 </p>
               </div>
               <button
                 onClick={() => setShowResetConfirm(true)}
-                className="px-4 py-2 bg-card-muted text-muted-foreground rounded-lg hover:bg-primary transition-colors cursor-pointer"
+                className="px-3 sm:px-4 py-2 bg-card-muted text-muted-foreground rounded-lg hover:bg-primary transition-colors cursor-pointer text-sm whitespace-nowrap flex-shrink-0"
               >
                 초기화
               </button>
@@ -815,7 +814,7 @@ export default function NotificationSettingsPage() {
         <div className="mt-6 p-4 text-center">
           <p className="text-sm text-muted-foreground flex items-center gap-2">
             <Lightbulb className="w-4 h-4" />
-            설정에서 더 세밀한 알림 조건을 설정 가능합니다.
+            설정에서 더 상세한 설정이 가능합니다.
           </p>
         </div>
       </div>

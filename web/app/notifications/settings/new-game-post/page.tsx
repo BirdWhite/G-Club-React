@@ -121,21 +121,20 @@ export default function NewGamePostNotificationSettings() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-8 py-8 max-w-4xl">
       {/* 헤더 */}
-      <div className="mb-12">
-        <div className="flex items-center gap-4">
+      <div className="mb-8 sm:mb-12">
+        <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">신규 게임메이트 글 알림</h1>
-            <p className="text-muted-foreground mt-1">받고 싶은 게임의 모집글 알림을 설정하세요</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">신규 게임메이트 글 알림</h1>
           </div>
         </div>
       </div>
@@ -145,11 +144,11 @@ export default function NewGamePostNotificationSettings() {
           
           {/* 필터 모드 선택 */}
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4">알림 받을 게임 선택</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">알림 받을 게임 선택</h3>
             
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {/* 모든 게임 */}
-              <label className={`flex items-center p-4 border border-border rounded-lg cursor-pointer transition-colors ${
+              <label className={`flex items-center p-3 sm:p-4 border border-border rounded-lg cursor-pointer transition-colors ${
                 gameFilter.mode === 'all' 
                   ? 'bg-card-elevated hover:bg-card-elevated/80' 
                   : 'bg-card hover:bg-card/80'
@@ -162,14 +161,14 @@ export default function NewGamePostNotificationSettings() {
                   onChange={() => setGameFilter(prev => ({ ...prev, mode: 'all' }))}
                   className="w-4 h-4 text-primary border-border focus:ring-primary"
                 />
-                <div className="ml-3">
-                  <div className="text-sm font-medium text-foreground">모든 게임 모집글 알림</div>
-                  <div className="text-sm text-muted-foreground">모든 게임의 새로운 모집글 알림을 받습니다</div>
+                <div className="ml-3 flex-1 min-w-0">
+                  <div className="text-sm sm:text-base font-medium text-foreground">모든 게임 모집글 알림</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">모든 게임의 새로운 모집글 알림을 받습니다</div>
                 </div>
               </label>
 
               {/* 관심 게임만 */}
-              <label className={`flex items-center p-4 border border-border rounded-lg cursor-pointer transition-colors ${
+              <label className={`flex items-center p-3 sm:p-4 border border-border rounded-lg cursor-pointer transition-colors ${
                 gameFilter.mode === 'favorites' 
                   ? 'bg-card-elevated hover:bg-card-elevated/80' 
                   : 'bg-card hover:bg-card/80'
@@ -185,16 +184,16 @@ export default function NewGamePostNotificationSettings() {
                   }}
                   className="w-4 h-4 text-primary border-border focus:ring-primary"
                 />
-                <div className="ml-3">
-                  <div className="text-sm font-medium text-foreground">관심 게임 모집글 알림</div>
-                  <div className="text-sm text-muted-foreground">
+                <div className="ml-3 flex-1 min-w-0">
+                  <div className="text-sm sm:text-base font-medium text-foreground">관심 게임 모집글 알림</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     좋아하는 게임({favoriteGames.length}개)의 모집글 알림만 받습니다
                   </div>
                 </div>
               </label>
 
               {/* 선택한 게임만 */}
-              <label className={`flex items-center p-4 border border-border rounded-lg cursor-pointer transition-colors ${
+              <label className={`flex items-center p-3 sm:p-4 border border-border rounded-lg cursor-pointer transition-colors ${
                 gameFilter.mode === 'custom' 
                   ? 'bg-card-elevated hover:bg-card-elevated/80' 
                   : 'bg-card hover:bg-card/80'
@@ -207,10 +206,10 @@ export default function NewGamePostNotificationSettings() {
                   onChange={() => setGameFilter(prev => ({ ...prev, mode: 'custom' }))}
                   className="w-4 h-4 text-primary border-border focus:ring-primary"
                 />
-                <div className="ml-3">
-                  <div className="text-sm font-medium text-foreground">선택한 게임 모집글 알림</div>
-                  <div className="text-sm text-muted-foreground">
-                    직접 선택한 게임({gameFilter.selectedGames.length}개)의 모집글 알림만 받습니다
+                <div className="ml-3 flex-1 min-w-0">
+                  <div className="text-sm sm:text-base font-medium text-foreground">선택한 게임 모집글 알림</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+                    선택한 게임({gameFilter.selectedGames.length}개)의 모집글 알림만 받습니다
                   </div>
                 </div>
               </label>
@@ -220,11 +219,11 @@ export default function NewGamePostNotificationSettings() {
           {/* 선택한 게임 목록 (custom 모드일 때만) */}
           {gameFilter.mode === 'custom' && (
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-md font-medium text-foreground">선택된 게임</h4>
+              <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+                <h4 className="text-sm sm:text-base font-medium text-foreground">선택된 게임</h4>
                 <button
                   onClick={() => setShowGameSearch(true)}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+                  className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-xs sm:text-sm whitespace-nowrap"
                 >
                   게임 추가
                 </button>
@@ -291,11 +290,11 @@ export default function NewGamePostNotificationSettings() {
           {/* 좋아하는 게임 목록 (favorites 모드일 때만) */}
           {gameFilter.mode === 'favorites' && (
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-md font-medium text-foreground">관심 게임 목록</h4>
+              <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+                <h4 className="text-sm sm:text-base font-medium text-foreground">관심 게임 목록</h4>
                 <button
                   onClick={() => router.push('/profile/favorite-games')}
-                  className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1"
+                  className="text-xs sm:text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1 whitespace-nowrap"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -351,16 +350,16 @@ export default function NewGamePostNotificationSettings() {
         </div>
 
         {/* 하단 버튼 */}
-        <div className="mt-12 flex justify-between">
+        <div className="mt-8 sm:mt-12 flex justify-between gap-3">
           <button
             onClick={() => router.back()}
-            className="px-6 py-2 border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
+            className="flex-1 sm:flex-none px-4 sm:px-6 py-2 border border-border text-foreground rounded-lg hover:bg-muted transition-colors text-sm sm:text-base"
           >
             취소
           </button>
           <button
             onClick={saveSettings}
-            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm sm:text-base"
           >
             저장
           </button>

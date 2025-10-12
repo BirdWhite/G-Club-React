@@ -42,7 +42,7 @@ export function Header() {
     if (pathname.startsWith('/notices/')) return '공지사항';
     if (pathname.startsWith('/channels/')) return '채널';
     if (pathname.startsWith('/notifications')) return '알림';
-    return 'G-Club';
+    return ''; // 기본값을 빈 문자열로 변경
   };
 
   // 사용자 정보 가져오기
@@ -330,9 +330,11 @@ export function Header() {
 
             {/* 페이지 제목 - 모바일에서만 표시 */}
             <div className="flex-1 flex items-center justify-center sm:hidden">
-              <h1 className="text-lg font-semibold text-header-foreground">
-                {getPageTitle()}
-              </h1>
+              {getPageTitle() && (
+                <h1 className="text-lg font-semibold text-header-foreground">
+                  {getPageTitle()}
+                </h1>
+              )}
             </div>
 
             {/* 프로필 영역 - 우측 상단 */}

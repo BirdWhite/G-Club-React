@@ -12,12 +12,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, X } from 'lucide-react';
+import { CalendarIcon, Clock, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { MobileTimePicker } from './MobileTimePicker';
+import { MobileDatePickerModal } from './MobileDatePickerModal';
+import { MobileTimePickerModal } from './MobileTimePickerModal';
 import { MobileParticipantManager } from './MobileParticipantManager';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect, useRef, useState } from 'react';
@@ -48,6 +47,8 @@ export function MobileGamePostForm({ initialData }: MobileGamePostFormProps) {
   const { profile } = useProfile();
   const containerRef = useRef<HTMLDivElement>(null);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   // 현재 시간에서 가장 가까운 30분 단위 시간 계산
   const getNextTimeSlot = () => {
@@ -306,69 +307,52 @@ const getDefaultParticipants = () => {
                   name="startDate"
                   render={({ field }) => (
                     <FormItem className="flex-1">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <button
-                              type="button"
-                              className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
-                            >
-                              <span className="truncate">
-                                {field.value ? (
-                                  (() => {
-                                    const today = new Date();
-                                    const tomorrow = new Date(today);
-                                    tomorrow.setDate(today.getDate() + 1);
-                                    const dayAfterTomorrow = new Date(today);
-                                    dayAfterTomorrow.setDate(today.getDate() + 2);
-                                    
-                                    const selectedDate = new Date(field.value);
-                                    selectedDate.setHours(0, 0, 0, 0);
-                                    today.setHours(0, 0, 0, 0);
-                                    tomorrow.setHours(0, 0, 0, 0);
-                                    dayAfterTomorrow.setHours(0, 0, 0, 0);
-                                    
-                                    if (selectedDate.getTime() === today.getTime()) {
-                                      return '오늘';
-                                    } else if (selectedDate.getTime() === tomorrow.getTime()) {
-                                      return '내일';
-                                    } else if (selectedDate.getTime() === dayAfterTomorrow.getTime()) {
-                                      return '모레';
-                                    } else {
-                                      return format(field.value, "M월 d일 (E)", { locale: ko });
-                                    }
-                                  })()
-                                ) : (
-                                  "날짜 선택"
-                                )}
-                              </span>
-                              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                            </button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent 
-                          className="w-auto p-0" 
-                          align="center" 
-                          side="bottom"
-                          sideOffset={8}
-                          alignOffset={0}
-                          avoidCollisions={true}
-                          collisionPadding={16}
+                      <FormControl>
+                        <button
+                          type="button"
+                          onClick={() => setShowDatePicker(true)}
+                          className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
                         >
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date < new Date(new Date().setHours(0, 0, 0, 0))
-                            }
-                            initialFocus
-                            locale={ko}
-                            className="w-80 max-w-[calc(100vw-2rem)]"
-                          />
-                        </PopoverContent>
-                      </Popover>
+                          <span className="truncate">
+                            {field.value ? (
+                              (() => {
+                                const today = new Date();
+                                const tomorrow = new Date(today);
+                                tomorrow.setDate(today.getDate() + 1);
+                                const dayAfterTomorrow = new Date(today);
+                                dayAfterTomorrow.setDate(today.getDate() + 2);
+                                
+                                const selectedDate = new Date(field.value);
+                                selectedDate.setHours(0, 0, 0, 0);
+                                today.setHours(0, 0, 0, 0);
+                                tomorrow.setHours(0, 0, 0, 0);
+                                dayAfterTomorrow.setHours(0, 0, 0, 0);
+                                
+                                if (selectedDate.getTime() === today.getTime()) {
+                                  return '오늘';
+                                } else if (selectedDate.getTime() === tomorrow.getTime()) {
+                                  return '내일';
+                                } else if (selectedDate.getTime() === dayAfterTomorrow.getTime()) {
+                                  return '모레';
+                                } else {
+                                  return format(field.value, "M월 d일 (E)", { locale: ko });
+                                }
+                              })()
+                            ) : (
+                              "날짜 선택"
+                            )}
+                          </span>
+                          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </FormControl>
                       <FormMessage />
+                      
+                      <MobileDatePickerModal
+                        isOpen={showDatePicker}
+                        value={field.value}
+                        onClose={() => setShowDatePicker(false)}
+                        onSelect={field.onChange}
+                      />
                     </FormItem>
                   )}
                 />
@@ -380,12 +364,25 @@ const getDefaultParticipants = () => {
                   render={({ field }) => (
                     <FormItem className="flex-1">
                       <FormControl>
-                        <MobileTimePicker
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowTimePicker(true)}
+                          className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
+                        >
+                          <span className="truncate">
+                            {field.value || "시간 선택"}
+                          </span>
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                        </button>
                       </FormControl>
                       <FormMessage />
+                      
+                      <MobileTimePickerModal
+                        isOpen={showTimePicker}
+                        value={field.value}
+                        onClose={() => setShowTimePicker(false)}
+                        onSelect={field.onChange}
+                      />
                     </FormItem>
                   )}
                 />
@@ -433,7 +430,7 @@ const getDefaultParticipants = () => {
                             }}
                             min="2"
                             max="100"
-                            className="w-16 text-center border-2 border-accent bg-background text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary px-2 py-1 rounded-md"
+                            className="w-16 text-center border-2 border-accent bg-background text-foreground text-lg font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary px-2 py-1 rounded-md"
                           />
                           <span className="text-base font-medium text-foreground">명</span>
                         </div>

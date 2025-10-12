@@ -36,8 +36,8 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   
   // 게임글 상태 표시
   const getDisplayStatus = () => {
-    // 가득 찬 경우
-    if (post.isFull) {
+    // OPEN 상태일 때만 가득 찬 경우 표시
+    if (post.isFull && post.status === 'OPEN') {
       return fullStatus;
     }
     
@@ -48,7 +48,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   const plainContent = post.content; // content가 이제 string 타입
 
   return (
-    <div className="group bg-card overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-border md:mx-0 mx-4">
+    <div className="group bg-card overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-border">
       <Link href={`/game-mate/${post.id}`} className="flex-1 flex flex-col p-4">
         {/* 상단: 시간 및 상태 */}
         <div className="flex items-center justify-between mb-3 text-xs">

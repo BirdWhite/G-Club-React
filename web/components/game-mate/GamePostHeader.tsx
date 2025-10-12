@@ -27,8 +27,8 @@ export function GamePostHeader({
   
   const fullStatus = { text: '가득 참', className: 'bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30' };
   
-  // 가득 찬 경우를 우선 확인
-  const currentStatus = post.isFull ? fullStatus : (statusInfo[post.status] || statusInfo.COMPLETED);
+  // OPEN 상태일 때만 가득 찬 경우 표시
+  const currentStatus = (post.isFull && post.status === 'OPEN') ? fullStatus : (statusInfo[post.status] || statusInfo.COMPLETED);
 
   return (
     <div className="pb-4">

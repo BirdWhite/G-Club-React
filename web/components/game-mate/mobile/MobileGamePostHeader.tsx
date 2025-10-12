@@ -27,13 +27,13 @@ export function MobileGamePostHeader({
   
   const fullStatus = { text: '가득 참', className: 'bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30' };
   
-  // 가득 찬 경우를 우선 확인
-  const currentStatus = post.isFull ? fullStatus : (statusInfo[post.status] || statusInfo.COMPLETED);
+  // OPEN 상태일 때만 가득 찬 경우 표시
+  const currentStatus = (post.isFull && post.status === 'OPEN') ? fullStatus : (statusInfo[post.status] || statusInfo.COMPLETED);
 
   return (
     <div className="pb-4">
-      {/* 뒤로가기 버튼 */}
-      <div className="mb-4">
+      {/* 첫 번째 줄: 뒤로가기 버튼과 수정/삭제 버튼 */}
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => window.history.back()}
           className="flex items-center gap-2 text-cyber-gray hover:text-foreground transition-colors"
@@ -41,31 +41,6 @@ export function MobileGamePostHeader({
           <ArrowLeft className="w-5 h-5" />
           <span className="text-sm font-medium">뒤로</span>
         </button>
-      </div>
-      
-      {/* 첫 번째 줄: 게임 정보, 상태, 수정/삭제 버튼 */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          {post.game?.iconUrl ? (
-            <Image 
-              src={post.game.iconUrl} 
-              alt={post.game.name || '게임 아이콘'}
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-md mr-3"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-md bg-indigo-100 flex items-center justify-center mr-3">
-              <span className="text-indigo-800 font-bold text-sm">
-                {post.game?.name?.[0] || 'G'}
-              </span>
-            </div>
-          )}
-          <span className="font-semibold text-lg text-cyber-gray mr-3">{post.game?.name || '게임 정보 없음'}</span>
-          <span className={`px-3 py-1 rounded-full font-semibold text-sm ${currentStatus.className}`}>
-            {currentStatus.text}
-          </span>
-        </div>
         
         {/* 수정/삭제 버튼들 */}
         {isOwner && (
@@ -87,8 +62,31 @@ export function MobileGamePostHeader({
           </div>
         )}
       </div>
+      
+      {/* 두 번째 줄: 게임 정보와 상태 */}
+      <div className="flex items-center mb-4">
+        {post.game?.iconUrl ? (
+          <Image 
+            src={post.game.iconUrl} 
+            alt={post.game.name || '게임 아이콘'}
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-md mr-3"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-md bg-indigo-100 flex items-center justify-center mr-3">
+            <span className="text-indigo-800 font-bold text-sm">
+              {post.game?.name?.[0] || 'G'}
+            </span>
+          </div>
+        )}
+        <span className="font-semibold text-lg text-cyber-gray mr-3">{post.game?.name || '게임 정보 없음'}</span>
+        <span className={`px-3 py-1 rounded-full font-semibold text-sm ${currentStatus.className}`}>
+          {currentStatus.text}
+        </span>
+      </div>
 
-      {/* 두 번째 줄: 제목과 조회수 */}
+      {/* 세 번째 줄: 제목과 조회수 */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-cyber-gray">{post.title || '제목 없음'}</h1>

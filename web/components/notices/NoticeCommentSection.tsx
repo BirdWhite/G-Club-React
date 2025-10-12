@@ -6,6 +6,7 @@ import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 import { Comment } from '@/types/models';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { Send } from 'lucide-react';
 
 interface NoticeCommentSectionProps {
   noticeId: string;
@@ -101,7 +102,7 @@ export function NoticeCommentSection({ noticeId, allowComments }: NoticeCommentS
 
   if (!allowComments) {
     return (
-      <div className="bg-card p-6 rounded-2xl border border-border">
+      <div className="bg-card p-4 md:p-6 rounded-2xl border border-border">
         <p className="text-muted-foreground text-center">
           이 공지사항은 댓글이 비활성화되어 있습니다.
         </p>
@@ -110,7 +111,7 @@ export function NoticeCommentSection({ noticeId, allowComments }: NoticeCommentS
   }
 
   return (
-    <div className="bg-card p-6 rounded-2xl border border-border">
+    <div className="bg-card p-4 md:p-6 rounded-2xl border border-border">
       <h3 className="text-lg font-semibold text-foreground mb-4">댓글 ({comments.length})</h3>
       
       {/* 댓글 작성 폼 */}
@@ -122,15 +123,16 @@ export function NoticeCommentSection({ noticeId, allowComments }: NoticeCommentS
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="댓글을 입력하세요..."
-              className="flex-1 px-4 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary h-10"
+              className="flex-1 min-w-0 px-3 py-2.5 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               maxLength={1000}
             />
             <button
               type="submit"
               disabled={!newComment.trim() || isSubmitting}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors h-10"
+              className="w-11 h-11 flex items-center justify-center bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+              aria-label="댓글 작성"
             >
-              {isSubmitting ? '작성 중...' : '댓글 작성'}
+              <Send className="w-5 h-5" />
             </button>
           </div>
         </form>

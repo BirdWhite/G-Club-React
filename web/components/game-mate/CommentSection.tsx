@@ -95,9 +95,9 @@ export function CommentSection({ gamePostId }: CommentSectionProps) {
         <Button 
           type="submit" 
           disabled={isSubmitting || !newComment.trim()}
-          className="bg-cyber-orange hover:bg-cyber-orange/80 text-cyber-dark font-medium h-10"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-10"
         >
-          {isSubmitting ? '작성 중...' : '댓글 작성'}
+          {isSubmitting ? '작성 중...' : '작성'}
         </Button>
       </form>
 

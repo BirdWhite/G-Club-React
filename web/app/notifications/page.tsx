@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -50,17 +50,24 @@ interface NotificationResponse {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   // 알림 목록 조회
-  const fetchNotifications = async (page: number = 1, unreadOnly: boolean = false) => {
+  const fetchNotifications = async (page: number = 1, unreadOnly: boolean = false, append: boolean = false) => {
     try {
-      setIsLoading(true);
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoading(true);
+      }
+      
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '20',
@@ -71,10 +78,16 @@ export default function NotificationsPage() {
       const data: NotificationResponse = await response.json();
 
       if (data.success) {
-        setNotifications(data.notifications);
+        if (append) {
+          // 기존 데이터에 추가
+          setNotifications(prev => [...prev, ...data.notifications]);
+        } else {
+          // 새로운 데이터로 교체
+          setNotifications(data.notifications);
+        }
         setUnreadCount(data.unreadCount);
         setCurrentPage(data.pagination.page);
-        setTotalPages(data.pagination.totalPages);
+        setHasMore(data.pagination.page < data.pagination.totalPages);
         setError(null);
       } else {
         setError('알림을 불러오는데 실패했습니다');
@@ -84,6 +97,7 @@ export default function NotificationsPage() {
       setError('서버 오류가 발생했습니다');
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
@@ -147,18 +161,43 @@ export default function NotificationsPage() {
     }
   };
 
-  // 페이지 변경
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    fetchNotifications(page, showUnreadOnly);
-  };
+  // 다음 페이지 로드
+  const loadMore = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      fetchNotifications(currentPage + 1, showUnreadOnly, true);
+    }
+  }, [currentPage, showUnreadOnly, isLoadingMore, hasMore]);
 
   // 필터 변경
   const handleFilterChange = (unreadOnly: boolean) => {
     setShowUnreadOnly(unreadOnly);
     setCurrentPage(1);
-    fetchNotifications(1, unreadOnly);
+    setHasMore(true);
+    fetchNotifications(1, unreadOnly, false);
   };
+
+  // Intersection Observer로 무한 스크롤 구현
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [loadMore, hasMore, isLoadingMore]);
 
   useEffect(() => {
     fetchNotifications();
@@ -175,7 +214,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-8 py-8 max-w-4xl">
         {/* 헤더 */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -249,128 +288,122 @@ export default function NotificationsPage() {
               </p>
             </div>
           ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={`p-6 rounded-2xl shadow-lg border border-border transition-all cursor-pointer hover:shadow-xl ${
-                  notification.isRead
-                    ? 'bg-card hover:bg-card/80'
-                    : 'bg-card hover:bg-card/80 border-l-4 border-l-primary'
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  {/* 아이콘 */}
-                  <div className="flex-shrink-0">
-                    {notification.type === 'NOTICE_NEW' ? (
-                      <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                        <Megaphone className="w-6 h-6" />
-                      </div>
-                    ) : notification.icon ? (
-                      <Image
-                        src={notification.icon}
-                        alt="알림 아이콘"
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
-                        <Bell className="w-6 h-6" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 내용 */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className={`font-semibold ${notification.isRead ? 'text-muted-foreground' : 'text-foreground'}`}>
-                        {notification.title}
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        {!notification.isRead && (
-                          <div className="w-2 h-2 bg-primary rounded-full"></div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <p className={`text-sm mb-3 ${notification.isRead ? 'text-muted-foreground' : 'text-foreground'}`}>
-                      {notification.body}
-                    </p>
-
-                    {/* 발송자 정보 */}
-                    {notification.sender && (
-                      <div className="flex items-center gap-2 mb-3">
-                        {notification.sender.profileImage ? (
-                          <Image
-                            src={notification.sender.profileImage}
-                            alt={notification.sender.nickname}
-                            width={24}
-                            height={24}
-                            className="w-6 h-6 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 bg-background rounded-full flex items-center justify-center text-xs text-muted-foreground border border-border">
-                            {notification.sender.nickname.charAt(0)}
-                          </div>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          {notification.sender.nickname}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* 게임 포스트 정보 */}
-                    {notification.gamePost && (
-                      <div className="mb-3 p-3 bg-muted rounded-lg">
-                        <p className="text-sm font-medium text-foreground">
-                          {notification.gamePost.game.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {notification.gamePost.title}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* 시간 정보 */}
-                    <div className="flex items-center justify-between">
-                      <DateTimeDisplay 
-                        date={notification.createdAt}
-                        className="text-xs text-muted-foreground"
-                      />
-                      {notification.isRead && notification.readAt && (
-                        <span className="text-xs text-muted-foreground">
-                          읽음
-                        </span>
+            <>
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`p-6 rounded-2xl shadow-lg border border-border transition-all cursor-pointer hover:shadow-xl ${
+                    notification.isRead
+                      ? 'bg-card hover:bg-card/80'
+                      : 'bg-card hover:bg-card/80 border-l-4 border-l-primary'
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    {/* 아이콘 */}
+                    <div className="flex-shrink-0">
+                      {notification.type === 'NOTICE_NEW' ? (
+                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                          <Megaphone className="w-6 h-6" />
+                        </div>
+                      ) : notification.icon ? (
+                        <Image
+                          src={notification.icon}
+                          alt="알림 아이콘"
+                          width={48}
+                          height={48}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
+                          <Bell className="w-6 h-6" />
+                        </div>
                       )}
+                    </div>
+
+                    {/* 내용 */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className={`font-semibold ${notification.isRead ? 'text-muted-foreground' : 'text-foreground'}`}>
+                          {notification.title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          {!notification.isRead && (
+                            <div className="w-2 h-2 bg-primary rounded-full"></div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <p className={`text-sm mb-3 ${notification.isRead ? 'text-muted-foreground' : 'text-foreground'}`}>
+                        {notification.body}
+                      </p>
+
+                      {/* 발송자 정보 */}
+                      {notification.sender && (
+                        <div className="flex items-center gap-2 mb-3">
+                          {notification.sender.profileImage ? (
+                            <Image
+                              src={notification.sender.profileImage}
+                              alt={notification.sender.nickname}
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 bg-background rounded-full flex items-center justify-center text-xs text-muted-foreground border border-border">
+                              {notification.sender.nickname.charAt(0)}
+                            </div>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {notification.sender.nickname}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* 게임 포스트 정보 */}
+                      {notification.gamePost && (
+                        <div className="mb-3 p-3 bg-muted rounded-lg">
+                          <p className="text-sm font-medium text-foreground">
+                            {notification.gamePost.game.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {notification.gamePost.title}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* 시간 정보 */}
+                      <div className="flex items-center justify-between">
+                        <DateTimeDisplay 
+                          date={notification.createdAt}
+                          className="text-xs text-muted-foreground"
+                        />
+                        {notification.isRead && notification.readAt && (
+                          <span className="text-xs text-muted-foreground">
+                            읽음
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))}
+
+              {/* 무한 스크롤 트리거 */}
+              <div ref={observerTarget} className="h-10 flex items-center justify-center">
+                {isLoadingMore && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <LoadingSpinner />
+                    <span>로딩 중...</span>
+                  </div>
+                )}
+                {!hasMore && notifications.length > 0 && (
+                  <p className="text-sm text-muted-foreground">모든 알림을 불러왔습니다</p>
+                )}
               </div>
-            ))
+            </>
           )}
         </div>
-
-        {/* 페이지네이션 */}
-        {totalPages > 1 && (
-          <div className="mt-8 flex justify-center">
-            <div className="flex gap-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`px-3 py-2 rounded-lg transition-colors ${
-                    page === currentPage
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

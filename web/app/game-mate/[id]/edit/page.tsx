@@ -50,8 +50,8 @@ export default function EditGamePostPage() {
 
   if (error || !post) {
     return (
-      <div className="bg-background flex items-center justify-center py-32">
-        <div className="text-center">
+      <div className="bg-background max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="bg-card border border-border shadow-lg rounded-lg p-8 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">오류 발생</h1>
           <p className="text-muted-foreground">{error || '게시글을 찾을 수 없습니다.'}</p>
         </div>
@@ -64,12 +64,12 @@ export default function EditGamePostPage() {
   }
 
   return (
-    <div className="bg-cyber-black-200 max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="bg-background max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-extrabold text-cyber-gray">모집글 수정하기</h1>
-        <p className="mt-2 text-sm text-cyber-gray/60">게시글 내용을 수정하고 다시 파티원을 모집해보세요.</p>
+        <h1 className="text-3xl font-extrabold text-foreground">모집글 수정하기</h1>
+        <p className="mt-2 text-sm text-muted-foreground">게시글 내용을 수정하고 다시 파티원을 모집해보세요.</p>
       </div>
-      <div className="bg-cyber-black-200-200 border border-cyber-black-300 shadow-lg rounded-lg p-6 sm:p-8">
+      <div className="bg-card border border-border shadow-lg rounded-lg p-6 sm:p-8">
         <GamePostForm initialData={post} />
       </div>
     </div>

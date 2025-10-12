@@ -58,7 +58,7 @@ export function MobileGamePostList({
     }
 
     return (
-      <div className="grid gap-4">
+      <div className="grid gap-4 px-4">
         {filteredPosts.map((post: GamePost) => (
           <GamePostCard 
             key={post.id}
