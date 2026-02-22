@@ -33,20 +33,42 @@ export async function GET(request: Request) {
       }
 
       if (data.session) {
-        // 이용약관 동의 상태 확인
+        const user = data.session.user
         try {
-          const userProfile = await prisma.userProfile.findUnique({
-            where: {
-              userId: data.session.user.id
-            },
-            select: {
-              termsAgreed: true,
-              privacyAgreed: true
-            }
-          });
+          // UserProfile이 없으면 생성 (신규 로그인 시)
+          let userProfile = await prisma.userProfile.findUnique({
+            where: { userId: user.id },
+            select: { termsAgreed: true, privacyAgreed: true }
+          })
+
+          if (!userProfile) {
+            const metadata = user.user_metadata ?? {}
+            const name = (metadata.full_name ?? metadata.name ?? metadata.nickname ?? user.email?.split('@')[0]) || '사용자'
+            const birthDate = metadata.birthDate ? new Date(metadata.birthDate) : new Date('2000-01-01')
+            // 카카오 CDN(k.kakaocdn.net) 이미지는 사용하지 않음
+            const rawImage = metadata.avatar_url ?? metadata.picture ?? metadata.profile_image ?? metadata.profile_image_url
+            const image = rawImage && !String(rawImage).includes('k.kakaocdn.net') ? rawImage : null
+
+            // 검증 대기(NONE) 역할 조회 - 신규 가입자는 운영진 부원 확인 전까지 NONE
+            const noneRole = await prisma.role.findFirst({ where: { name: 'NONE' }, select: { id: true } })
+
+            await prisma.userProfile.create({
+              data: {
+                userId: user.id,
+                name,
+                email: user.email ?? null,
+                birthDate,
+                image,
+                roleId: noneRole?.id ?? null,
+                termsAgreed: false,
+                privacyAgreed: false
+              }
+            })
+            userProfile = { termsAgreed: false, privacyAgreed: false }
+          }
 
           // 이용약관에 동의하지 않은 경우 약관 동의 페이지로 리다이렉트
-          if (!userProfile || !userProfile.termsAgreed || !userProfile.privacyAgreed) {
+          if (!userProfile.termsAgreed || !userProfile.privacyAgreed) {
             return NextResponse.redirect(`${origin}/auth/terms`)
           }
           const forwardedHost = request.headers.get('x-forwarded-host')

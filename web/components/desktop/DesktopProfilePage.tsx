@@ -86,7 +86,7 @@ export function DesktopProfilePage({ targetProfile, isOwnProfile }: DesktopProfi
         <div className="flex flex-col md:flex-row gap-6">
           {/* 프로필 이미지 */}
           <div className="w-32 h-32 md:w-40 md:h-40 relative rounded-full overflow-hidden border-4 border-border bg-white">
-            {targetProfile.image ? (
+            {targetProfile.image && !targetProfile.image.includes('k.kakaocdn.net') ? (
               <Image
                 src={targetProfile.image}
                 alt={displayName}

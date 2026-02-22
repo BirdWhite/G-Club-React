@@ -18,9 +18,23 @@ export function Header() {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  const { profile } = useProfile(); // 2. useProfile 훅 호출
+  const { profile, isLoading: profileLoading } = useProfile(); // 2. useProfile 훅 호출
   const isAdmin = profile?.role?.name === 'ADMIN' || profile?.role?.name === 'SUPER_ADMIN'; // 3. isAdmin 변수 생성
-  const isPendingMember = profile?.role?.name === 'NONE'; // 4. NONE 역할 사용자 확인
+  const isPendingMember = !profile?.roleId || profile?.role?.name === 'NONE'; // 검증 대기: roleId null 또는 NONE
+
+  // 세션과 프로필 로딩 통합: 세션이 있는데 프로필이 아직 없거나 로딩 중이면 로딩 상태 유지 (레이아웃 시프트 방지)
+  const isNavLoading = isLoading || (!!session && (profileLoading || profile === null));
+
+  // 지연 스켈레톤: 250ms 이상 로딩될 때만 스켈레톤 표시 (빠른 로딩 시 깜빡임 방지)
+  const [showSkeleton, setShowSkeleton] = useState(false);
+  useEffect(() => {
+    if (!isNavLoading) {
+      setShowSkeleton(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowSkeleton(true), 250);
+    return () => clearTimeout(timer);
+  }, [isNavLoading]);
 
   // 실시간 알림 구독
   const { unreadCount: unreadNotificationCount } = useNotificationSubscription(session?.user?.id || null);
@@ -294,37 +308,40 @@ export function Header() {
                 </Link>
               </div>
 
-              {/* 데스크톱 네비게이션 - 스켈레톤 로딩으로 안정화 */}
-              <nav className="hidden md:ml-6 md:flex md:space-x-6 lg:space-x-8">
+              {/* 데스크톱 네비게이션 - 고정 최소 너비로 시프트 방지 */}
+              <nav className="hidden md:ml-6 md:flex md:items-center md:space-x-6 lg:space-x-8">
                 <NavLink href="/">홈</NavLink>
-                {isLoading ? (
-                  // 로딩 중일 때 스켈레톤 표시
-                  <div className="flex items-center space-x-6 lg:space-x-8">
-                    <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
-                    <div className="h-4 w-12 bg-muted animate-pulse rounded"></div>
-                    <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
-                  </div>
-                ) : session && !isPendingMember ? (
-                  <>
-                    <NavLink href="/game-mate">게임메이트</NavLink>
-                    <NavLink href="/notifications" showBadge={true} badgeCount={unreadNotificationCount}>알림</NavLink>
-                    {isAdmin && (
-                      <NavLink href="/admin/dashboard">
-                        관리자 대시보드
-                      </NavLink>
-                    )}
-                  </>
-                ) : (
-                  // 로그인하지 않은 사용자에게는 투명한 공간 제공 (레이아웃 유지)
-                  <div className="flex items-center space-x-6 lg:space-x-8">
-                    <div className="opacity-0 pointer-events-none">
-                      <span className="text-sm font-medium">게임메이트</span>
-                    </div>
-                    <div className="opacity-0 pointer-events-none">
-                      <span className="text-sm font-medium">알림</span>
-                    </div>
-                  </div>
-                )}
+                {/* 항상 동일한 공간 확보 (스켈레톤/링크/placeholder 전환 시 레이아웃 시프트 방지) */}
+                <div className="flex items-center space-x-6 lg:space-x-8 min-w-[240px]">
+                  {isNavLoading && showSkeleton ? (
+                    <>
+                      <div className="h-4 w-[72px] bg-muted animate-pulse rounded shrink-0" aria-hidden />
+                      <div className="h-4 w-10 bg-muted animate-pulse rounded shrink-0" aria-hidden />
+                      <div className="h-4 w-[100px] bg-muted animate-pulse rounded shrink-0" aria-hidden />
+                    </>
+                  ) : isNavLoading ? (
+                    /* 빠른 로딩 시: 스켈레톤 대신 투명 placeholder (깜빡임 방지) */
+                    <>
+                      <span className="text-sm font-medium opacity-0 pointer-events-none select-none" aria-hidden>게임메이트</span>
+                      <span className="text-sm font-medium opacity-0 pointer-events-none select-none" aria-hidden>알림</span>
+                    </>
+                  ) : session && !isPendingMember ? (
+                    <>
+                      <NavLink href="/game-mate">게임메이트</NavLink>
+                      <NavLink href="/notifications" showBadge={true} badgeCount={unreadNotificationCount}>알림</NavLink>
+                      {isAdmin && (
+                        <NavLink href="/admin/dashboard">
+                          관리자 대시보드
+                        </NavLink>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm font-medium opacity-0 pointer-events-none select-none" aria-hidden>게임메이트</span>
+                      <span className="text-sm font-medium opacity-0 pointer-events-none select-none" aria-hidden>알림</span>
+                    </>
+                  )}
+                </div>
               </nav>
             </div>
 
@@ -339,12 +356,15 @@ export function Header() {
 
             {/* 프로필 영역 - 우측 상단 */}
             <div className="flex items-center">
-              {isLoading ? (
+              {isNavLoading && showSkeleton ? (
                 <div className="flex items-center space-x-2">
-                  {/* 프로필 스켈레톤 */}
-                  <div className="h-8 w-8 bg-muted animate-pulse rounded-full"></div>
-                  <div className="hidden md:block h-5 w-5 bg-muted animate-pulse rounded"></div>
+                  {/* 프로필 스켈레톤 - 250ms 이상 로딩 시에만 표시 */}
+                  <div className="h-8 w-8 bg-muted animate-pulse rounded-full" aria-hidden />
+                  <div className="hidden md:block h-5 w-5 bg-muted animate-pulse rounded" aria-hidden />
                 </div>
+              ) : isNavLoading ? (
+                /* 빠른 로딩 시: 스켈레톤 대신 투명 placeholder (깜빡임 방지) */
+                <div className="h-8 w-8 shrink-0" aria-hidden />
               ) : session ? (
                     <div className="flex items-center space-x-2">
                       {/* 프로필 사진 */}

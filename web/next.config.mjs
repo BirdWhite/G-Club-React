@@ -55,10 +55,6 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
-      },
-      {
-        protocol: 'https',
         hostname: 'pnu-ultimate.kro.kr',
         pathname: '/storage/v1/object/public/**',
       },

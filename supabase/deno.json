@@ -1,8 +1,0 @@
-{
-  "imports": {
-    "@prisma/client": "npm:@prisma/client@5.14.0",
-    "prisma": "npm:@prisma/client@5.14.0/edge",
-    "std/http": "https://deno.land/std@0.177.0/http/server.ts"
-  },
-  "nodeModulesDir": "auto"
-} 

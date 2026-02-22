@@ -5,9 +5,9 @@ import prisma from '@/lib/database/prisma';
 // 공지사항 목록 조회
 export async function GET(request: NextRequest) {
   try {
-    // 로그인하지 않은 사용자에게는 빈 데이터 반환
+    // 로그인하지 않았거나 roleId가 null/NONE(검증 대기)은 공지사항 조회 불가
     const user = await getCurrentUser();
-    if (!user) {
+    if (!user || !user.role || user.role === 'NONE') {
       return NextResponse.json({
         success: true,
         notices: [],

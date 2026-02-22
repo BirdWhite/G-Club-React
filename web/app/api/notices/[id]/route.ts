@@ -8,10 +8,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 로그인하지 않은 사용자에게는 401 에러 반환
+    // 로그인하지 않은 사용자 또는 NONE 역할(검증 대기)은 공지사항 조회 불가
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    }
+    if (!user.role || user.role === 'NONE') {
+      return NextResponse.json({ error: '회원 승인이 완료된 후 이용 가능합니다.' }, { status: 403 });
     }
 
     const { id } = await params;

@@ -27,6 +27,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       if (!session) {
         setProfile(null);
+        setIsLoading(false);
         return;
       }
       

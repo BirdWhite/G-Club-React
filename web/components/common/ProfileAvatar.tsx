@@ -12,6 +12,10 @@ interface ProfileAvatarProps {
   unoptimized?: boolean;
 }
 
+// 카카오 CDN 이미지는 사용하지 않음 (Next.js Image 도메인 미허용)
+const isKakaoImage = (url: string | null | undefined) =>
+  url && String(url).includes('k.kakaocdn.net');
+
 export function ProfileAvatar({
   name,
   image,
@@ -27,8 +31,10 @@ export function ProfileAvatar({
     lg: 'h-12 w-12 text-lg',
   };
 
+  const displayImage = image && !isKakaoImage(image) ? image : null;
+
   // 프로필 이미지가 있는 경우
-  if (image) {
+  if (displayImage) {
     return (
       <div className={cn(
         'relative rounded-full overflow-hidden bg-white p-0.5',
@@ -36,7 +42,7 @@ export function ProfileAvatar({
         className
       )}>
         <Image
-          src={image}
+          src={displayImage}
           alt={name || '프로필 이미지'}
           fill
           sizes={`${size === 'sm' ? '32px' : size === 'md' ? '40px' : '48px'}`}

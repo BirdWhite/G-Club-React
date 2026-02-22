@@ -57,9 +57,10 @@ export default function GameMatePage() {
   useEffect(() => {
     // 로딩이 완료된 후에만 역할 확인
     if (!isLoading && profile) {
-      // NONE 역할 사용자는 프로필 등록 페이지로 리다이렉트
-      if (profile.role?.name === 'NONE') {
-        router.push('/');
+      // 검증되지 않은 사용자(roleId null 또는 NONE)는 대기 페이지로 리다이렉트
+      const isUnverified = !profile.roleId || profile.role?.name === 'NONE';
+      if (isUnverified) {
+        router.push('/auth/pending');
         return;
       }
     }
@@ -70,9 +71,9 @@ export default function GameMatePage() {
     return <LoadingSpinner />;
   }
 
-
-  // NONE 역할 사용자는 리다이렉트되므로 여기까지 오지 않음
-  if (profile.role?.name === 'NONE') {
+  // 검증되지 않은 사용자는 리다이렉트되므로 여기까지 오지 않음
+  const isUnverified = !profile.roleId || profile.role?.name === 'NONE';
+  if (isUnverified) {
     return null;
   }
 

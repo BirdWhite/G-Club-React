@@ -330,7 +330,7 @@ export function UserRoleManager() {
                   <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{user.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.userId}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {user.role?.name === 'NONE' ? (
+                    {(!user.roleId || user.role?.name === 'NONE') ? (
                       <button
                         onClick={() => handleToggleMemberStatus(user.id, 'NONE')}
                         className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
@@ -371,7 +371,7 @@ export function UserRoleManager() {
                       user.role?.name === 'USER' ? 'bg-green-100 text-green-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
-                      {user.role?.name || '없음'}
+                      {user.role?.name || (user.roleId ? '없음' : '검증 대기')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

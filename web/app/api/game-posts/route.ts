@@ -7,8 +7,8 @@ export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
     
-    // 로그인하지 않은 사용자에게는 빈 데이터 반환
-    if (!user) {
+    // 로그인하지 않았거나 roleId가 null/NONE(검증 대기)인 사용자는 목록 조회 불가
+    if (!user || !user.role || user.role === 'NONE') {
       return NextResponse.json({
         success: true,
         posts: [],
@@ -156,6 +156,14 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: '로그인이 필요합니다.' },
       { status: 401 }
+    );
+  }
+
+  // roleId가 null이거나 NONE(검증 대기) 사용자는 게임메이트 글 작성 불가
+  if (!user.role || user.role === 'NONE') {
+    return NextResponse.json(
+      { error: '회원 승인이 완료된 후 이용 가능합니다.' },
+      { status: 403 }
     );
   }
 

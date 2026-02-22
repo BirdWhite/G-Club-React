@@ -47,6 +47,22 @@ interface NotificationResponse {
   unreadCount: number;
 }
 
+function NotificationSkeleton() {
+  return (
+    <div className="p-6 rounded-2xl border border-border bg-card animate-pulse">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-full bg-muted shrink-0" />
+        <div className="flex-1 min-w-0 space-y-3">
+          <div className="h-5 w-3/4 bg-muted rounded" />
+          <div className="h-4 w-full bg-muted rounded" />
+          <div className="h-4 w-2/3 bg-muted rounded" />
+          <div className="h-3 w-1/4 bg-muted rounded mt-4" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,7 +73,18 @@ export default function NotificationsPage() {
   const [hasMore, setHasMore] = useState(true);
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(false); // 로딩이 250ms 이상일 때만 스켈레톤 표시
   const observerTarget = useRef<HTMLDivElement>(null);
+
+  // 지연 스켈레톤: 로딩이 250ms 이상 걸릴 때만 스켈레톤 표시
+  useEffect(() => {
+    if (!isLoading || notifications.length > 0) {
+      setShowSkeleton(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowSkeleton(true), 250);
+    return () => clearTimeout(timer);
+  }, [isLoading, notifications.length]);
 
   // 알림 목록 조회
   const fetchNotifications = async (page: number = 1, unreadOnly: boolean = false, append: boolean = false) => {
@@ -79,10 +106,8 @@ export default function NotificationsPage() {
 
       if (data.success) {
         if (append) {
-          // 기존 데이터에 추가
           setNotifications(prev => [...prev, ...data.notifications]);
         } else {
-          // 새로운 데이터로 교체
           setNotifications(data.notifications);
         }
         setUnreadCount(data.unreadCount);
@@ -168,8 +193,9 @@ export default function NotificationsPage() {
     }
   }, [currentPage, showUnreadOnly, isLoadingMore, hasMore]);
 
-  // 필터 변경
+  // 필터 변경 (로딩 스피너 없이 부드러운 전환)
   const handleFilterChange = (unreadOnly: boolean) => {
+    if (showUnreadOnly === unreadOnly) return;
     setShowUnreadOnly(unreadOnly);
     setCurrentPage(1);
     setHasMore(true);
@@ -203,14 +229,6 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, []);
 
-
-  if (isLoading && notifications.length === 0) {
-    return (
-      <div className="bg-background flex items-center justify-center py-32">
-        <LoadingSpinner />
-      </div>
-    );
-  }
 
   return (
     <div className="bg-background">
@@ -275,9 +293,21 @@ export default function NotificationsPage() {
           </div>
         )}
 
-        {/* 알림 목록 */}
-        <div className="space-y-4">
-          {notifications.length === 0 ? (
+        {/* 알림 목록 - 로딩 시 스켈레톤, 필터 전환 시 부드러운 opacity 전환 */}
+        <div
+          className={`space-y-4 transition-opacity duration-300 ease-out ${
+            isLoading && notifications.length > 0 ? 'opacity-70 pointer-events-none' : 'opacity-100'
+          }`}
+        >
+          {isLoading && notifications.length === 0 && showSkeleton ? (
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <NotificationSkeleton key={i} />
+              ))}
+            </div>
+          ) : isLoading && notifications.length === 0 ? (
+            <div className="min-h-[200px]" aria-hidden />
+          ) : notifications.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-xl font-semibold text-foreground mb-2">

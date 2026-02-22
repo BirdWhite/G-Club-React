@@ -1,3 +1,13 @@
+/**
+ * Prisma 시드 스크립트
+ *
+ * 실행 방법 (web 폴더에서):
+ *   npm run seed
+ *   npm run db:seed
+ *   npx prisma db seed
+ *
+ * 실행 전: DATABASE_URL이 .env에 설정되어 있어야 하고, db:push로 스키마가 적용된 상태여야 합니다.
+ */
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -19,13 +29,13 @@ async function main() {
       id: 'admin-role-id', 
       name: 'ADMIN', 
       description: '관리자',
-      isDefault: true 
+      isDefault: false 
     },
     { 
         id: 'user-role-id', 
         name: 'USER', 
         description: '부원',
-        isDefault: true 
+        isDefault: false 
     },
     { 
         id: 'none-role-id', 

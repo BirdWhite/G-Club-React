@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database/supabase';
+import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 import { isAdmin_Server } from '@/lib/database/auth';
 import { notificationService } from '@/lib/notifications/notificationService';
@@ -17,11 +18,13 @@ export async function GET(
   { params }: { params: Promise<RouteContext['params']> }
 ) {
   try {
-    // 로그인하지 않은 사용자에게는 401 에러 반환
-    const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    }
+    // roleId가 null이거나 NONE(검증 대기) 사용자는 상세 조회 불가
+    if (!user.role || user.role === 'NONE') {
+      return NextResponse.json({ error: '회원 승인이 완료된 후 이용 가능합니다.' }, { status: 403 });
     }
 
     const { id } = await params;
@@ -451,14 +454,17 @@ export async function DELETE(
       include: { role: true },
     });
 
-    if (!userProfile || !userProfile.role) {
+    if (!userProfile) {
       return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 404 });
+    }
+    // roleId가 null이거나 NONE(검증 대기)은 삭제 불가
+    if (!userProfile.role || userProfile.role.name === 'NONE') {
+      return NextResponse.json({ error: '회원 승인이 완료된 후 이용 가능합니다.' }, { status: 403 });
     }
 
     const userRole = userProfile.role;
     const userIsAdmin = isAdmin_Server(userRole);
 
-    // 작성자이거나 관리자인 경우에만 삭제 가능
     if (post.authorId !== user.id && !userIsAdmin) {
       return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
     }

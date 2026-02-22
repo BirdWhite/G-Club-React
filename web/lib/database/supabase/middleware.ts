@@ -60,11 +60,14 @@ export async function updateSession(request: NextRequest) {
     const isPublicFiles = PUBLIC_FILE.test(currentPath);
     
     // 허용된 경로들 (인증 없이 접근 가능)
+    // /auth/callback: OAuth 코드 교환용 - 세션 없이 접근해야 함
     const publicPaths = [
       '/',
       '/auth/login',
+      '/auth/callback',
       '/auth/register',
       '/auth/terms',
+      '/auth/pending',
       '/profile/register',
     ];
     
@@ -80,21 +83,8 @@ export async function updateSession(request: NextRequest) {
     if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = '/auth/login';
-      
-      // nginx 환경에서의 호스트 처리 개선
-      const host = request.headers.get('host') || 'pnu-ultimate.kro.kr';
-      const cleanHost = host.split(':')[0]; // 포트 번호 제거
-      
-      // 프로토콜 결정
-      const forwardedProto = request.headers.get('x-forwarded-proto');
-      const protocol = forwardedProto === 'https' ? 'https:' : 'http:';
-      
-      // URL 구성 개선
-      url.host = cleanHost;
-      url.protocol = protocol;
-      url.port = protocol === 'https:' ? '443' : '80';
-      
-      console.log('Redirecting to:', url.toString());
+      // request.nextUrl은 이미 올바른 origin(호스트+포트)을 포함함 - 그대로 사용
+      url.href = `${url.origin}/auth/login${url.search}`;
       return NextResponse.redirect(url);
     }
     

@@ -14,6 +14,7 @@ export function LoginForm() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: {
           prompt: 'select_account' // 매번 계정 선택 화면 표시
         }
