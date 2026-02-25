@@ -2,6 +2,10 @@
   "name": "ultimate",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "next dev -p 3000 -H 127.0.0.1",
     "build": "next build",
@@ -80,6 +84,7 @@
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
     "@types/web-push": "^3.6.4",
+    "baseline-browser-mapping": "^2.10.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "lightningcss": "^1.30.2",

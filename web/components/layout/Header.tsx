@@ -164,14 +164,13 @@ export function Header() {
     };
   }, [isProfileMenuOpen]);
   
-  // 클라이언트 사이드에서만 실행되는 NavLink 컴포넌트
+  // NavLink: pathname을 props로 받아 훅 순서 일관성 유지 (React #310 에러 방지)
   const NavLink = ({ href, children, showBadge = false, badgeCount = 0 }: { 
     href: string; 
     children: React.ReactNode;
     showBadge?: boolean;
     badgeCount?: number;
   }) => {
-    const pathname = usePathname();
     const isActive = href === '/' ? pathname === href : pathname?.startsWith(href);
     
     return (

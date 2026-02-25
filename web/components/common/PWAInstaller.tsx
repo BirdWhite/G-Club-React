@@ -107,19 +107,17 @@ export function PWAInstaller() {
 
   const handleDismiss = () => {
     setShowInstallButton(false);
-    // 하루 동안 숨기기
+    // X 누르면 72시간 동안 숨기기
     localStorage.setItem('pwa-install-dismissed', Date.now().toString());
   };
 
-  // 이전에 닫았다면 24시간 동안 표시하지 않음
+  // 이전에 X로 닫았다면 72시간 동안 표시하지 않음
   useEffect(() => {
     const dismissed = localStorage.getItem('pwa-install-dismissed');
     if (dismissed) {
-      const dismissedTime = parseInt(dismissed);
-      const now = Date.now();
-      const oneDayInMs = 24 * 60 * 60 * 1000;
-      
-      if (now - dismissedTime < oneDayInMs) {
+      const dismissedTime = parseInt(dismissed, 10);
+      const seventyTwoHoursInMs = 72 * 60 * 60 * 1000;
+      if (Date.now() - dismissedTime < seventyTwoHoursInMs) {
         setShowInstallButton(false);
       }
     }
@@ -128,9 +126,10 @@ export function PWAInstaller() {
   if (!showInstallButton) return null;
 
   return (
-    <div className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl p-4 shadow-lg">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-[env(safe-area-inset-bottom)] md:bottom-4 md:left-4 md:right-auto md:max-w-sm">
+      <div className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl p-4 shadow-lg">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
             <svg
               className="w-6 h-6"
@@ -147,11 +146,11 @@ export function PWAInstaller() {
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm">PWA 앱</h3>
+            <h3 className="font-semibold text-sm">앱</h3>
             <p className="text-xs opacity-90">홈 화면에 추가</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={handleInstallClick}
             className="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/90 transition-colors whitespace-nowrap"
@@ -167,6 +166,7 @@ export function PWAInstaller() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+          </div>
         </div>
       </div>
     </div>
