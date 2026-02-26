@@ -1,9 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function MembershipPendingPage() {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(false);
+
+  const handleCheckStatus = () => {
+    setIsChecking(true);
+    // 전체 새로고침으로 프로필 캐시 무효화 (검증 완료 시 즉시 반영)
+    window.location.href = '/';
+  };
   return (
     <div className="bg-background flex items-center justify-center px-4 py-32">
       <div className="max-w-2xl w-full p-8 text-center">
@@ -107,13 +115,14 @@ export default function MembershipPendingPage() {
           </div>
         </div>
 
-        {/* 상태 확인 버튼 */}
+        {/* 상태 확인 버튼 - 프로필 새로고침 후 홈으로 이동 (검증 완료 시 즉시 반영) */}
         <div>
           <button 
-            onClick={() => router.push('/')}
-            className="w-full btn-primary"
+            onClick={handleCheckStatus}
+            disabled={isChecking}
+            className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            상태 확인하기
+            {isChecking ? '확인 중...' : '상태 확인하기'}
           </button>
         </div>
       </div>
