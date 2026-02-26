@@ -6,6 +6,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DateTimeDisplay } from '@/components/common/DateTimeDisplay';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { Eye, Megaphone, Pin } from 'lucide-react';
+import { extractFirstImageUrl } from '@/lib/utils';
 import type { Notice } from '@/types/models';
 
 interface NoticeResponse {
@@ -116,61 +117,75 @@ export default function NoticesPage() {
               </p>
             </div>
           ) : (
-            notices.map((notice) => (
-              <Link
-                key={notice.id}
-                href={`/notices/${notice.id}`}
-                className="block p-6 rounded-2xl shadow-lg border border-border bg-card transition-all hover:shadow-xl hover:bg-card/80"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    {notice.isPinned && (
-                      <span className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full flex items-center gap-1">
-                        <Pin className="w-3 h-3" />
-                        고정
-                      </span>
-                    )}
-                    <h3 className="text-lg font-semibold text-foreground line-clamp-2">
-                      {notice.title}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>{notice.viewCount}</span>
+            notices.map((notice) => {
+              const thumbnailUrl = extractFirstImageUrl(notice.content);
+              return (
+                <Link
+                  key={notice.id}
+                  href={`/notices/${notice.id}`}
+                  className="flex rounded-2xl shadow-lg border border-border bg-card transition-all hover:shadow-xl hover:bg-card/80 overflow-hidden"
+                >
+                  {thumbnailUrl && (
+                    <div className="relative shrink-0 w-[120px] sm:w-[160px] aspect-video self-stretch">
+                      <img
+                        src={thumbnailUrl}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
                     </div>
-                  </div>
-                </div>
-                
-                {notice.summary && (
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                    {notice.summary}
-                  </p>
-                )}
+                  )}
+                  <div className="flex-1 min-w-0 p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {notice.isPinned && (
+                          <span className="shrink-0 px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full flex items-center gap-1">
+                            <Pin className="w-3 h-3" />
+                            고정
+                          </span>
+                        )}
+                        <h3 className="text-lg font-semibold text-foreground line-clamp-2">
+                          {notice.title}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0 ml-2">
+                        <div className="flex items-center gap-1">
+                          <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span>{notice.viewCount}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {notice.summary && (
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        {notice.summary}
+                      </p>
+                    )}
 
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <DateTimeDisplay 
-                    date={notice.publishedAt || notice.createdAt}
-                    className="text-xs"
-                  />
-                  <div className="flex items-center gap-4">
-                    <span>
-                      {notice.author.name}
-                      {notice.lastModifiedBy && notice.lastModifiedBy.userId !== notice.authorId && (
-                        <span className="text-muted-foreground">
-                          {' '}(수정됨: {notice.lastModifiedBy.name})
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <DateTimeDisplay 
+                        date={notice.publishedAt || notice.createdAt}
+                        className="text-xs"
+                      />
+                      <div className="flex items-center gap-4">
+                        <span>
+                          {notice.author.name}
+                          {notice.lastModifiedBy && notice.lastModifiedBy.userId !== notice.authorId && (
+                            <span className="text-muted-foreground">
+                              {' '}(수정됨: {notice.lastModifiedBy.name})
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      {!notice.isPublished && (
+                        <span className="px-2 py-1 bg-yellow-500/20 text-yellow-600 text-xs rounded-full">
+                          임시저장
                         </span>
                       )}
-                    </span>
+                    </div>
                   </div>
-                  {!notice.isPublished && (
-                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-600 text-xs rounded-full">
-                      임시저장
-                    </span>
-                  )}
-                </div>
-              </Link>
-            ))
+                </Link>
+              );
+            })
           )}
         </div>
 

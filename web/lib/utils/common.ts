@@ -36,6 +36,28 @@ export const INPUT_LIMITS = {
   NOTICE_COMMENT_MAX: 1000,
 } as const
 
+interface TiptapNode {
+  type: string;
+  attrs?: { src?: string };
+  content?: TiptapNode[];
+}
+
+/**
+ * Tiptap JSON 콘텐츠에서 첫 번째 이미지 URL을 추출
+ */
+export function extractFirstImageUrl(content: unknown): string | null {
+  if (!content || typeof content !== 'object') return null;
+  const node = content as TiptapNode;
+  if (node.type === 'image' && node.attrs?.src) return node.attrs.src;
+  if (Array.isArray(node.content)) {
+    for (const child of node.content) {
+      const found = extractFirstImageUrl(child);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 /**
  * HTML 태그, 스크립트, 위험한 패턴 제거 (XSS 방지)
  * 유저 입력 필드에 사용

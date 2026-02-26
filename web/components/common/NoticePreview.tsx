@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { DateTimeDisplay } from '@/components/common/DateTimeDisplay';
 import { Eye, ChevronRight, Megaphone, Pin } from 'lucide-react';
 import { useNoticeListSubscription } from '@/hooks/useRealtimeSubscription';
+import { extractFirstImageUrl } from '@/lib/utils';
 
 export function NoticePreview() {
   // 실시간 구독 훅 사용
@@ -58,45 +59,59 @@ export function NoticePreview() {
         </div>
       ) : (
         <div className="space-y-3">
-          {displayNotices.map((notice) => (
-            <Link
-              key={notice.id}
-              href={`/notices/${notice.id}`}
-              className="block p-4 min-h-[5.5rem] rounded-lg bg-card border border-border/50 hover:border-border hover:bg-muted/30 transition-all group"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {notice.isPinned && (
-                    <span className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full flex items-center gap-1">
-                      <Pin className="w-3 h-3" />
-                      고정
-                    </span>
+          {displayNotices.map((notice) => {
+            const thumbnailUrl = extractFirstImageUrl(notice.content);
+            return (
+              <Link
+                key={notice.id}
+                href={`/notices/${notice.id}`}
+                className="flex min-h-[5.5rem] rounded-lg bg-card border border-border/50 hover:border-border hover:bg-muted/30 transition-all group overflow-hidden"
+              >
+                {thumbnailUrl && (
+                  <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-video self-stretch">
+                    <img
+                      src={thumbnailUrl}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0 p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {notice.isPinned && (
+                        <span className="shrink-0 px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full flex items-center gap-1">
+                          <Pin className="w-3 h-3" />
+                          고정
+                        </span>
+                      )}
+                      <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                        {notice.title}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                      <Eye className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{notice.viewCount}</span>
+                    </div>
+                  </div>
+                  
+                  {notice.summary && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                      {notice.summary}
+                    </p>
                   )}
-                  <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                    {notice.title}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Eye className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">{notice.viewCount}</span>
-                </div>
-              </div>
-              
-              {notice.summary && (
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                  {notice.summary}
-                </p>
-              )}
 
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{notice.author.name}</span>
-                <DateTimeDisplay 
-                  date={notice.publishedAt || notice.createdAt}
-                  className="text-xs"
-                />
-              </div>
-            </Link>
-          ))}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{notice.author.name}</span>
+                    <DateTimeDisplay 
+                      date={notice.publishedAt || notice.createdAt}
+                      className="text-xs"
+                    />
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

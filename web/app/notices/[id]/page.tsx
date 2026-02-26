@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DateTimeDisplay } from '@/components/common/DateTimeDisplay';
+import { formatAbsoluteTime } from '@/lib/utils/date';
 import { Button } from '@/components/ui/button';
 import { RichTextViewer } from '@/components/editor/RichTextViewer';
 import { NoticeCommentSection } from '@/components/notices/NoticeCommentSection';
@@ -181,30 +182,45 @@ export default function NoticeDetailPage() {
             {notice.title}
           </h1>
           
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <ProfileAvatar 
-                  name={notice.author.name}
-                  image={notice.author.image}
-                  size="sm"
-                />
-                <span>{notice.author.name}</span>
-                {notice.lastModifiedBy && notice.lastModifiedBy.userId !== notice.authorId && (
-                  <span className="text-xs text-muted-foreground">
-                    (수정됨: {notice.lastModifiedBy.name})
-                  </span>
-                )}
-              </div>
-              <DateTimeDisplay 
-                date={notice.publishedAt || notice.createdAt}
-                className="text-sm"
-                variant="absolute"
+          <div className="flex items-center justify-between text-sm text-muted-foreground gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <ProfileAvatar 
+                name={notice.author.name}
+                image={notice.author.image}
+                size="sm"
               />
-              <div className="flex items-center gap-1">
-                <Eye className="w-4 h-4 text-muted-foreground" />
-                <span>{notice.viewCount}</span>
-              </div>
+              <span>{notice.author.name}</span>
+              {notice.lastModifiedBy && notice.lastModifiedBy.userId !== notice.authorId && (
+                <span className="text-xs text-muted-foreground shrink-0">
+                  (수정됨: {notice.lastModifiedBy.name})
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
+              {(() => {
+                const created = new Date(notice.createdAt).getTime();
+                const updated = new Date(notice.updatedAt).getTime();
+                const wasModified = updated - created > 1000;
+                return (
+                  <div className="flex items-center gap-4">
+                    {wasModified ? (
+                      <span className="text-sm">
+                        작성됨 {formatAbsoluteTime(notice.createdAt)} · 수정됨 {formatAbsoluteTime(notice.updatedAt)}
+                      </span>
+                    ) : (
+                      <DateTimeDisplay 
+                        date={notice.publishedAt || notice.createdAt}
+                        className="text-sm"
+                        variant="absolute"
+                      />
+                    )}
+                    <div className="flex items-center gap-1">
+                      <Eye className="w-4 h-4 text-muted-foreground" />
+                      <span>{notice.viewCount}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
