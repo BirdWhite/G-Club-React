@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { formatDistanceToNow, format, isToday, isTomorrow, differenceInCalendarDays, differenceInYears } from 'date-fns';
-import { ko } from 'date-fns/locale';
 import { GamePost } from '@/types/models';
+import { formatRelativeTime } from '@/lib/utils/date';
 import { Clock, Users, Edit, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -44,36 +43,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   
   const currentStatus = getDisplayStatus();
 
-  // 1시간 5분(65분) 이내: 상대시간 | 65분 초과: 절대시간 | 오늘: 오늘 HH:mm | 내일: 내일 HH:mm | n일: n일 후/전 HH:mm | 한달+: M월 d일 HH:mm | 1년+: y년 M월 d일 HH:mm
-  const getStartTimeDisplay = () => {
-    if (!isMounted) return '...';
-    const startDate = new Date(post.startTime);
-    const now = new Date();
-    const diffMs = startDate.getTime() - now.getTime();
-    const diffMinutes = Math.abs(diffMs) / (60 * 1000);
-    const timeStr = format(startDate, 'HH:mm', { locale: ko });
-
-    if (diffMinutes <= 65) {
-      return formatDistanceToNow(startDate, { addSuffix: true, locale: ko });
-    }
-    if (differenceInYears(startDate, now) !== 0) {
-      return format(startDate, 'y년 M월 d일 HH:mm', { locale: ko });
-    }
-    const daysDiff = differenceInCalendarDays(startDate, now);
-    if (Math.abs(daysDiff) >= 30) {
-      return format(startDate, 'M월 d일 HH:mm', { locale: ko });
-    }
-    if (isTomorrow(startDate)) {
-      return `내일 ${timeStr}`;
-    }
-    if (isToday(startDate)) {
-      return `오늘 ${timeStr}`;
-    }
-    if (daysDiff > 0) {
-      return `${daysDiff}일 후 ${timeStr}`;
-    }
-    return `${Math.abs(daysDiff)}일 전 ${timeStr}`;
-  };
+  const startTimeDisplay = isMounted ? formatRelativeTime(post.startTime) : '...';
 
   return (
     <div className="group bg-card overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-border">
@@ -105,7 +75,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
             <div className="flex items-center text-primary text-xs mt-1">
               <Clock className="h-4 w-4 mr-1 text-primary flex-shrink-0" />
               <time dateTime={typeof post.startTime === 'string' ? post.startTime : post.startTime.toISOString()}>
-                {getStartTimeDisplay()}
+                {startTimeDisplay}
               </time>
             </div>
           </div>

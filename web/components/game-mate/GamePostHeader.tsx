@@ -2,8 +2,7 @@
 
 import type { GamePost } from '@/types/models';
 import { ChevronLeft, Eye } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { formatAbsoluteTime } from '@/lib/utils/date';
 import { useEffect, useState } from 'react';
 
 interface GamePostHeaderProps {
@@ -83,7 +82,7 @@ export function GamePostHeader({
           <span>•</span>
           {post.createdAt && (
             <time dateTime={typeof post.createdAt === 'string' ? post.createdAt : post.createdAt.toISOString?.()}>
-              {isMounted ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: ko }) : '...'}
+              {isMounted ? formatAbsoluteTime(post.createdAt) : '...'}
             </time>
           )}
           <span>•</span>

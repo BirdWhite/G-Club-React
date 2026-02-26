@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 import { Comment } from '@/types/models';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { formatRelativeTime } from '@/lib/utils/date';
 import { Send } from 'lucide-react';
 
 interface NoticeCommentSectionProps {
@@ -160,10 +159,7 @@ export function NoticeCommentSection({ noticeId, allowComments }: NoticeCommentS
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-foreground">{comment.author.name}</span>
                   <span className="text-sm text-muted-foreground">
-                    {formatDistanceToNow(new Date(comment.createdAt), { 
-                      addSuffix: true, 
-                      locale: ko 
-                    })}
+                    {formatRelativeTime(comment.createdAt)}
                   </span>
                   {profile && !comment.isDeleted && (profile.userId === comment.authorId || 
                     ['ADMIN', 'SUPER_ADMIN'].includes(profile.role?.name || '')) && (

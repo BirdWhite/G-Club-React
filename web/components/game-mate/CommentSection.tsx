@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 import { useProfile } from '@/contexts/ProfileProvider';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { formatRelativeTime } from '@/lib/utils/date';
 import { useCommentSubscription } from '@/hooks/useRealtimeSubscription';
 // import type { Comment } from '@/types/models'; // 현재 미사용
 
@@ -129,10 +128,7 @@ export function CommentSection({ gamePostId }: CommentSectionProps) {
                       dateTime={typeof comment.createdAt === 'string' ? comment.createdAt : comment.createdAt.toISOString()}
                       className="text-xs text-foreground/70"
                     >
-                      {isMounted ? formatDistanceToNow(new Date(comment.createdAt), { 
-                        addSuffix: true, 
-                        locale: ko 
-                      }) : '...'}
+                      {isMounted ? formatRelativeTime(comment.createdAt) : '...'}
                     </time>
                   </div>
                   {!comment.isDeleted && profile && (profile.userId === comment.authorId || 

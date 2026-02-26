@@ -1,12 +1,15 @@
-import { formatRelativeTime } from '@/lib/utils/date';
+import { formatRelativeTime, formatAbsoluteTime } from '@/lib/utils/date';
 
 interface DateTimeDisplayProps {
   date: Date | string;
   showIcon?: boolean;
   className?: string;
+  /** 'relative' 상대시간 | 'absolute' 절대시간 (상세 페이지용) */
+  variant?: 'relative' | 'absolute';
 }
 
-export function DateTimeDisplay({ date, showIcon = true, className = '' }: DateTimeDisplayProps) {
+export function DateTimeDisplay({ date, showIcon = true, className = '', variant = 'relative' }: DateTimeDisplayProps) {
+  const formatted = variant === 'absolute' ? formatAbsoluteTime(date) : formatRelativeTime(date);
   return (
     <div className={`flex items-center text-muted-foreground ${className}`}>
       {showIcon && (
@@ -25,7 +28,7 @@ export function DateTimeDisplay({ date, showIcon = true, className = '' }: DateT
           />
         </svg>
       )}
-      <span>{formatRelativeTime(date)}</span>
+      <span>{formatted}</span>
     </div>
   );
 }

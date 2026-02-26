@@ -196,6 +196,7 @@ export default function NoticeDetailPage() {
               <DateTimeDisplay 
                 date={notice.publishedAt || notice.createdAt}
                 className="text-sm"
+                variant="absolute"
               />
               <div className="flex items-center gap-1">
                 <Eye className="w-4 h-4 text-muted-foreground" />
