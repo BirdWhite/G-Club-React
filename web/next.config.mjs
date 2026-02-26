@@ -110,9 +110,10 @@ const withPWAConfig = withPWA({
   dest: 'public',
   disable: false, // PWA 활성화
   customWorkerDir: 'worker', // 커스텀 워커 디렉토리
+  reloadOnOnline: false, // 탭 복귀 시 'online' 이벤트로 인한 강제 새로고침 방지
   workboxOptions: {
     disableDevLogs: true,
-    skipWaiting: true,
+    skipWaiting: false, // 탭 복귀 시 새 SW 즉시 활성화 → controllerchange → 리로드 방지
     clientsClaim: true,
     cleanupOutdatedCaches: true,
     cacheId: 'ultimate-pwa-v2', // 버전 업데이트

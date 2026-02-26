@@ -1,10 +1,10 @@
 'use client';
 
 import { createClient } from '@/lib/database/supabase';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useProfile } from '@/contexts/ProfileProvider'; // 1. useProfile 훅 임포트
+import { useProfile } from '@/contexts/ProfileProvider';
 import type { Session } from '@supabase/supabase-js';
 import { MobileNavigation } from '@/components/layout/MobileNavigation';
 import { NavLink } from '@/components/layout/NavLink';
@@ -18,6 +18,7 @@ export function Header() {
   const supabase = createClient();
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const currentUserIdRef = useRef<string | null>(null);
   
   const { profile, isLoading: profileLoading } = useProfile(); // 2. useProfile 훅 호출
   const isAdmin = profile?.role?.name === 'ADMIN' || profile?.role?.name === 'SUPER_ADMIN'; // 3. isAdmin 변수 생성
@@ -60,22 +61,27 @@ export function Header() {
     return ''; // 기본값을 빈 문자열로 변경
   };
 
-  // 사용자 정보 가져오기
   const fetchUser = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
-        setSession(null);
+        currentUserIdRef.current = null;
+        setSession((prev) => (prev !== null ? null : prev));
         return null;
       }
 
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
-      
+
+      currentUserIdRef.current = user?.id ?? null;
       const sessionData = user ? { user } as Session : null;
-      setSession(sessionData);
-      
+      setSession((prev) => {
+        if (!prev && !sessionData) return prev;
+        if (prev?.user?.id === sessionData?.user?.id) return prev;
+        return sessionData;
+      });
+
       return user;
     } catch (error) {
       console.error('사용자 정보를 가져오는 중 오류 발생:', error);
@@ -87,54 +93,47 @@ export function Header() {
   }, [supabase.auth]);
 
   useEffect(() => {
-    // 초기 사용자 정보 로드
     fetchUser();
 
-    // 인증 상태 변경 감지
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // 세션 상태 업데이트
-        setSession(session);
-        
-        // 로그아웃 시 메인 페이지로 리다이렉트
         if (event === 'SIGNED_OUT') {
+          currentUserIdRef.current = null;
+          setSession(null);
           router.push('/');
+          return;
         }
-        // 로그인 성공 시 프로필 페이지로 리다이렉트 (로그인 페이지에서만)
-        else if (event === 'SIGNED_IN' && pathname === '/auth/login') {
+
+        // Supabase는 탭 포커스 시 토큰 갱신 목적으로 SIGNED_IN을 발생시킴
+        // 같은 유저면 세션 업데이트를 스킵해서 불필요한 리렌더 방지
+        const newUserId = session?.user?.id ?? null;
+        if (newUserId && newUserId === currentUserIdRef.current) {
+          return;
+        }
+
+        currentUserIdRef.current = newUserId;
+        setSession(session);
+
+        if (event === 'SIGNED_IN' && pathname === '/auth/login') {
           router.push('/profile');
         }
       }
     );
 
-    // 페이지 가시성 변경 시 사용자 정보 갱신
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchUser();
-      }
-    };
-
-    // 서비스 워커 세션 준비 완료 이벤트 리스너 (단순화)
     const handleSWSessionReady = (event: Event) => {
       const customEvent = event as CustomEvent<{ session: unknown; fromCache: boolean; isPWA: boolean }>;
       const { isPWA } = customEvent.detail || {};
       console.log('서비스 워커 세션 준비 완료:', { isPWA });
-      
-      // 항상 서버에서 세션을 가져오기
       fetchUser();
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('swSessionReady', handleSWSessionReady);
 
-    // 클린업 함수
     return () => {
-      // 구독 해제
       subscription?.unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('swSessionReady', handleSWSessionReady);
     };
-  }, [fetchUser, router, supabase.auth, pathname]); // 의존성 복구
+  }, [fetchUser, router, supabase.auth, pathname]);
   
   // 프로필 메뉴 열림 상태
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);

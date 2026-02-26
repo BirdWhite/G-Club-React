@@ -60,9 +60,11 @@ export function PWAManager({ children }: PWAManagerProps) {
             }));
           }, 100);
           
-          // 주기적으로 서비스 워커 업데이트 확인
+          // 탭이 보일 때만 서비스 워커 업데이트 확인 (탭 복귀 시 불필요한 controllerchange 방지)
           setInterval(() => {
-            registration.update();
+            if (document.visibilityState === 'visible') {
+              registration.update();
+            }
           }, 5 * 60 * 1000); // 5분마다
         })
         .catch((error) => {

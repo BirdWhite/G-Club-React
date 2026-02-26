@@ -11,11 +11,9 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
-        // 토큰 만료 시간을 1시간으로 제한
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
-        // 토큰 만료 시간 설정
         flowType: 'pkce',
       }
     }

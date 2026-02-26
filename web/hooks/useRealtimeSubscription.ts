@@ -649,11 +649,12 @@ export function useCommentSubscription(gamePostId: string) {
   const [loading, setLoading] = useState(true);
   const supabase = useMemo(() => createClient(), []);
 
-  const fetchComments = useCallback(async () => {
+  const fetchComments = useCallback(async (showLoading = true) => {
     try {
+      if (showLoading) setLoading(true);
       const response = await fetch(`/api/game-posts/${gamePostId}/comments`);
       if (!response.ok) throw new Error('Failed to fetch comments');
-      
+
       const data = await response.json();
       setComments(data);
     } catch (error) {
@@ -664,10 +665,10 @@ export function useCommentSubscription(gamePostId: string) {
   }, [gamePostId]);
 
   useEffect(() => {
-    fetchComments();
+    fetchComments(true);
   }, [fetchComments]);
 
-  // 실시간 구독 설정
+  // 실시간 구독 설정 - 업데이트 시 로딩 표시 없이 백그라운드 갱신
   useEffect(() => {
     let pollingInterval: NodeJS.Timeout | null = null;
 
@@ -684,7 +685,7 @@ export function useCommentSubscription(gamePostId: string) {
           filter: `gamePostId=eq.${gamePostId}`,
         },
         () => {
-          fetchComments();
+          fetchComments(false);
         }
       )
       .on(
@@ -696,7 +697,7 @@ export function useCommentSubscription(gamePostId: string) {
           filter: `gamePostId=eq.${gamePostId}`,
         },
         () => {
-          fetchComments();
+          fetchComments(false);
         }
       )
       .on(
@@ -708,16 +709,15 @@ export function useCommentSubscription(gamePostId: string) {
           filter: `gamePostId=eq.${gamePostId}`,
         },
         () => {
-          fetchComments();
+          fetchComments(false);
         }
       )
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR') {
           console.log('댓글 실시간 구독 실패, 폴링으로 대체');
-          // 실시간 연결 실패 시 폴링으로 대체
           pollingInterval = setInterval(() => {
-            fetchComments();
-          }, 10000); // 10초마다 폴링
+            fetchComments(false);
+          }, 10000);
         }
       });
 
@@ -728,6 +728,107 @@ export function useCommentSubscription(gamePostId: string) {
       }
     };
   }, [gamePostId, supabase, fetchComments]);
+
+  return { comments, loading, refresh: fetchComments };
+}
+
+// 공지사항 댓글 실시간 구독 훅
+export function useNoticeCommentSubscription(noticeId: string | null) {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = useMemo(() => createClient(), []);
+  const fetchInProgressRef = useRef(false);
+
+  const fetchComments = useCallback(async (showLoading = true) => {
+    if (!noticeId) return;
+    if (fetchInProgressRef.current) return;
+    fetchInProgressRef.current = true;
+    try {
+      if (showLoading) setLoading(true);
+      const response = await fetch(`/api/notices/${noticeId}/comments`);
+      if (!response.ok) throw new Error('Failed to fetch comments');
+
+      const data = await response.json();
+      setComments(data);
+    } catch (error) {
+      console.error('공지사항 댓글 조회 오류:', error);
+    } finally {
+      setLoading(false);
+      fetchInProgressRef.current = false;
+    }
+  }, [noticeId]);
+
+  useEffect(() => {
+    if (noticeId) {
+      fetchComments(true);
+    } else {
+      setComments([]);
+      setLoading(false);
+    }
+  }, [noticeId, fetchComments]);
+
+  // 실시간 구독 설정 (noticeId가 있을 때만)
+  useEffect(() => {
+    if (!noticeId) return;
+
+    let pollingInterval: NodeJS.Timeout | null = null;
+
+    const channel = supabase
+      .channel(`notice_comments_${noticeId}_${Date.now()}`, {
+        config: { broadcast: { self: false } },
+      })
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'Comment',
+          filter: `noticeId=eq.${noticeId}`,
+        },
+        () => {
+          fetchComments(false); // 실시간 업데이트 시 로딩 표시 없음
+        }
+      )
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'Comment',
+          filter: `noticeId=eq.${noticeId}`,
+        },
+        () => {
+          fetchComments(false);
+        }
+      )
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'Comment',
+          filter: `noticeId=eq.${noticeId}`,
+        },
+        () => {
+          fetchComments(false);
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.log('공지사항 댓글 실시간 구독 실패, 폴링으로 대체');
+          pollingInterval = setInterval(() => {
+            fetchComments(false);
+          }, 10000);
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [noticeId, supabase, fetchComments]);
 
   return { comments, loading, refresh: fetchComments };
 }

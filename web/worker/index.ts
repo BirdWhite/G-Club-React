@@ -236,11 +236,9 @@ async function markNotificationAsRead(notificationId: string) {
   }
 }
 
-// 설치 이벤트
+// 설치 이벤트 - skipWaiting 제거: next.config skipWaiting:false와 동일하게 탭 복귀 시 리로드 방지
 self.addEventListener('install', function(event: any) {
   console.log('[custom-worker] Service worker installed');
-  // 즉시 활성화
-  sw.skipWaiting();
 });
 
 // 백그라운드 동기화 이벤트

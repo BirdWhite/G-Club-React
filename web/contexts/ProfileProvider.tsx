@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { createClient } from '@/lib/database/supabase';
-import type { FullUserProfile } from '@/lib/user'; // getUserProfile에서 정의한 타입을 재사용합니다.
+import type { FullUserProfile } from '@/lib/user';
 
 interface ProfileContextType {
   profile: FullUserProfile | null;
@@ -18,28 +18,36 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [supabase] = useState(() => createClient());
+  const currentUserIdRef = useRef<string | null>(null);
+  const fetchInProgressRef = useRef(false);
 
-  const fetchProfile = async () => {
-    setIsLoading(true);
+  const fetchProfile = async (showLoading = true) => {
+    if (fetchInProgressRef.current) return;
+    fetchInProgressRef.current = true;
+
+    if (showLoading) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
+        currentUserIdRef.current = null;
         setProfile(null);
         setIsLoading(false);
         return;
       }
-      
-      // 사용자 프로필 정보를 가져오는 API 호출
+
+      currentUserIdRef.current = session.user.id;
+
       const res = await fetch('/api/profile', {
-        cache: 'no-store', // 캐시 방지
+        cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
         },
       });
       
-      // 401 에러는 인증되지 않은 사용자
       if (res.status === 401) {
         setProfile(null);
         return;
@@ -55,22 +63,33 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setProfile(null);
     } finally {
       setIsLoading(false);
+      fetchInProgressRef.current = false;
     }
   };
 
   useEffect(() => {
-    fetchProfile(); // 컴포넌트 마운트 시 프로필 정보 가져오기
+    fetchProfile();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
-      // 로그인 또는 로그아웃 시 프로필 정보 다시 가져오기
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        currentUserIdRef.current = null;
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if (event === 'SIGNED_IN') {
+        // Supabase는 탭 포커스 시 토큰 갱신 목적으로 SIGNED_IN을 발생시킴
+        // 같은 유저면 이미 프로필이 로드되어 있으므로 스킵
+        if (session?.user?.id === currentUserIdRef.current) {
+          return;
+        }
         fetchProfile();
       }
     });
 
-    // refreshProfile 이벤트 리스너 추가
     const handleRefreshProfile = () => {
-      fetchProfile();
+      fetchProfile(false);
     };
 
     window.addEventListener('refreshProfile', handleRefreshProfile);
@@ -79,7 +98,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       authListener.subscription.unsubscribe();
       window.removeEventListener('refreshProfile', handleRefreshProfile);
     };
-  }, [supabase]); // supabase 의존성 복구
+  }, [supabase]);
 
   return (
     <ProfileContext.Provider value={{ profile, isLoading, error, refetchProfile: fetchProfile }}>

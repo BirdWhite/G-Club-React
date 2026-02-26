@@ -73,7 +73,11 @@ define(['./workbox-b7918965'], (function (workbox) { 'use strict';
   workbox.setCacheNameDetails({
     prefix: "ultimate-pwa-v2"
   });
-  self.skipWaiting();
+  self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+      self.skipWaiting();
+    }
+  });
   workbox.clientsClaim();
   workbox.registerRoute("/", new workbox.NetworkFirst({
     "cacheName": "start-url",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/database/supabase';
 
@@ -17,10 +17,17 @@ export function useTermsAgreement() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
+  const checkedRef = useRef(false);
+  const fetchInProgressRef = useRef(false);
 
   const checkAgreementStatus = async () => {
+    if (fetchInProgressRef.current) return;
+    fetchInProgressRef.current = true;
+
     try {
-      setIsLoading(true);
+      if (!checkedRef.current) {
+        setIsLoading(true);
+      }
       setError(null);
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -31,7 +38,7 @@ export function useTermsAgreement() {
       }
 
       const response = await fetch('/api/auth/terms-agreement', {
-        cache: 'no-store' // 캐시를 사용하지 않도록 설정
+        cache: 'no-store'
       });
       
       if (!response.ok) {
@@ -42,10 +49,9 @@ export function useTermsAgreement() {
       
       if (result.success) {
         setAgreementStatus(result.data);
+        checkedRef.current = true;
         
-        // 필수 약관에 동의하지 않은 경우 약관 동의 페이지로 리다이렉트
         if (!result.data.termsAgreed || !result.data.privacyAgreed) {
-          // 인증 관련 페이지가 아닌 경우에만 리다이렉트
           if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth/')) {
             router.replace('/auth/terms');
           }
@@ -58,6 +64,7 @@ export function useTermsAgreement() {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
+      fetchInProgressRef.current = false;
     }
   };
 
@@ -78,7 +85,7 @@ export function useTermsAgreement() {
           privacyAgreed,
           marketingAgreed: false
         }),
-        cache: 'no-store' // 캐시를 사용하지 않도록 설정
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -90,7 +97,6 @@ export function useTermsAgreement() {
       if (result.success) {
         setAgreementStatus(result.data);
         
-        // 상태 업데이트 후 다시 한 번 확인
         setTimeout(() => {
           checkAgreementStatus();
         }, 100);
@@ -108,25 +114,10 @@ export function useTermsAgreement() {
 
   useEffect(() => {
     checkAgreementStatus();
-  }, []);
 
-  // 경로 변경 시마다 약관 동의 상태 확인
-  useEffect(() => {
-    const handleRouteChange = () => {
-      // 인증 관련 페이지가 아닌 경우에만 확인
-      if (!window.location.pathname.startsWith('/auth/')) {
-        checkAgreementStatus();
-      }
-    };
-
-    // 페이지 로드 시 확인
-    handleRouteChange();
-
-    // popstate 이벤트 리스너 추가 (뒤로가기/앞으로가기)
-    window.addEventListener('popstate', handleRouteChange);
-
+    window.addEventListener('popstate', checkAgreementStatus);
     return () => {
-      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('popstate', checkAgreementStatus);
     };
   }, []);
 

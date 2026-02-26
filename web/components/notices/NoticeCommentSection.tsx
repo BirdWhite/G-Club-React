@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
-import { Comment } from '@/types/models';
 import { formatRelativeTime } from '@/lib/utils/date';
+import { useNoticeCommentSubscription } from '@/hooks/useRealtimeSubscription';
 import { Send } from 'lucide-react';
 
 interface NoticeCommentSectionProps {
@@ -14,26 +14,11 @@ interface NoticeCommentSectionProps {
 
 export function NoticeCommentSection({ noticeId, allowComments }: NoticeCommentSectionProps) {
   const { profile } = useProfile();
-  const [comments, setComments] = useState<Comment[]>([]);
+  const { comments, loading: isLoading, refresh: refreshComments } = useNoticeCommentSubscription(
+    allowComments ? noticeId : null
+  );
   const [newComment, setNewComment] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // 댓글 목록 조회
-  const fetchComments = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/notices/${noticeId}/comments`);
-      if (response.ok) {
-        const data = await response.json();
-        setComments(data);
-      }
-    } catch (error) {
-      console.error('댓글 조회 오류:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [noticeId]);
 
   // 댓글 작성
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,9 +36,8 @@ export function NoticeCommentSection({ noticeId, allowComments }: NoticeCommentS
       });
 
       if (response.ok) {
-        const newCommentData = await response.json();
-        setComments(prev => [...prev, newCommentData]);
         setNewComment('');
+        refreshComments(false); // 실시간 구독이 곧 반영하지만 즉시 UI 업데이트
       } else {
         const errorData = await response.json();
         alert(errorData.error || '댓글 작성에 실패했습니다.');
@@ -76,13 +60,7 @@ export function NoticeCommentSection({ noticeId, allowComments }: NoticeCommentS
       });
 
       if (response.ok) {
-        setComments(prev => 
-          prev.map(comment => 
-            comment.id === commentId 
-              ? { ...comment, isDeleted: true, content: '[삭제된 댓글입니다]' }
-              : comment
-          )
-        );
+        refreshComments(false); // 실시간 구독이 곧 반영하지만 즉시 UI 업데이트
       } else {
         const errorData = await response.json();
         alert(errorData.error || '댓글 삭제에 실패했습니다.');
@@ -92,12 +70,6 @@ export function NoticeCommentSection({ noticeId, allowComments }: NoticeCommentS
       alert('댓글 삭제 중 오류가 발생했습니다.');
     }
   };
-
-  useEffect(() => {
-    if (allowComments) {
-      fetchComments();
-    }
-  }, [noticeId, allowComments]);
 
   if (!allowComments) {
     return (
