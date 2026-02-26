@@ -106,6 +106,18 @@ export function RichTextEditor({ content, onChange, postId, disabled = false, sh
     }
   }, [editor, disabled]);
 
+  // Escape 키로 링크/유튜브 메뉴 닫기
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && (showLinkMenu || showYoutubeMenu)) {
+        setShowLinkMenu(false);
+        setShowYoutubeMenu(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showLinkMenu, showYoutubeMenu]);
+
   // 이미지 업로드 처리 함수
   const uploadImage = useCallback(async (file: File) => {
     try {
@@ -215,16 +227,32 @@ export function RichTextEditor({ content, onChange, postId, disabled = false, sh
     
     if (!linkUrl) {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      setShowLinkMenu(false);
       return;
     }
     
     // 올바른 URL 형식인지 확인
-    let href = linkUrl;
+    let href = linkUrl.trim();
+    if (!href) return;
     if (!/^https?:\/\//.test(href)) {
       href = `https://${href}`;
     }
     
-    editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
+    const { from, to } = editor.state.selection;
+    const hasSelection = from !== to;
+
+    if (hasSelection) {
+      // 선택된 텍스트에 링크 적용
+      editor.chain().focus().setLink({ href }).run();
+    } else {
+      // 선택 없으면 URL을 링크 텍스트로 삽입
+      editor.chain().focus().insertContent({
+        type: 'text',
+        text: href,
+        marks: [{ type: 'link', attrs: { href } }],
+      }).run();
+    }
+
     setShowLinkMenu(false);
     setLinkUrl('');
   }, [editor, linkUrl]);
@@ -494,7 +522,13 @@ export function RichTextEditor({ content, onChange, postId, disabled = false, sh
       
       <div
         className="flex-grow cursor-text"
-        onClick={() => editor?.chain().focus().run()}
+        onClick={() => {
+          editor?.chain().focus().run();
+          if (showLinkMenu || showYoutubeMenu) {
+            setShowLinkMenu(false);
+            setShowYoutubeMenu(false);
+          }
+        }}
       >
         <EditorContent
           editor={editor}

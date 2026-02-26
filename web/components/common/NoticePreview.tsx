@@ -9,8 +9,8 @@ export function NoticePreview() {
   // 실시간 구독 훅 사용
   const { notices, loading: isLoading } = useNoticeListSubscription();
   
-  // 최상단 5개만 표시
-  const displayNotices = notices.slice(0, 5);
+  // 최상단 3개만 표시
+  const displayNotices = notices.slice(0, 3);
 
   if (isLoading) {
     return (
@@ -62,7 +62,7 @@ export function NoticePreview() {
             <Link
               key={notice.id}
               href={`/notices/${notice.id}`}
-              className="block p-4 rounded-lg bg-card border border-border/50 hover:border-border hover:bg-muted/30 transition-all group"
+              className="block p-4 min-h-[5.5rem] rounded-lg bg-card border border-border/50 hover:border-border hover:bg-muted/30 transition-all group"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">

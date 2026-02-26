@@ -2,6 +2,7 @@
 
 import { Editor } from '@tiptap/react';
 import React from 'react';
+import { Input } from '@/components/ui/input';
 
 export interface YoutubeMenuProps {
   editor: Editor | null;
@@ -100,32 +101,32 @@ const YoutubeMenu = ({ editor, youtubeUrl, setYoutubeUrl, setShowYoutubeMenu }: 
   };
 
   return (
-    <div className="bg-gray-50 border-b border-gray-300 p-2 flex flex-col gap-2">
-      <div className="text-sm font-medium mb-1">
+    <div className="bg-muted border-b border-border p-2 flex flex-col gap-2">
+      <div className="text-sm font-medium mb-1 text-foreground">
         유튜브 영상 삽입
       </div>
-      <div className="text-xs text-gray-600">
+      <div className="text-xs text-muted-foreground">
         유튜브 영상 URL 또는 임베드 코드를 붙여넣어주세요.
       </div>
-      <input
+      <Input
         type="text"
         value={youtubeUrl}
         onChange={(e) => setYoutubeUrl(e.target.value)}
         onKeyDown={handleYoutubeKeyDown}
         placeholder="예: https://www.youtube.com/watch?v=xtEa91AX8Ys"
-        className="flex-1 p-2 border border-gray-300 rounded"
+        className="flex-1"
         autoFocus
       />
       <div className="flex justify-end gap-2 mt-1">
         <button
           onClick={insertYoutube}
-          className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 flex items-center gap-1"
+          className="px-3 py-1 bg-primary text-primary-foreground text-sm rounded hover:opacity-90 flex items-center gap-1"
         >
           <span className="material-icons" style={{fontSize: '16px'}}>add</span> 삽입
         </button>
         <button
           onClick={() => setShowYoutubeMenu(false)}
-          className="px-3 py-1 bg-gray-300 text-sm rounded hover:bg-gray-400"
+          className="px-3 py-1 bg-secondary text-secondary-foreground text-sm rounded hover:bg-accent"
         >
           취소
         </button>

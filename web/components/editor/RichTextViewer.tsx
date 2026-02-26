@@ -75,19 +75,53 @@ export function RichTextViewer({ content }: RichTextViewerProps) {
   }
 
   return (
-    <div className="prose prose-sm sm:prose-base max-w-none 
-      prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-em:text-foreground
-      prose-blockquote:border-l-primary prose-blockquote:bg-muted prose-blockquote:text-foreground
-      prose-code:bg-muted prose-code:text-foreground prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-      prose-pre:bg-muted prose-pre:text-foreground prose-pre:border prose-pre:border-border
-      prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-      prose-img:rounded-lg prose-img:shadow-sm
-      prose-hr:border-border">
-      <EditorContent 
-        editor={editor} 
-        className="[&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_li]:marker:text-foreground" 
-      />
-    </div>
+    <>
+      <style jsx global>{`
+        /* 상세 페이지 ProseMirror 제목 스타일 (에디터와 동일하게) */
+        .ProseMirror h1 {
+          font-size: 2em;
+          font-weight: bold;
+          margin: 1em 0 0.5em 0;
+          color: var(--color-foreground);
+        }
+        .ProseMirror h2 {
+          font-size: 1.5em;
+          font-weight: bold;
+          margin: 0.8em 0 0.4em 0;
+          color: var(--color-foreground);
+        }
+        .ProseMirror h3 {
+          font-size: 1.25em;
+          font-weight: bold;
+          margin: 0.6em 0 0.3em 0;
+          color: var(--color-foreground);
+        }
+        .ProseMirror h4 {
+          font-size: 1.1em;
+          font-weight: bold;
+          margin: 0.5em 0 0.25em 0;
+          color: var(--color-foreground);
+        }
+        .ProseMirror h5 {
+          font-size: 1em;
+          font-weight: bold;
+          margin: 0.4em 0 0.2em 0;
+          color: var(--color-foreground);
+        }
+        .ProseMirror h6 {
+          font-size: 0.9em;
+          font-weight: bold;
+          margin: 0.3em 0 0.15em 0;
+          color: var(--color-foreground);
+        }
+      `}</style>
+      <div className="prose prose-sm sm:prose-base max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-em:text-foreground prose-blockquote:border-l-primary prose-blockquote:bg-muted prose-blockquote:text-foreground prose-code:bg-muted prose-code:text-foreground prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-muted prose-pre:text-foreground prose-pre:border prose-pre:border-border prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-sm prose-hr:border-border">
+        <EditorContent 
+          editor={editor} 
+          className="[&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_li]:marker:text-foreground" 
+        />
+      </div>
+    </>
   );
 };
 
