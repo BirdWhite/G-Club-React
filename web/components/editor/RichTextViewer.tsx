@@ -53,7 +53,7 @@ export function RichTextViewer({ content }: RichTextViewerProps) {
         height: 480,
         width: 640,
         HTMLAttributes: {
-          class: 'youtube-video mx-auto rounded-lg',
+          class: 'youtube-video rounded-lg',
           allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
           allowfullscreen: 'true',
           frameborder: '0',
@@ -113,6 +113,27 @@ export function RichTextViewer({ content }: RichTextViewerProps) {
           font-weight: bold;
           margin: 0.3em 0 0.15em 0;
           color: var(--color-foreground);
+        }
+        /* YouTube 비디오 스타일 (에디터와 동일하게) */
+        .ProseMirror .youtube-video {
+          position: relative;
+          width: 100%;
+          max-width: 640px;
+          height: auto;
+          aspect-ratio: 16/9;
+          margin: 1rem 0;
+          border-radius: 4px;
+          overflow: hidden;
+          padding-top: 0;
+          display: block;
+        }
+        .ProseMirror .youtube-video iframe {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border: none;
         }
       `}</style>
       <div className="prose prose-sm sm:prose-base max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-em:text-foreground prose-blockquote:border-l-primary prose-blockquote:bg-muted prose-blockquote:text-foreground prose-code:bg-muted prose-code:text-foreground prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-muted prose-pre:text-foreground prose-pre:border prose-pre:border-border prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-sm prose-hr:border-border">

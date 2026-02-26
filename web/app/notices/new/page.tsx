@@ -38,18 +38,19 @@ export default function NewNoticePage() {
       const existingId = localStorage.getItem('tempNoticeId');
       if (!existingId) {
         try {
+          const candidateId = crypto.randomUUID();
           const response = await fetch('/api/notices/validate-id', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ noticeId: crypto.randomUUID() }),
+            body: JSON.stringify({ noticeId: candidateId }),
           });
 
           if (response.ok) {
             const result = await response.json();
             if (result.isValid && !result.exists) {
-              localStorage.setItem('tempNoticeId', crypto.randomUUID());
+              localStorage.setItem('tempNoticeId', candidateId);
             }
           }
         } catch (error) {
@@ -86,16 +87,20 @@ export default function NewNoticePage() {
       return;
     }
     
-    // 리치텍스트 에디터 내용 확인
-    const hasContent = formData.content && 
+    // 리치텍스트 에디터 내용 확인 (텍스트, 이미지, 유튜브 등)
+    const contentNodes = formData.content && 
       typeof formData.content === 'object' && 
-      'content' in formData.content && 
-      Array.isArray((formData.content as { content: Array<{ type: string; content?: Array<{ text?: string }> }> }).content) && 
-      (formData.content as { content: Array<{ type: string; content?: Array<{ text?: string }> }> }).content.some((node: { type: string; content?: Array<{ text?: string }> }) => 
-        node.type === 'paragraph' && 
-        node.content && 
-        node.content.some((textNode: { text?: string }) => textNode.text && textNode.text.trim())
-      );
+      'content' in formData.content
+        ? (formData.content as { content: Array<{ type: string; content?: Array<{ text?: string }> }> }).content
+        : [];
+    const hasContent = Array.isArray(contentNodes) && contentNodes.some(
+      (node: { type: string; content?: Array<{ text?: string }> }) =>
+        node.type === 'image' ||
+        node.type === 'youtube' ||
+        (node.type === 'paragraph' && node.content?.some(
+          (textNode: { text?: string }) => textNode.text && textNode.text.trim()
+        ))
+    );
     
     if (!hasContent) {
       alert('내용을 입력해주세요.');

@@ -142,15 +142,18 @@ export async function PUT(
       );
     }
 
-    // 리치텍스트 에디터 내용 확인
+    // 리치텍스트 에디터 내용 확인 (텍스트, 이미지, 유튜브 등)
+    const contentNodes = content?.content;
     const hasContent = content && 
       typeof content === 'object' && 
       'content' in content && 
-      Array.isArray(content.content) && 
-      content.content.some((node: { type: string; content?: Array<{ text?: string }> }) => 
-        node.type === 'paragraph' && 
-        node.content && 
-        node.content.some((textNode: { text?: string }) => textNode.text && textNode.text.trim())
+      Array.isArray(contentNodes) && 
+      contentNodes.some((node: { type: string; content?: Array<{ text?: string }> }) => 
+        node.type === 'image' ||
+        node.type === 'youtube' ||
+        (node.type === 'paragraph' && 
+          node.content && 
+          node.content.some((textNode: { text?: string }) => textNode.text && textNode.text.trim()))
       );
     
     if (!hasContent) {
@@ -284,8 +287,8 @@ export async function PUT(
       const contentString = JSON.stringify(content);
       const imageUrls: string[] = [];
       
-      // 정규식으로 이미지 URL 추출
-      const imageUrlRegex = /https:\/\/[^\/]+\/storage\/v1\/object\/public\/notices\/[^"'\s]+/g;
+      // 정규식으로 이미지 URL 추출 (http/https 모두 매칭)
+      const imageUrlRegex = /https?:\/\/[^\/]+(?::\d+)?\/storage\/v1\/object\/public\/notices\/[^"'\s]+/g;
       let match;
       while ((match = imageUrlRegex.exec(contentString)) !== null) {
         imageUrls.push(match[0]);
@@ -408,16 +411,16 @@ export async function DELETE(
       const { createServerClient } = await import('@/lib/database/supabase');
       const supabase = await createServerClient();
       
-      // 공지사항 폴더의 모든 이미지 삭제
+      // 공지사항 폴더의 모든 이미지 삭제 (bucket 'notices' 내 경로: {id}/파일명)
       const { data: files, error: listError } = await supabase.storage
         .from('notices')
-        .list(`notices/${id}`, {
+        .list(id, {
           limit: 1000,
           offset: 0
         });
 
       if (!listError && files && files.length > 0) {
-        const filePaths = files.map(file => `notices/${id}/${file.name}`);
+        const filePaths = files.map(file => `${id}/${file.name}`);
         
         const { error: deleteError } = await supabase.storage
           .from('notices')

@@ -128,15 +128,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 리치텍스트 에디터 내용 확인
+    // 리치텍스트 에디터 내용 확인 (텍스트, 이미지, 유튜브 등)
+    const contentNodes = content?.content;
     const hasContent = content && 
       typeof content === 'object' && 
       'content' in content && 
-      Array.isArray(content.content) && 
-      content.content.some((node: { type: string; content?: Array<{ text?: string }> }) => 
-        node.type === 'paragraph' && 
-        node.content && 
-        node.content.some((textNode: { text?: string }) => textNode.text && textNode.text.trim())
+      Array.isArray(contentNodes) && 
+      contentNodes.some((node: { type: string; content?: Array<{ text?: string }> }) => 
+        node.type === 'image' ||
+        node.type === 'youtube' ||
+        (node.type === 'paragraph' && 
+          node.content && 
+          node.content.some((textNode: { text?: string }) => textNode.text && textNode.text.trim()))
       );
     
     if (!hasContent) {
