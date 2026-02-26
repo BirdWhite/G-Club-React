@@ -121,7 +121,8 @@ export default function PWAInstallPage() {
 
   return (
     <div className="bg-background">
-      <div className="container mx-auto px-8 py-8 max-w-4xl">
+      <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
+        <div className="w-full max-w-4xl">
         {/* 헤더 */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -226,6 +227,7 @@ export default function PWAInstallPage() {
               <span>홈 화면에서 바로 접근 가능</span>
             </li>
           </ul>
+        </div>
         </div>
       </div>
     </div>

@@ -21,7 +21,7 @@ export const ProfileFormLayout = ({
 
   return (
     //전체 페이지 배경 컨테이너 - 최소 화면 높이, 패딩
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen py-12 px-0">
       {/* 중앙 정렬된 폼 카드 컨테이너 */}
       <div className={`${maxWidthClass} mx-auto bg-card border border-border shadow-lg rounded-lg p-6`}>
         {/* 페이지 제목 영역 */}

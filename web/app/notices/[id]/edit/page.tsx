@@ -166,7 +166,8 @@ export default function EditNoticePage() {
   if (error || !notice) {
     return (
       <div className="bg-background">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
+        <div className="w-full max-w-4xl">
           <div className="text-center py-12">
             <X className="w-16 h-16 mx-auto mb-4 text-red-500" />
             <h3 className="text-xl font-semibold text-foreground mb-2">
@@ -183,13 +184,15 @@ export default function EditNoticePage() {
             </Link>
           </div>
         </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
+        <div className="w-full max-w-4xl">
         {/* 헤더 */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -355,6 +358,7 @@ export default function EditNoticePage() {
             </Button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

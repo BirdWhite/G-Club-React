@@ -104,7 +104,7 @@ export default function FavoriteGamesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div>
       {/* 헤더 */}
       <div className="mb-12">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

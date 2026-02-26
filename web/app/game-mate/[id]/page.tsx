@@ -92,8 +92,10 @@ export default function GamePostDetailPage({ params }: { params: Promise<{ id: s
       {isMobile ? (
         <MobileGamePostDetailClient initialPost={initialPostState} userId={userId} />
       ) : (
-        <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
+          <div className="w-full max-w-4xl">
           <GamePostDetailClient initialPost={initialPostState} userId={userId} />
+          </div>
         </div>
       )}
     </>

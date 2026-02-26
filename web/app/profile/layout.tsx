@@ -12,8 +12,10 @@ export default function ProfileLayout({
 }) {
   return (
     <div className="h-full">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-0 md:py-8">
+      <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-0 md:py-8">
+        <div className="w-full max-w-4xl">
         {children}
+        </div>
       </div>
     </div>
   );

@@ -121,7 +121,8 @@ export default function NewGamePostNotificationSettings() {
   }
 
   return (
-    <div className="container mx-auto px-8 py-8 max-w-4xl">
+    <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
+        <div className="w-full max-w-4xl">
       {/* 헤더 */}
       <div className="mb-8 sm:mb-12">
         <div className="flex items-center gap-2 sm:gap-4">
@@ -372,6 +373,7 @@ export default function NewGamePostNotificationSettings() {
         onGameSelect={addGame}
         excludeGameIds={gameFilter.selectedGames.map(g => g.id)}
       />
-    </div>
+        </div>
+      </div>
   );
 }

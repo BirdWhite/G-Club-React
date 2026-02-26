@@ -126,7 +126,7 @@ export default function GameMateHistoryPage() {
 
   if (profileLoading || isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div>
         <div className="flex justify-center items-center py-32">
           <LoadingSpinner />
         </div>
@@ -136,7 +136,7 @@ export default function GameMateHistoryPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div>
         <div className="text-center py-32">
           <div className="text-red-500 text-xl mb-4">❌</div>
           <h2 className="text-xl font-semibold text-foreground mb-2">오류 발생</h2>
@@ -153,7 +153,7 @@ export default function GameMateHistoryPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div>
       {/* 헤더 */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-4">

@@ -74,7 +74,8 @@ export default function MyGamePostNotificationSettings() {
   }
 
   return (
-    <div className="container mx-auto px-8 py-8 max-w-4xl">
+    <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
+        <div className="w-full max-w-4xl">
       {/* 헤더 */}
       <div className="mb-8 sm:mb-12">
         <div className="flex items-center gap-2 sm:gap-4">
@@ -259,6 +260,7 @@ export default function MyGamePostNotificationSettings() {
             저장
           </button>
         </div>
-    </div>
+        </div>
+      </div>
   );
 }

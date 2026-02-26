@@ -11,8 +11,8 @@ import { DesktopHomePage } from '@/components/desktop/DesktopHomePage';
 // 홈 스켈레톤 (로딩이 250ms 이상일 때만 표시)
 function HomeSkeleton() {
   return (
-    <section className="h-full flex flex-col justify-start items-center px-8 sm:px-6 lg:px-8 py-8">
-      <div className="w-full max-w-7xl space-y-6">
+    <section className="h-full flex flex-col justify-start items-center px-8 sm:px-10 lg:px-12 py-8">
+      <div className="w-full max-w-4xl space-y-6">
         <div className="px-0 py-6">
           <div className="h-7 w-32 bg-muted animate-pulse rounded mb-4" />
           <div className="space-y-3">

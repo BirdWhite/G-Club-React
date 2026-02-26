@@ -121,8 +121,10 @@ export default function GameMatePage() {
       ) : (
         <div className="h-full bg-background overflow-y-auto scrollbar-visible">
           {/* 데스크톱용 콘텐츠 */}
-          <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <main className="flex flex-col items-center py-8 px-8 sm:px-10 lg:px-12">
+          <div className="w-full max-w-4xl">
             <DesktopGamePostList {...commonProps} />
+          </div>
           </main>
         </div>
       )}

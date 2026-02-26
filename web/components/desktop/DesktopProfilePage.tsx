@@ -81,7 +81,7 @@ export function DesktopProfilePage({ targetProfile, isOwnProfile }: DesktopProfi
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="py-8">
       <div className="bg-card border border-border shadow-lg overflow-hidden p-6" style={{borderRadius: 'var(--radius)'}}>
         <div className="flex flex-col md:flex-row gap-6">
           {/* 프로필 이미지 */}

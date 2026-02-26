@@ -236,8 +236,8 @@ export function Header() {
   return (
     <>
       <header className="header-container">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="flex justify-center px-8 sm:px-10 lg:px-12">
+          <div className="w-full max-w-4xl flex items-center justify-between h-16">
             {/* 로고 영역 - 좌측 */}
             <div className="flex items-center">
               {/* 데스크톱 로고 */}
