@@ -15,7 +15,7 @@ const WaitingList: React.FC<WaitingListProps> = ({ waitingList }) => {
   if (!waitingList || waitingList.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {waitingList.map((participant) => {
         const isInvited = participant.status === 'INVITED';
         // const isTimeWaiting = participant.status === 'TIME_WAITING'; // 현재 미사용

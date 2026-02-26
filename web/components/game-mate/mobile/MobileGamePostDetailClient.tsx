@@ -22,6 +22,7 @@ interface MobileGamePostDetailClientProps {
 export function MobileGamePostDetailClient({ initialPost, userId }: MobileGamePostDetailClientProps) {
   const router = useRouter();
   const { post, loading: isSubmitting, refresh } = useGamePostDetailSubscription(initialPost.id, initialPost);
+  const [isParticipantListExpanded, setIsParticipantListExpanded] = useState(false);
   const [isWaitingListExpanded, setIsWaitingListExpanded] = useState(false);
   
   // 조회수 증가 (페이지 로드 시 한 번만)
@@ -62,12 +63,24 @@ export function MobileGamePostDetailClient({ initialPost, userId }: MobileGamePo
   ) => {
     try {
       const response = await action();
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonError) {
-        console.error('JSON Parse Error:', jsonError);
-        data = { error: '서버 응답을 파싱할 수 없습니다.' };
+      const contentType = response.headers.get('content-type') ?? '';
+      let data: { error?: string } = {};
+
+      if (contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('JSON Parse Error:', jsonError);
+          data = { error: '서버 응답을 파싱할 수 없습니다.' };
+        }
+      } else {
+        const text = await response.text();
+        console.error('Non-JSON response:', { status: response.status, contentType, preview: text.slice(0, 100) });
+        data = {
+          error: response.status === 404
+            ? '요청한 리소스를 찾을 수 없습니다. 페이지를 새로고침 후 다시 시도해주세요.'
+            : '서버가 예상치 못한 응답을 반환했습니다. 페이지를 새로고침 후 다시 시도해주세요.',
+        };
       }
 
       if (!response.ok) {
@@ -82,21 +95,25 @@ export function MobileGamePostDetailClient({ initialPost, userId }: MobileGamePo
   };
 
   const handleJoin = () => handleAction(
-    () => fetch(`/api/game-posts/${currentPost.id}/join`, { method: 'POST' }),
-    '게임에 참여했습니다!',
+    () => fetch(`/api/game-posts/${currentPost.id}/participate`, { method: 'POST' }),
+    '게임 참여가 완료되었습니다.',
     '게임 참여 중 오류가 발생했습니다.'
   );
 
   const handleLeave = () => handleAction(
-    () => fetch(`/api/game-posts/${currentPost.id}/leave`, { method: 'PATCH' }),
-    '게임에서 나갔습니다.',
-    '게임 나가기 중 오류가 발생했습니다.'
+    () => fetch(`/api/game-posts/${currentPost.id}/participate`, { method: 'DELETE' }),
+    '참여가 취소되었습니다.',
+    '참여 취소 중 오류가 발생했습니다.'
   );
 
-  const handleWait = () => handleAction(
-    () => fetch(`/api/game-posts/${currentPost.id}/wait`, { method: 'POST' }),
-    '예비 참가로 등록되었습니다.',
-    '예비 참가 등록 중 오류가 발생했습니다.'
+  const handleWait = (availableTime: string | null) => handleAction(
+    () => fetch(`/api/game-posts/${currentPost.id}/wait`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ availableTime }),
+    }),
+    '예비 참여가 등록되었습니다.',
+    '예비 참여 등록 중 오류가 발생했습니다.'
   );
 
   const handleLeaveEarly = () => handleAction(
@@ -112,12 +129,17 @@ export function MobileGamePostDetailClient({ initialPost, userId }: MobileGamePo
 
     try {
       const response = await fetch(`/api/game-posts/${currentPost.id}`, { method: 'DELETE' });
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonError) {
-        console.error('JSON Parse Error:', jsonError);
-        data = { error: '서버 응답을 파싱할 수 없습니다.' };
+      const contentType = response.headers.get('content-type') ?? '';
+      let data: { error?: string } = {};
+      if (contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('JSON Parse Error:', jsonError);
+          data = { error: '서버 응답을 파싱할 수 없습니다.' };
+        }
+      } else {
+        data = { error: '서버가 예상치 못한 응답을 반환했습니다. 페이지를 새로고침 후 다시 시도해주세요.' };
       }
 
       if (!response.ok) {
@@ -167,33 +189,44 @@ export function MobileGamePostDetailClient({ initialPost, userId }: MobileGamePo
       </div>
 
       <div className="mt-8">
-        <div className="flex items-center mb-4">
+        <div
+          className="flex items-center mb-4 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors w-fit"
+          onClick={() => setIsParticipantListExpanded(!isParticipantListExpanded)}
+        >
           <Users className="h-5 w-5 text-foreground mr-2" />
-          <span className="text-xl font-bold text-foreground">
-            {currentPost.participants?.filter(p => p.status === 'ACTIVE').length || 0}/{currentPost.maxParticipants}
+          <span className="text-xl font-bold text-foreground mr-3">
+            참여 {currentPost.participants?.filter(p => p.status === 'ACTIVE').length || 0}/{currentPost.maxParticipants}
           </span>
+          <div className="ml-1">
+            {isParticipantListExpanded ? (
+              <ChevronDown className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronRight className="h-5 w-5 text-gray-500" />
+            )}
+          </div>
         </div>
-        <ParticipantList
-          participants={currentPost.participants}
-          authorId={currentPost.author.userId}
-          gamePostId={currentPost.id}
-          gameStatus={currentPost.status}
-          isOwner={isOwner}
-          onParticipantUpdate={refresh}
-        />
+        {isParticipantListExpanded && (
+          <ParticipantList
+            participants={currentPost.participants}
+            authorId={currentPost.author.userId}
+            gamePostId={currentPost.id}
+            gameStatus={currentPost.status}
+            isOwner={isOwner}
+            onParticipantUpdate={refresh}
+          />
+        )}
       </div>
 
       {currentPost.waitingList && currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING').length > 0 && (
          <div className="mt-8">
             <div 
-              className="flex items-center mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors w-fit"
+              className="flex items-center mb-4 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors w-fit"
               onClick={() => setIsWaitingListExpanded(!isWaitingListExpanded)}
             >
               <Clock className="h-5 w-5 text-foreground mr-2" />
-              <h3 className="text-xl font-bold text-cyber-gray mr-3">예비 목록</h3>
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30">
-                {currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING').length}명
-              </span>
+              <h3 className="text-xl font-bold text-cyber-gray mr-3">
+                예비 {currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING').length}
+              </h3>
               <div className="ml-3">
                 {isWaitingListExpanded ? (
                   <ChevronDown className="h-5 w-5 text-gray-500" />

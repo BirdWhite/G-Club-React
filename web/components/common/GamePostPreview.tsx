@@ -33,9 +33,9 @@ export function GamePostPreview() {
             <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
-        <div className="flex gap-4 overflow-hidden">
+        <div className="flex gap-6 overflow-x-auto overflow-y-hidden pb-2">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex-shrink-0 w-80 animate-pulse bg-muted rounded-lg h-48"></div>
+            <div key={i} className="flex-shrink-0 w-full md:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)] animate-pulse bg-muted rounded-lg h-48" />
           ))}
         </div>
       </div>
@@ -64,8 +64,8 @@ export function GamePostPreview() {
         <div className="game-post-swiper-container">
           <Swiper
             modules={[Navigation, Pagination, Autoplay]}
-            spaceBetween={16}
-            slidesPerView={1}
+            spaceBetween={24}
+            slidesPerView="auto"
             navigation={{
               prevEl: '.game-post-swiper-button-prev',
               nextEl: '.game-post-swiper-button-next',
@@ -79,22 +79,11 @@ export function GamePostPreview() {
               disableOnInteraction: false,
               pauseOnMouseEnter: true,
             }}
-            breakpoints={{
-              640: {
-                slidesPerView: 2,
-              },
-              1024: {
-                slidesPerView: 3,
-              },
-              1280: {
-                slidesPerView: 4,
-              },
-            }}
             loop={posts.length > 3}
             className="pb-12"
           >
             {posts.map((post) => (
-              <SwiperSlide key={post.id}>
+              <SwiperSlide key={post.id} className="!w-full md:!w-[calc((100%-1.5rem)/2)] lg:!w-[calc((100%-3rem)/3)] flex-shrink-0">
                 <GamePostCard post={post} />
               </SwiperSlide>
             ))}

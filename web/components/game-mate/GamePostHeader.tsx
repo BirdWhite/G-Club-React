@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import type { GamePost } from '@/types/models';
 import { ChevronLeft, Eye } from 'lucide-react';
 import { formatAbsoluteTime } from '@/lib/utils/date';
@@ -25,7 +26,7 @@ export function GamePostHeader({
     OPEN: { text: '모집 중', className: 'bg-cyber-green/20 text-cyber-green border border-cyber-green/30' },
     IN_PROGRESS: { text: '게임 중', className: 'bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/30' },
     COMPLETED: { text: '종료', className: 'bg-cyber-gray/20 text-cyber-gray border border-cyber-gray/30' },
-    EXPIRED: { text: '만료됨', className: 'bg-cyber-red/20 text-cyber-red border border-cyber-red/30' },
+    EXPIRED: { text: '만료', className: 'bg-cyber-gray/20 text-cyber-gray border border-cyber-gray/30' },
   };
   
   const fullStatus = { text: '가득 참', className: 'bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30' };
@@ -69,27 +70,45 @@ export function GamePostHeader({
         )}
       </div>
 
-      {/* 두 번째 줄: 제목+상태뱃지(왼쪽)과 작성자·조회수(오른쪽) */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-cyber-gray">{post.title || '제목 없음'}</h1>
+      {/* 두 번째 줄: 제목+상태뱃지(왼쪽) | 게임 아이콘(오른쪽) */}
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <h1 className="text-3xl font-bold text-cyber-gray truncate">{post.title || '제목 없음'}</h1>
           <span className={`px-3 py-1 rounded-full font-semibold text-sm flex-shrink-0 ${currentStatus.className}`}>
             {currentStatus.text}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground text-right">
-          <span>{post.author?.name || '익명'}</span>
-          <span>•</span>
-          {post.createdAt && (
-            <time dateTime={typeof post.createdAt === 'string' ? post.createdAt : post.createdAt.toISOString?.()}>
-              {isMounted ? formatAbsoluteTime(post.createdAt) : '...'}
-            </time>
-          )}
-          <span>•</span>
-          <div className="flex items-center gap-1">
-            <Eye className="w-4 h-4 text-muted-foreground" />
-            <span>{post.viewCount}</span>
-          </div>
+        {post.game && (
+          post.game.iconUrl ? (
+            <Image
+              src={post.game.iconUrl}
+              alt={post.game.name || '게임'}
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-lg object-cover flex-shrink-0"
+            />
+          ) : (
+            <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold text-muted-foreground">
+                {post.game?.name?.[0] || 'G'}
+              </span>
+            </div>
+          )
+        )}
+      </div>
+      {/* 세 번째 줄: 작성자 · 시간 · 조회수 */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span>{post.author?.name || '익명'}</span>
+        <span>•</span>
+        {post.createdAt && (
+          <time dateTime={typeof post.createdAt === 'string' ? post.createdAt : post.createdAt.toISOString?.()}>
+            {isMounted ? formatAbsoluteTime(post.createdAt) : '...'}
+          </time>
+        )}
+        <span>•</span>
+        <div className="flex items-center gap-1">
+          <Eye className="w-4 h-4 text-muted-foreground" />
+          <span>{post.viewCount}</span>
         </div>
       </div>
     </div>

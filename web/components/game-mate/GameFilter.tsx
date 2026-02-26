@@ -32,7 +32,7 @@ export function GameFilter({
 
   return (
     <div>
-      <div className="flex gap-3">
+      <div className="flex gap-3 items-center">
         {/* 게임 선택 드롭다운 - 모바일에서 반반 나누기 */}
         <div className="flex-1">
           <DesktopGameSearch
@@ -54,7 +54,7 @@ export function GameFilter({
                 <SelectItem value="recruiting" className="py-4 text-base">모집 중</SelectItem>
                 <SelectItem value="open" className="py-4 text-base">자리 있음</SelectItem>
                 <SelectItem value="full" className="py-4 text-base">가득 참</SelectItem>
-                <SelectItem value="completed_expired" className="py-4 text-base">완료/만료됨</SelectItem>
+                <SelectItem value="completed_expired" className="py-4 text-base">완료/만료</SelectItem>
               </SelectContent>
           </Select>
         </div>

@@ -71,7 +71,7 @@ export function TimeWaitingModal({
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">예비 참가</h2>
+            <h2 className="text-lg font-semibold text-foreground">예비 참여</h2>
           </div>
           <button
             onClick={onClose}

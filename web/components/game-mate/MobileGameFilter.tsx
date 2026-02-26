@@ -54,7 +54,7 @@ export function MobileGameFilter({
                 <SelectItem value="recruiting" className="py-4 text-base">모집 중</SelectItem>
                 <SelectItem value="open" className="py-4 text-base">자리 있음</SelectItem>
                 <SelectItem value="full" className="py-4 text-base">가득 참</SelectItem>
-                <SelectItem value="completed_expired" className="py-4 text-base">완료/만료됨</SelectItem>
+                <SelectItem value="completed_expired" className="py-4 text-base">완료/만료</SelectItem>
               </SelectContent>
           </Select>
         </div>

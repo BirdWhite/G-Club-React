@@ -36,7 +36,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     return (
       <div className="h-screen grid grid-rows-[auto_1fr] overflow-hidden">
         <Header />
-        <main className="overflow-y-auto">
+        <main className="overflow-y-auto min-h-0">
           <div className="flex items-center justify-center h-64">
             <LoadingSpinner />
           </div>
@@ -50,7 +50,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     return (
       <div className="h-screen grid grid-rows-[auto_1fr] overflow-hidden">
         <Header />
-        <main className="overflow-y-auto">
+        <main className="overflow-y-auto min-h-0">
           <div className="flex items-center justify-center h-64">
             <LoadingSpinner />
           </div>
@@ -63,7 +63,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     return (
       <div className="h-screen grid grid-rows-[auto_1fr] overflow-hidden">
         <Header />
-        <main className="overflow-y-auto">
+        <main className="overflow-y-auto min-h-0">
           <div className="flex items-center justify-center h-64">
             <LoadingSpinner />
           </div>
@@ -75,7 +75,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <div className="h-screen grid grid-rows-[auto_1fr] overflow-hidden">
       <Header />
-      <main className="overflow-y-auto">
+      <main className="overflow-y-auto min-h-0">
         {children}
       </main>
     </div>

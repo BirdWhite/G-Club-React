@@ -26,7 +26,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
     OPEN: { text: '모집 중', className: 'bg-chart-3/20 text-chart-3 group-hover:bg-chart-3/30' },
     IN_PROGRESS: { text: '게임 중', className: 'bg-chart-2/20 text-chart-2 group-hover:bg-chart-2/30' },
     COMPLETED: { text: '종료', className: 'bg-card-foreground/20 text-card-foreground group-hover:bg-card-foreground/30' },
-    EXPIRED: { text: '만료 됨', className: 'bg-red-400/20 text-red-400 group-hover:bg-red-400/30' },
+    EXPIRED: { text: '만료', className: 'bg-card-foreground/20 text-card-foreground group-hover:bg-card-foreground/30' },
   };
   
   const fullStatus = { text: '가득 참', className: 'bg-chart-4/20 text-chart-4 group-hover:bg-chart-4/30' };
@@ -72,8 +72,8 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
             <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-300 truncate">
               {post.title}
             </h3>
-            <div className="flex items-center text-primary text-xs mt-1">
-              <Clock className="h-4 w-4 mr-1 text-primary flex-shrink-0" />
+            <div className={`flex items-center text-xs mt-1 ${post.status === 'COMPLETED' || post.status === 'EXPIRED' ? 'text-muted-foreground' : 'text-primary'}`}>
+              <Clock className={`h-4 w-4 mr-1 flex-shrink-0 ${post.status === 'COMPLETED' || post.status === 'EXPIRED' ? 'text-muted-foreground' : 'text-primary'}`} />
               <time dateTime={typeof post.startTime === 'string' ? post.startTime : post.startTime.toISOString()}>
                 {startTimeDisplay}
               </time>
@@ -120,7 +120,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
             <div className="absolute inset-0 flex items-center justify-start pl-2">
               <div className="flex items-center text-xs font-semibold text-white/80">
                 <Users className="h-3 w-3 mr-1" />
-                <span>{`${post._count?.participants || 0}/${post.maxParticipants}`}</span>
+                <span>참여 {post._count?.participants || 0}/{post.maxParticipants}</span>
               </div>
             </div>
           </div>

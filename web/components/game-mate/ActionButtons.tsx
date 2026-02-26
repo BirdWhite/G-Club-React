@@ -45,9 +45,10 @@ export function ActionButtons({
 }: ActionButtonsProps) {
   const [isTimeWaitingModalOpen, setIsTimeWaitingModalOpen] = useState(false);
   
-  const commonButtonStyles = "w-full inline-flex items-center justify-center px-6 py-3 bg-transparent border-0 rounded-md text-base font-medium text-foreground focus:outline-none focus:ring-0 disabled:opacity-50 hover:underline";
-  const leftAlignedButtonStyles = "inline-flex items-center justify-center px-6 py-3 bg-transparent border-0 rounded-md text-base font-medium text-foreground focus:outline-none focus:ring-0 disabled:opacity-50 hover:underline";
-  const disabledButtonStyles = "text-muted-foreground cursor-not-allowed no-underline";
+  const commonButtonStyles = "w-full inline-flex items-center justify-center px-6 py-3 bg-transparent border rounded-md text-base font-medium text-foreground border-foreground focus:outline-none focus:ring-0 disabled:opacity-50 hover:underline";
+  const primaryButtonStyles = "w-full inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground border border-primary rounded-md text-base font-medium focus:outline-none focus:ring-0 disabled:opacity-50 hover:bg-primary/90";
+  const leftAlignedButtonStyles = "inline-flex items-center justify-center px-6 py-3 bg-transparent border rounded-md text-base font-medium text-foreground border-foreground focus:outline-none focus:ring-0 disabled:opacity-50 hover:underline";
+  const disabledButtonStyles = "text-muted-foreground border-muted-foreground cursor-not-allowed no-underline";
 
 
   // 예비 참여자가 참여 제안을 받은 경우 승낙/거절 버튼 표시 (최우선)
@@ -57,9 +58,9 @@ export function ActionButtons({
       return (
         <div className="space-y-4">
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-foreground mb-2">게임 참가 제안</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">참여 제안</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              빈자리가 발생했습니다. 게임에 참가하시겠습니까?
+              빈자리가 발생했습니다. 게임에 참여하시겠습니까?
             </p>
             <div className="flex gap-3 justify-center">
               <button
@@ -125,7 +126,7 @@ export function ActionButtons({
           return {
             text: '게임 시작',
             icon: <LogIn className="mr-2 h-5 w-5" />,
-            className: ''
+            className: 'bg-transparent text-primary border-primary hover:bg-primary/10 hover:no-underline'
           };
         case 'IN_PROGRESS':
           return {
@@ -143,21 +144,21 @@ export function ActionButtons({
           return {
             text: '게임 시작',
             icon: <LogIn className="mr-2 h-5 w-5" />,
-            className: ''
+            className: 'bg-transparent text-primary border-primary hover:bg-primary/10 hover:no-underline'
           };
       }
     };
 
     const buttonInfo = getStatusButtonInfo();
 
-    // 모집 중(OPEN)일 때: 게임 시작(왼쪽) + 모집 종료(오른쪽)
+    // 모집 중(OPEN)일 때: 게임 시작(2) + 모집 취소(1) 비율
     if (postStatus === 'OPEN' && onCloseRecruitment) {
       return (
-        <div className="flex justify-between items-center gap-3 w-full">
+        <div className="grid grid-cols-2 lg:grid-cols-[2fr_1fr] gap-2 w-full">
           <button
             onClick={onToggleStatus}
             disabled={loading}
-            className={`${leftAlignedButtonStyles} ${buttonInfo.className}`}
+            className={`${commonButtonStyles} ${buttonInfo.className}`}
           >
             {buttonInfo.icon}
             {loading ? '처리 중...' : buttonInfo.text}
@@ -165,28 +166,24 @@ export function ActionButtons({
           <button
             onClick={onCloseRecruitment}
             disabled={loading}
-            className={`${leftAlignedButtonStyles} text-red-500 hover:text-red-600`}
+            className={`${commonButtonStyles} text-red-500 border-red-500 hover:text-red-600 hover:border-red-600`}
           >
             <XCircle className="mr-2 h-5 w-5" />
-            {loading ? '처리 중...' : '모집 종료'}
+            {loading ? '처리 중...' : '모집 취소'}
           </button>
         </div>
       );
     }
     
-    // 모집 재개(COMPLETED)는 오른쪽, 나머지(게임 완료 등)는 왼쪽
-    const alignRight = postStatus === 'COMPLETED';
     return (
-      <div className={`flex w-full ${alignRight ? 'justify-end' : 'justify-start'}`}>
-        <button
-          onClick={onToggleStatus}
-          disabled={loading}
-          className={`${leftAlignedButtonStyles} ${buttonInfo.className}`}
-        >
-          {buttonInfo.icon}
-          {loading ? '처리 중...' : buttonInfo.text}
-        </button>
-      </div>
+      <button
+        onClick={onToggleStatus}
+        disabled={loading}
+        className={`${commonButtonStyles} ${buttonInfo.className}`}
+      >
+        {buttonInfo.icon}
+        {loading ? '처리 중...' : buttonInfo.text}
+      </button>
     );
   }
 
@@ -224,7 +221,7 @@ export function ActionButtons({
         <button
           onClick={onCancelParticipation}
           disabled={loading}
-          className={commonButtonStyles}
+          className={`${commonButtonStyles} text-red-500 border-red-500 hover:text-red-600 hover:border-red-600`}
         >
           <XCircle className="mr-2 h-5 w-5" />
           {loading ? '취소 중...' : '참여 취소하기'}
@@ -310,7 +307,15 @@ export function ActionButtons({
   if (!isFull && !isParticipating && (postStatus === 'OPEN' || postStatus === 'IN_PROGRESS')) {
     return (
       <>
-        <div className={(waitingCancelButton || (!isWaiting && !isFull)) ? "grid grid-cols-2 gap-2" : "space-y-2"}>
+        <div className={(waitingCancelButton || (!isWaiting && !isFull)) ? "grid grid-cols-2 lg:grid-cols-[2fr_1fr] gap-2" : "space-y-2"}>
+          <button
+            onClick={onParticipate}
+            disabled={loading}
+            className={primaryButtonStyles}
+          >
+            <PlusCircle className="mr-2 h-5 w-5" />
+            {loading ? '참여 중...' : '게임 참여'}
+          </button>
           {waitingCancelButton}
           {!isWaiting && (
             <button
@@ -322,14 +327,6 @@ export function ActionButtons({
               예비 신청
             </button>
           )}
-          <button
-            onClick={onParticipate}
-            disabled={loading}
-            className={commonButtonStyles}
-          >
-            <PlusCircle className="mr-2 h-5 w-5" />
-            {loading ? '참여 중...' : '게임 참가'}
-          </button>
         </div>
         
         <TimeWaitingModal

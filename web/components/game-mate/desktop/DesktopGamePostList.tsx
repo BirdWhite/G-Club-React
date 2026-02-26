@@ -69,26 +69,24 @@ export function DesktopGamePostList({
 
   return (
     <div>
-      <div className="bg-card p-4 sm:p-6 rounded-lg shadow mb-6 border border-border">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-          <div className="flex-1">
-            <GameFilter
-              selectedGame={urlState.gameId}
-              onGameChange={onGameChange}
-              statusFilter={urlState.status as StatusFilterType}
-              onStatusChange={onStatusChange}
-            />
-          </div>
-          <div className="lg:flex-shrink-0">
-            <button
-              type="button"
-              onClick={() => router.push('/game-mate/new')}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors cursor-pointer"
-            >
-              <PlusCircle className="mr-2 h-5 w-5" />
-              새 모집글 작성하기
-            </button>
-          </div>
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center mb-6">
+        <div className="flex-1">
+          <GameFilter
+            selectedGame={urlState.gameId}
+            onGameChange={onGameChange}
+            statusFilter={urlState.status as StatusFilterType}
+            onStatusChange={onStatusChange}
+          />
+        </div>
+        <div className="lg:flex-shrink-0 flex items-center">
+          <button
+            type="button"
+            onClick={() => router.push('/game-mate/new')}
+            className="h-12 inline-flex items-center justify-center px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors cursor-pointer"
+          >
+            <PlusCircle className="mr-2 h-5 w-5" />
+            새 모집글 작성하기
+          </button>
         </div>
       </div>
 
