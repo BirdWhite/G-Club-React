@@ -42,6 +42,17 @@ html {
   --color-cyber-black-150-oklch: oklch(0.28 0.03 265);  /* #181c25 → 배경 색상 */
   --color-cyber-black-200-oklch: oklch(0.255 0.025 265);  /* #1d2330 → 배경 색상 */
   --color-cyber-red-hover:       oklch(0.58 0.2078 25.33);
+
+  /* 관리자 대시보드 팔레트 (밝음 → 어두움) */
+  --color-admin-50: #E8F5BD;   /* 페이지 배경 */
+  --color-admin-100: #C7EABB;  /* 카드 배경 */
+  --color-admin-200: #A2CB8B;  /* 테두리, 구분선 */
+  --color-admin-500: #84B179;   /* 버튼, 링크, CTA */
+  --color-admin-background: #E8F5BD;
+  --color-admin-foreground: var(--color-neutral-950);
+  --color-admin-card: #C7EABB;
+  --color-admin-border: #A2CB8B;
+  --color-admin-primary: #84B179;
 }
 
 :root {
@@ -478,6 +489,11 @@ html {
   
   .mobile-game-form-active header {
     display: none !important;
+  }
+
+  /* 네비 숨김 시 PWA 팝업은 화면 하단에 배치 */
+  .mobile-game-form-active .pwa-installer-popup {
+    bottom: 0;
   }
 
   /* Select 드롭다운 화살표 스타일 */

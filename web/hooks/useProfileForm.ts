@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCroppedImg, CropArea } from '@/lib/utils/image';
+import { INPUT_LIMITS } from '@/lib/utils/common';
 
 /**
  * 프로필 폼 상태 관리 타입 정의
@@ -155,8 +156,10 @@ export const useProfileForm = () => {
 
     if (!name.trim()) {
       errors.name = '이름을 입력해주세요.';
-    } else if (name.trim().length < 2) {
-      errors.name = '이름은 2글자 이상 입력해주세요.';
+    } else if (name.trim().length < INPUT_LIMITS.PROFILE_NAME_MIN) {
+      errors.name = `이름은 ${INPUT_LIMITS.PROFILE_NAME_MIN}글자 이상 입력해주세요.`;
+    } else if (name.trim().length > INPUT_LIMITS.PROFILE_NAME_MAX) {
+      errors.name = `이름은 ${INPUT_LIMITS.PROFILE_NAME_MAX}글자 이하로 입력해주세요.`;
     }
 
     if (!birthDate) {

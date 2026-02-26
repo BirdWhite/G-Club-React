@@ -18,8 +18,9 @@ export default function AdminDashboard() {
   // URL의 쿼리 파라미터에서 탭 상태 가져오기
   const getInitialTab = () => {
     const tabParam = searchParams?.get('tab');
-    if (tabParam === 'permission') return 'permission';
+    if (tabParam === 'user') return 'user';
     if (tabParam === 'games') return 'games';
+    if (tabParam === 'permission') return 'permission';
     return 'user';
   };
   
@@ -42,10 +43,10 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center overflow-hidden">
+      <div className="h-full flex items-center justify-center overflow-hidden bg-admin-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-          <p className="mt-4 text-gray-600">로딩 중...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-admin-primary"></div>
+          <p className="mt-4 text-admin-foreground">로딩 중...</p>
         </div>
       </div>
     );

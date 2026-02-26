@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { getDisplayImageUrl } from '@/lib/utils/common';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DateTimeDisplay } from '@/components/common/DateTimeDisplay';
 import { Bell, Megaphone } from 'lucide-react';
@@ -371,19 +372,22 @@ export default function NotificationsPage() {
                       {/* 발송자 정보 */}
                       {notification.sender && (
                         <div className="flex items-center gap-2 mb-3">
-                          {notification.sender.profileImage ? (
+                          {(() => {
+                            const img = getDisplayImageUrl(notification.sender.profileImage);
+                            return img ? (
                             <Image
-                              src={notification.sender.profileImage}
+                              src={img}
                               alt={notification.sender.nickname}
                               width={24}
                               height={24}
                               className="w-6 h-6 rounded-full object-cover"
                             />
-                          ) : (
+                            ) : (
                             <div className="w-6 h-6 bg-background rounded-full flex items-center justify-center text-xs text-muted-foreground border border-border">
                               {notification.sender.nickname.charAt(0)}
                             </div>
-                          )}
+                          );
+                          })()}
                           <span className="text-xs text-muted-foreground">
                             {notification.sender.nickname}
                           </span>

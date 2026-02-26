@@ -11,9 +11,6 @@ interface DesktopGamePostListProps {
   userId?: string;
   posts: GamePost[];
   loading?: boolean;
-  loadingMore?: boolean;
-  hasMore?: boolean;
-  onLoadMore?: () => void;
   urlState: {
     gameId: string;
     status: string;
@@ -28,9 +25,6 @@ export function DesktopGamePostList({
   userId, 
   posts, 
   loading = false,
-  loadingMore = false,
-  hasMore = false,
-  onLoadMore,
   urlState, 
   onGameChange, 
   onStatusChange 
@@ -99,25 +93,6 @@ export function DesktopGamePostList({
       </div>
 
       {renderPosts()}
-      
-      {/* 무한 스크롤 로딩 및 더 보기 버튼 */}
-      {hasMore && (
-        <div className="mt-8 text-center">
-          {loadingMore ? (
-            <div className="flex justify-center items-center py-4">
-              <LoadingSpinner />
-              <span className="ml-2 text-muted-foreground">더 많은 게임메이트를 불러오는 중...</span>
-            </div>
-          ) : (
-            <button
-              onClick={onLoadMore}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              더 많은 게임메이트 보기
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -126,7 +126,7 @@ export function PWAInstaller() {
   if (!showInstallButton) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-[env(safe-area-inset-bottom)] md:bottom-4 md:left-4 md:right-auto md:max-w-sm">
+    <div className="pwa-installer-popup fixed bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] left-0 right-0 z-[60] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:bottom-4 md:left-4 md:right-auto md:max-w-sm md:pb-4">
       <div className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl p-4 shadow-lg">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">

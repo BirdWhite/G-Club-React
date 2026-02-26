@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/database/supabase';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 import { isAdmin_Server } from '@/lib/database/auth';
+import { sanitizeUserInput, INPUT_LIMITS } from '@/lib/utils/common';
 import { notificationService } from '@/lib/notifications/notificationService';
 import { autoPromoteFirstWaitingParticipant } from '@/lib/database/gameParticipantUtils';
 
@@ -194,7 +195,28 @@ export async function PATCH(
     if (!title || !content || maxParticipants === undefined || !startDate || !startTime) {
       return NextResponse.json({ error: '모든 필수 항목을 입력해주세요.' }, { status: 400 });
     }
-    
+
+    const sanitizedTitle = sanitizeUserInput(title);
+    const sanitizedContent = sanitizeUserInput(String(content || ''));
+    if (!sanitizedTitle) {
+      return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 });
+    }
+    if (sanitizedTitle.length > INPUT_LIMITS.GAME_POST_TITLE_MAX) {
+      return NextResponse.json(
+        { error: `제목은 ${INPUT_LIMITS.GAME_POST_TITLE_MAX}자 이하로 입력해주세요.` },
+        { status: 400 }
+      );
+    }
+    if (!sanitizedContent) {
+      return NextResponse.json({ error: '내용을 입력해주세요.' }, { status: 400 });
+    }
+    if (sanitizedContent.length > INPUT_LIMITS.GAME_POST_CONTENT_MAX) {
+      return NextResponse.json(
+        { error: `내용은 ${INPUT_LIMITS.GAME_POST_CONTENT_MAX}자 이하로 입력해주세요.` },
+        { status: 400 }
+      );
+    }
+
     // 날짜와 시간을 합쳐서 DateTime 객체 생성
     const dateOnly = new Date(startDate);
     const timeOnly = new Date(startTime);
@@ -209,11 +231,6 @@ export async function PATCH(
     );
     
 
-    // content 필드 검증
-    if (typeof content !== 'string' || content.trim().length === 0) {
-      return NextResponse.json({ error: '내용을 입력해주세요.' }, { status: 400 });
-    }
-    
     if (maxParticipants < 2 || maxParticipants > 100) {
       return NextResponse.json({ error: '인원수는 2명 이상 100명 이하로 설정해주세요.' }, { status: 400 });
     }
@@ -278,8 +295,8 @@ export async function PATCH(
       const post = await prisma.gamePost.update({
         where: { id },
         data: {
-          title,
-          content,
+          title: sanitizedTitle,
+          content: sanitizedContent,
           maxParticipants,
           startTime: combinedDateTime,
         },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
+import { sanitizeUserInput, INPUT_LIMITS } from '@/lib/utils/common';
 
 // 댓글 목록 조회
 export async function GET(
@@ -59,17 +60,17 @@ export async function POST(
     const { id: gamePostId } = await params;
     const { content } = await request.json();
 
-    // 입력 검증
-    if (!content || content.trim().length === 0) {
+    // 입력 검증 및 필터링
+    const sanitizedContent = sanitizeUserInput(content);
+    if (!sanitizedContent) {
       return NextResponse.json(
         { error: '댓글 내용을 입력해주세요.' },
         { status: 400 }
       );
     }
-
-    if (content.length > 500) {
+    if (sanitizedContent.length > INPUT_LIMITS.GAME_POST_COMMENT_MAX) {
       return NextResponse.json(
-        { error: '댓글은 500자 이하로 작성해주세요.' },
+        { error: `댓글은 ${INPUT_LIMITS.GAME_POST_COMMENT_MAX}자 이하로 작성해주세요.` },
         { status: 400 }
       );
     }
@@ -100,7 +101,7 @@ export async function POST(
       data: {
         gamePostId,
         authorId: profile.userId,
-        content: content.trim()
+        content: sanitizedContent
       },
       include: {
         author: {

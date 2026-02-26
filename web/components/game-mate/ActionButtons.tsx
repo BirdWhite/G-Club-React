@@ -20,6 +20,7 @@ interface ActionButtonsProps {
   onLeaveEarly?: () => void;
   onWait: (availableTime: string | null) => void;
   onToggleStatus?: () => void;
+  onCloseRecruitment?: () => void;
   onWaitingListUpdate?: () => void;
   loading: boolean;
 }
@@ -38,13 +39,15 @@ export function ActionButtons({
   onLeaveEarly,
   onWait,
   onToggleStatus,
+  onCloseRecruitment,
   onWaitingListUpdate,
   loading,
 }: ActionButtonsProps) {
   const [isTimeWaitingModalOpen, setIsTimeWaitingModalOpen] = useState(false);
   
-  const commonButtonStyles = "w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50";
-  const disabledButtonStyles = "bg-gray-400 cursor-not-allowed";
+  const commonButtonStyles = "w-full inline-flex items-center justify-center px-6 py-3 bg-transparent border-0 rounded-md text-base font-medium text-foreground focus:outline-none focus:ring-0 disabled:opacity-50 hover:underline";
+  const leftAlignedButtonStyles = "inline-flex items-center justify-center px-6 py-3 bg-transparent border-0 rounded-md text-base font-medium text-foreground focus:outline-none focus:ring-0 disabled:opacity-50 hover:underline";
+  const disabledButtonStyles = "text-muted-foreground cursor-not-allowed no-underline";
 
 
   // 예비 참여자가 참여 제안을 받은 경우 승낙/거절 버튼 표시 (최우선)
@@ -78,7 +81,7 @@ export function ActionButtons({
                   }
                 }}
                 disabled={loading}
-                className={`${commonButtonStyles} bg-green-600 text-white hover:bg-green-700 focus:ring-green-500`}
+                className={commonButtonStyles}
               >
                 <Check className="mr-2 h-5 w-5" />
                 {loading ? '처리 중...' : '참여하기'}
@@ -102,7 +105,7 @@ export function ActionButtons({
                   }
                 }}
                 disabled={loading}
-                className={`${commonButtonStyles} bg-red-600 text-white hover:bg-red-700 focus:ring-red-500`}
+                className={commonButtonStyles}
               >
                 <X className="mr-2 h-5 w-5" />
                 {loading ? '처리 중...' : '거절하기'}
@@ -122,46 +125,74 @@ export function ActionButtons({
           return {
             text: '게임 시작',
             icon: <LogIn className="mr-2 h-5 w-5" />,
-            className: 'bg-cyber-purple hover:bg-cyber-purple/90 focus:ring-cyber-purple text-cyber-black'
+            className: ''
           };
         case 'IN_PROGRESS':
           return {
             text: '게임 완료',
             icon: <CheckCircle className="mr-2 h-5 w-5" />,
-            className: 'bg-cyber-green hover:bg-cyber-green/90 focus:ring-cyber-green text-cyber-black'
+            className: ''
           };
         case 'COMPLETED':
           return {
             text: '모집 재개',
             icon: <PlusCircle className="mr-2 h-5 w-5" />,
-            className: 'bg-cyber-blue hover:bg-cyber-blue/90 focus:ring-cyber-blue text-cyber-black'
+            className: ''
           };
         default:
           return {
             text: '게임 시작',
             icon: <LogIn className="mr-2 h-5 w-5" />,
-            className: 'bg-cyber-purple hover:bg-cyber-purple/90 focus:ring-cyber-purple text-cyber-black'
+            className: ''
           };
       }
     };
 
     const buttonInfo = getStatusButtonInfo();
+
+    // 모집 중(OPEN)일 때: 게임 시작(왼쪽) + 모집 종료(오른쪽)
+    if (postStatus === 'OPEN' && onCloseRecruitment) {
+      return (
+        <div className="flex justify-between items-center gap-3 w-full">
+          <button
+            onClick={onToggleStatus}
+            disabled={loading}
+            className={`${leftAlignedButtonStyles} ${buttonInfo.className}`}
+          >
+            {buttonInfo.icon}
+            {loading ? '처리 중...' : buttonInfo.text}
+          </button>
+          <button
+            onClick={onCloseRecruitment}
+            disabled={loading}
+            className={`${leftAlignedButtonStyles} text-red-500 hover:text-red-600`}
+          >
+            <XCircle className="mr-2 h-5 w-5" />
+            {loading ? '처리 중...' : '모집 종료'}
+          </button>
+        </div>
+      );
+    }
     
+    // 모집 재개(COMPLETED)는 오른쪽, 나머지(게임 완료 등)는 왼쪽
+    const alignRight = postStatus === 'COMPLETED';
     return (
-      <button
-        onClick={onToggleStatus}
-        disabled={loading}
-        className={`${commonButtonStyles} text-white ${buttonInfo.className}`}
-      >
-        {buttonInfo.icon}
-        {loading ? '처리 중...' : buttonInfo.text}
-      </button>
+      <div className={`flex w-full ${alignRight ? 'justify-end' : 'justify-start'}`}>
+        <button
+          onClick={onToggleStatus}
+          disabled={loading}
+          className={`${leftAlignedButtonStyles} ${buttonInfo.className}`}
+        >
+          {buttonInfo.icon}
+          {loading ? '처리 중...' : buttonInfo.text}
+        </button>
+      </div>
     );
   }
 
   if (postStatus === 'COMPLETED') {
     return (
-      <button disabled className={`${commonButtonStyles} text-white ${disabledButtonStyles}`}>
+      <button disabled className={`${commonButtonStyles} ${disabledButtonStyles}`}>
         게임 모임이 종료되었습니다.
       </button>
     );
@@ -169,7 +200,7 @@ export function ActionButtons({
 
   if (postStatus === 'EXPIRED') {
     return (
-      <button disabled className={`${commonButtonStyles} text-white ${disabledButtonStyles}`}>
+      <button disabled className={`${commonButtonStyles} ${disabledButtonStyles}`}>
         모집 기간이 만료되었습니다.
       </button>
     );
@@ -182,7 +213,7 @@ export function ActionButtons({
         <button
           onClick={onLeaveEarly}
           disabled={loading}
-          className={`${commonButtonStyles} bg-red-600 text-white hover:bg-red-700 focus:ring-red-500`}
+          className={commonButtonStyles}
         >
           <XCircle className="mr-2 h-5 w-5" />
           {loading ? '퇴장 중...' : '퇴장하기'}
@@ -193,7 +224,7 @@ export function ActionButtons({
         <button
           onClick={onCancelParticipation}
           disabled={loading}
-          className={`${commonButtonStyles} bg-red-600 text-white hover:bg-red-700 focus:ring-red-500`}
+          className={commonButtonStyles}
         >
           <XCircle className="mr-2 h-5 w-5" />
           {loading ? '취소 중...' : '참여 취소하기'}
@@ -238,7 +269,7 @@ export function ActionButtons({
             }
           }}
           disabled={loading}
-          className={`${commonButtonStyles} bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500`}
+          className={commonButtonStyles}
         >
           <X className="mr-2 h-5 w-5" />
           {loading ? '취소 중...' : '예비 참여 취소'}
@@ -254,7 +285,7 @@ export function ActionButtons({
         <button
           onClick={() => setIsTimeWaitingModalOpen(true)}
           disabled={loading}
-          className={`${commonButtonStyles} bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500`}
+          className={commonButtonStyles}
         >
           <Hourglass className="mr-2 h-5 w-5" />
           {loading ? '등록 중...' : '예비 신청'}
@@ -285,7 +316,7 @@ export function ActionButtons({
             <button
               onClick={() => setIsTimeWaitingModalOpen(true)}
               disabled={loading}
-              className={`${commonButtonStyles} bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500`}
+              className={commonButtonStyles}
             >
               <Clock className="mr-2 h-5 w-5" />
               예비 신청
@@ -294,7 +325,7 @@ export function ActionButtons({
           <button
             onClick={onParticipate}
             disabled={loading}
-            className={`${commonButtonStyles} bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary`}
+            className={commonButtonStyles}
           >
             <PlusCircle className="mr-2 h-5 w-5" />
             {loading ? '참여 중...' : '게임 참가'}

@@ -93,31 +93,31 @@ export function PermissionManager() {
     }
   };
 
-  if (isLoading) return <div>로딩 중...</div>;
-  if (error) return <div className="text-red-500">오류: {error}</div>;
+  if (isLoading) return <div className="text-admin-foreground">로딩 중...</div>;
+  if (error) return <div className="text-danger">오류: {error}</div>;
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">권한 관리</h2>
+    <div className="bg-admin-50 shadow rounded-lg p-6 border border-admin-border">
+      <h2 className="text-2xl font-bold mb-4 text-admin-foreground">권한 관리</h2>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-admin-border">
+          <thead className="bg-admin-100">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">권한 \ 역할</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">권한 \ 역할</th>
               {roles.map(role => (
-                <th key={role.id} className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                <th key={role.id} className="px-6 py-3 text-center text-xs font-medium text-admin-foreground uppercase">
                   {role.name}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-admin-50 divide-y divide-admin-border">
             {permissions.map(permission => (
               <tr key={permission.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{permission.name}</div>
+                  <div className="text-sm font-medium text-admin-foreground">{permission.name}</div>
                   {permission.description && (
-                    <div className="text-xs text-gray-500">{permission.description}</div>
+                    <div className="text-xs text-admin-foreground">{permission.description}</div>
                   )}
                 </td>
                 {roles.map(role => {
@@ -131,8 +131,8 @@ export function PermissionManager() {
                         disabled={isDisabled || isSaving}
                         className={`w-8 h-8 rounded-full font-bold ${
                           hasPermission
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : 'bg-red-100 text-red-800 hover:bg-red-200'
+                            ? 'bg-admin-100 text-admin-foreground hover:bg-admin-200'
+                            : 'bg-danger/20 text-danger hover:bg-danger/30'
                         } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                       >
                         {hasPermission ? 'O' : 'X'}

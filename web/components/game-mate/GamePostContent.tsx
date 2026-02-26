@@ -1,11 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import type { GamePost } from '@/types/models';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
 import { formatRelativeTime } from '@/lib/utils/date';
-// RichTextViewer 제거 - 단순 텍스트 표시로 변경
-import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 import { useEffect, useState } from 'react';
 
 interface GamePostContentProps {
@@ -22,44 +19,32 @@ export function GamePostContent({ post }: GamePostContentProps) {
   return (
     <div className="bg-card border border-border shadow-lg overflow-hidden rounded-lg">
       <div className="px-4 py-5 sm:p-6">
-        <div className="flex items-center mb-6">
-          <div className="flex-shrink-0">
-            <ProfileAvatar
-              name={post.author.name}
-              image={post.author.image}
-              size="md"
-              unoptimized={post.author.image?.includes('127.0.0.1')}
-            />
-          </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium text-cyber-gray">
-              {post.author.name || '익명'}
-            </p>
-            {post.createdAt && (
-              <div className="flex space-x-1 text-sm text-cyber-gray/60">
-                <time dateTime={typeof post.createdAt === 'string' ? post.createdAt : post.createdAt.toISOString()}>
-                  {isMounted ? formatDistanceToNow(new Date(post.createdAt), { 
-                    addSuffix: true, 
-                    locale: ko 
-                  }) : '...'}
-                </time>
-                {isMounted && post.updatedAt && new Date(post.createdAt).getTime() !== new Date(post.updatedAt).getTime() && (
-                  <span>(수정됨)</span>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* 게임 시작 시간 */}
+        {/* 게임 시작 시간(왼쪽) + 게임 아이콘(오른쪽) */}
         {post.startTime && (
-          <div className="mt-3 mb-4">
-            <div className="inline-flex items-center px-3 py-1.5 bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/30 rounded-full text-sm font-medium">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mb-4 flex items-center justify-between w-full">
+            <div className="flex items-center gap-2 text-primary text-sm font-medium">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="font-semibold">{isMounted ? formatRelativeTime(new Date(post.startTime)) : '...'}</span>
             </div>
+            {post.game && (
+              post.game.iconUrl ? (
+                <Image
+                  src={post.game.iconUrl}
+                  alt={post.game.name || '게임'}
+                  width={20}
+                  height={20}
+                  className="h-5 w-5 rounded-sm object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="h-5 w-5 rounded-sm bg-muted flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-bold text-muted-foreground">
+                    {post.game?.name?.[0] || 'G'}
+                  </span>
+                </div>
+              )
+            )}
           </div>
         )}
         

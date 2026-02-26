@@ -45,9 +45,8 @@ export async function GET(request: Request) {
             const metadata = user.user_metadata ?? {}
             const name = (metadata.full_name ?? metadata.name ?? metadata.nickname ?? user.email?.split('@')[0]) || '사용자'
             const birthDate = metadata.birthDate ? new Date(metadata.birthDate) : new Date('2000-01-01')
-            // 카카오 CDN(k.kakaocdn.net) 이미지는 사용하지 않음
             const rawImage = metadata.avatar_url ?? metadata.picture ?? metadata.profile_image ?? metadata.profile_image_url
-            const image = rawImage && !String(rawImage).includes('k.kakaocdn.net') ? rawImage : null
+            const image = rawImage && !String(rawImage).includes('kakaocdn.net') ? rawImage : null
 
             // 검증 대기(NONE) 역할 조회 - 신규 가입자는 운영진 부원 확인 전까지 NONE
             const noneRole = await prisma.role.findFirst({ where: { name: 'NONE' }, select: { id: true } })

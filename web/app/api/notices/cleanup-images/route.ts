@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database/supabase';
+import { getCurrentUser } from '@/lib/database/supabase';
+import prisma from '@/lib/database/prisma';
 
-// 공지사항 생성 실패 시 이미지 정리 API
+// 공지사항 생성 실패 시 이미지 정리 API (관리자 전용)
 export async function POST(request: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    }
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      include: { role: true }
+    });
+    if (!profile?.role || !['ADMIN', 'SUPER_ADMIN'].includes(profile.role.name)) {
+      return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
+    }
+
     const { noticeId } = await request.json();
 
     if (!noticeId || typeof noticeId !== 'string') {

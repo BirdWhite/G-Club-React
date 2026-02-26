@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider'; // 1. useProfile 훅 임포트
 import type { Session } from '@supabase/supabase-js';
 import { MobileNavigation } from '@/components/layout/MobileNavigation';
+import { NavLink } from '@/components/layout/NavLink';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 import { useNotificationSubscription } from '@/hooks/useRealtimeSubscription';
 
@@ -164,32 +165,6 @@ export function Header() {
     };
   }, [isProfileMenuOpen]);
   
-  // NavLink: pathname을 props로 받아 훅 순서 일관성 유지 (React #310 에러 방지)
-  const NavLink = ({ href, children, showBadge = false, badgeCount = 0 }: { 
-    href: string; 
-    children: React.ReactNode;
-    showBadge?: boolean;
-    badgeCount?: number;
-  }) => {
-    const isActive = href === '/' ? pathname === href : pathname?.startsWith(href);
-    
-    return (
-      <Link 
-        href={href}
-        className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium relative ${
-          isActive ? 'nav-link-active' : 'nav-link'
-        }`}
-      >
-        {children}
-        {showBadge && badgeCount > 0 && (
-          <span className="absolute -top-1 -right-4 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-            {badgeCount > 99 ? '99+' : badgeCount}
-          </span>
-        )}
-      </Link>
-    );
-  };
-  
   // 프로필 업데이트 이벤트 리스너
   useEffect(() => {
     if (!session?.user) return;
@@ -309,7 +284,7 @@ export function Header() {
 
               {/* 데스크톱 네비게이션 - 고정 최소 너비로 시프트 방지 */}
               <nav className="hidden md:ml-6 md:flex md:items-center md:space-x-6 lg:space-x-8">
-                <NavLink href="/">홈</NavLink>
+                <NavLink href="/" pathname={pathname}>홈</NavLink>
                 {/* 항상 동일한 공간 확보 (스켈레톤/링크/placeholder 전환 시 레이아웃 시프트 방지) */}
                 <div className="flex items-center space-x-6 lg:space-x-8 min-w-[240px]">
                   {isNavLoading && showSkeleton ? (
@@ -326,10 +301,10 @@ export function Header() {
                     </>
                   ) : session && !isPendingMember ? (
                     <>
-                      <NavLink href="/game-mate">게임메이트</NavLink>
-                      <NavLink href="/notifications" showBadge={true} badgeCount={unreadNotificationCount}>알림</NavLink>
+                      <NavLink href="/game-mate" pathname={pathname}>게임메이트</NavLink>
+                      <NavLink href="/notifications" pathname={pathname} showBadge={true} badgeCount={unreadNotificationCount}>알림</NavLink>
                       {isAdmin && (
-                        <NavLink href="/admin/dashboard">
+                        <NavLink href="/admin/dashboard" pathname={pathname}>
                           관리자 대시보드
                         </NavLink>
                       )}
@@ -376,7 +351,7 @@ export function Header() {
                         }`}>
                           <ProfileAvatar
                             name={profile?.name}
-                            image={profile?.image && !profile.image.includes('k.kakaocdn.net') ? profile.image : null}
+                            image={profile?.image && !profile.image.includes('kakaocdn.net') ? profile.image : null}
                             size="md"
                             className={`transition-all duration-200 group-hover:scale-110 ${
                               pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit'

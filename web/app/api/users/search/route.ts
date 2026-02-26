@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
+import { getDisplayImageUrl } from '@/lib/utils/common';
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,7 +66,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([guestOption]);
     }
 
-    return NextResponse.json(users);
+    // 카카오 이미지 제외 후 반환
+    const safeUsers = users.map(u => ({
+      ...u,
+      image: getDisplayImageUrl(u.image)
+    }));
+    return NextResponse.json(safeUsers);
   } catch (error) {
     console.error('사용자 검색 오류:', error);
     return NextResponse.json(

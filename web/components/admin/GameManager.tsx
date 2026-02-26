@@ -210,76 +210,76 @@ export function GameManager() {
     }
   };
 
-  if (loading) return <div>로딩 중...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (loading) return <div className="text-admin-foreground">로딩 중...</div>;
+  if (error) return <div className="text-danger">{error}</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg text-gray-500 font-medium">게임 관리</h2>
+        <h2 className="text-lg text-admin-foreground font-medium">게임 관리</h2>
         <button
           type="button"
           onClick={() => setIsAdding(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-admin-primary hover:bg-admin-500/90"
         >
           <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
           게임 추가
         </button>
       </div>
 
-      <div className="bg-white shadow overflow-x-auto sm:rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-admin-50 shadow overflow-x-auto sm:rounded-lg border border-admin-border">
+        <table className="min-w-full divide-y divide-admin-border">
+          <thead className="bg-admin-100">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">순서</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">아이콘</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">생성일</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+              <th className="w-14 px-2 py-3 text-left text-xs font-medium text-admin-foreground uppercase tracking-wider">순서</th>
+              <th className="w-16 px-2 py-3 text-left text-xs font-medium text-admin-foreground uppercase tracking-wider">아이콘</th>
+              <th className="w-28 px-3 py-3 text-left text-xs font-medium text-admin-foreground uppercase tracking-wider">이름</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-admin-foreground uppercase tracking-wider">설명</th>
+              <th className="w-24 px-3 py-3 text-left text-xs font-medium text-admin-foreground uppercase tracking-wider">생성일</th>
+              <th className="w-24 px-3 py-3 text-right text-xs font-medium text-admin-foreground uppercase tracking-wider">액션</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-admin-50 divide-y divide-admin-border">
             {games.map((game, index) => (
-              <tr key={game.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
+              <tr key={game.id} className="hover:bg-admin-100">
+                <td className="w-14 px-2 py-4 whitespace-nowrap">
                   <div className="flex flex-col space-y-1">
                     <button
                       onClick={() => handleReorder(game.id, 'up')}
                       disabled={index === 0 || reordering === game.id}
-                      className="text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-admin-foreground hover:text-admin-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <ChevronUpIcon className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleReorder(game.id, 'down')}
                       disabled={index === games.length - 1 || reordering === game.id}
-                      className="text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-admin-foreground hover:text-admin-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <ChevronDownIcon className="h-4 w-4" />
                     </button>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="w-16 px-2 py-4 whitespace-nowrap">
                   {game.iconUrl && (
                     <Image className="h-10 w-10 rounded-full" src={game.iconUrl} alt={game.name} width={40} height={40} />
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{game.name}</td>
-                <td className="px-6 py-4 text-sm text-gray-500">{game.description}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="w-28 px-3 py-4 whitespace-nowrap text-sm font-medium text-admin-foreground">{game.name}</td>
+                <td className="px-4 py-4 text-sm text-admin-foreground">{game.description}</td>
+                <td className="w-24 px-3 py-4 whitespace-nowrap text-sm text-admin-foreground">
                   {new Date(game.createdAt).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="w-24 px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => handleEdit(game)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    className="text-admin-primary hover:text-admin-500 mr-4"
                   >
                     <PencilIcon className="h-5 w-5" />
                   </button>
                   <button
                     onClick={() => handleDelete(game.id)}
-                    className="text-red-600 hover:text-red-900"
+                    className="text-danger hover:text-danger/90"
                   >
                     <TrashIcon className="h-5 w-5" />
                   </button>
@@ -293,14 +293,14 @@ export function GameManager() {
       {/* 추가/수정 모달 */}
       {(isAdding || editingGame) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-admin-50 rounded-lg p-6 w-full max-w-md border border-admin-border">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg text-gray-500 font-medium">
+              <h3 className="text-lg text-admin-foreground font-medium">
                 {editingGame ? '게임 수정' : '새 게임 추가'}
               </h3>
               <button
                 onClick={resetForm}
-                className="text-gray-400 hover:text-gray-500"
+                className="text-admin-foreground hover:text-admin-primary"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
@@ -308,21 +308,21 @@ export function GameManager() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">아이콘</label>
+                <label className="block text-sm font-medium text-admin-foreground">아이콘</label>
                 <div className="mt-1 flex items-center">
-                  <span className="inline-block h-12 w-12 rounded-full overflow-hidden bg-gray-100">
+                  <span className="inline-block h-12 w-12 rounded-full overflow-hidden bg-admin-100">
                     {previewUrl ? (
                       <Image src={previewUrl} alt="미리보기" className="h-full w-full object-cover" width={48} height={48} />
                     ) : formData.iconUrl ? (
                       <Image src={formData.iconUrl} alt={formData.name} className="h-full w-full object-cover" width={48} height={48} />
                     ) : (
-                      <PhotoIcon className="h-full w-full text-gray-300" />
+                      <PhotoIcon className="h-full w-full text-admin-border" />
                     )}
                   </span>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                    className="ml-5 bg-admin-50 py-2 px-3 border border-admin-border rounded-md shadow-sm text-sm leading-4 font-medium text-admin-foreground hover:bg-admin-100 focus:outline-none"
                   >
                     이미지 선택
                   </button>
@@ -337,37 +337,37 @@ export function GameManager() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700">게임 이름</label>
+                <label className="block text-sm font-medium text-admin-foreground">게임 이름</label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name || ''}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full text-gray-500 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full text-admin-foreground border border-admin-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-admin-primary focus:border-admin-primary sm:text-sm"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">게임 별칭</label>
+                <label className="block text-sm font-medium text-admin-foreground">게임 별칭</label>
                 <input
                   type="text"
                   name="aliases"
                   value={aliasesInput}
                   onChange={(e) => setAliasesInput(e.target.value)}
-                  className="mt-1 block w-full text-gray-500 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full text-admin-foreground border border-admin-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-admin-primary focus:border-admin-primary sm:text-sm"
                   placeholder="쉼표(,)로 구분하여 입력"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">설명</label>
+                <label className="block text-sm font-medium text-admin-foreground">설명</label>
                 <textarea
                   name="description"
                   rows={3}
                   value={formData.description || ''}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full text-gray-500 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full text-admin-foreground border border-admin-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-admin-primary focus:border-admin-primary sm:text-sm"
                 />
               </div>
 
@@ -376,14 +376,14 @@ export function GameManager() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="bg-admin-50 py-2 px-4 border border-admin-border rounded-md shadow-sm text-sm font-medium text-admin-foreground hover:bg-admin-100"
                   >
                     취소
                   </button>
                   <button
                     type="submit"
                     disabled={isUploading}
-                    className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                    className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-admin-primary hover:bg-admin-500/90 disabled:opacity-50"
                   >
                     {isUploading ? '저장 중...' : '저장'}
                   </button>

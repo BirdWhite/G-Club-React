@@ -213,19 +213,19 @@ export function UserRoleManager() {
     fetchData(1, searchTerm, roleFilter, false);
   };
 
-  if (isLoading) return <div>로딩 중...</div>;
-  if (error) return <div className="text-red-500">오류: {error}</div>;
+  if (isLoading) return <div className="text-admin-foreground">로딩 중...</div>;
+  if (error) return <div className="text-danger">오류: {error}</div>;
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">사용자 관리</h2>
+    <div className="bg-admin-50 shadow rounded-lg p-6 border border-admin-border">
+      <h2 className="text-2xl font-bold mb-6 text-admin-foreground">사용자 관리</h2>
       
       {/* 검색 및 필터 섹션 */}
       <div className="mb-6 space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* 검색 입력 */}
           <div className="flex-1">
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="search" className="block text-sm font-medium text-admin-foreground mb-1">
               사용자 검색
             </label>
             <div className="relative">
@@ -235,19 +235,19 @@ export function UserRoleManager() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="이름 또는 Supabase UID로 검색..."
-                className={`w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-gray-900 ${
-                  isTyping ? 'bg-yellow-50 border-yellow-300' : 
-                  isSearching ? 'bg-blue-50 border-blue-300' : ''
+                className={`w-full px-3 py-2 pr-10 border border-admin-border rounded-md shadow-sm focus:outline-none focus:ring-admin-primary focus:border-admin-primary transition-colors text-admin-foreground ${
+                  isTyping ? 'bg-admin-100 border-admin-200' : 
+                  isSearching ? 'bg-admin-100 border-admin-primary' : ''
                 }`}
               />
               {isTyping && (
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-admin-border border-t-admin-primary rounded-full animate-spin"></div>
                 </div>
               )}
               {isSearching && !isTyping && (
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-admin-primary"></div>
                 </div>
               )}
             </div>
@@ -255,14 +255,14 @@ export function UserRoleManager() {
           
           {/* 역할 필터 */}
           <div className="sm:w-48">
-            <label htmlFor="roleFilter" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="roleFilter" className="block text-sm font-medium text-admin-foreground mb-1">
               역할 필터
             </label>
             <select
               id="roleFilter"
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+              className="w-full px-3 py-2 border border-admin-border rounded-md shadow-sm focus:outline-none focus:ring-admin-primary focus:border-admin-primary text-admin-foreground"
             >
               <option value="">모든 역할</option>
               {roles.map((role) => (
@@ -275,14 +275,14 @@ export function UserRoleManager() {
           
           {/* 페이지 크기 선택 */}
           <div className="sm:w-32">
-            <label htmlFor="pageSize" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="pageSize" className="block text-sm font-medium text-admin-foreground mb-1">
               페이지 크기
             </label>
             <select
               id="pageSize"
               value={pageSize}
               onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+              className="w-full px-3 py-2 border border-admin-border rounded-md shadow-sm focus:outline-none focus:ring-admin-primary focus:border-admin-primary text-admin-foreground"
             >
               <option value={5}>5개</option>
               <option value={10}>10개</option>
@@ -294,7 +294,7 @@ export function UserRoleManager() {
         
         {/* 검색 결과 정보 */}
         {pagination && (
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-admin-foreground">
             총 {pagination.totalCount}명 중 {((pagination.currentPage - 1) * pagination.limit) + 1}-{Math.min(pagination.currentPage * pagination.limit, pagination.totalCount)}명 표시
           </div>
         )}
@@ -303,37 +303,37 @@ export function UserRoleManager() {
       <div className="relative">
         {/* 검색 중 로딩 오버레이 (타이핑 중이 아닐 때만) */}
         {isSearching && !isTyping && (
-          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+          <div className="absolute inset-0 bg-admin-50 bg-opacity-90 flex items-center justify-center z-10">
             <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-              <span className="text-sm text-gray-600">검색 중...</span>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-admin-primary"></div>
+              <span className="text-sm text-admin-foreground">검색 중...</span>
             </div>
           </div>
         )}
         
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-admin-border">
+          <thead className="bg-admin-100">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사용자 이름</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supabase UID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">부원 확인</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">현재 역할</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">역할 변경</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">사용자 이름</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">Supabase UID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">부원 확인</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">현재 역할</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">역할 변경</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-admin-50 divide-y divide-admin-border">
             {users.map((user) => {
               const canModify = canChangeRole(user);
               return (
                 <tr key={user.id}>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{user.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.userId}</td>
+                  <td className="px-6 py-4 whitespace-nowrap font-medium text-admin-foreground">{user.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-admin-foreground">{user.userId}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {(!user.roleId || user.role?.name === 'NONE') ? (
                       <button
                         onClick={() => handleToggleMemberStatus(user.id, 'NONE')}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-admin-primary hover:bg-admin-500/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-admin-primary transition-colors"
                       >
                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -344,7 +344,7 @@ export function UserRoleManager() {
                       <div className="group relative">
                         <button
                           onClick={() => handleToggleMemberStatus(user.id, 'USER')}
-                          className="inline-flex items-center justify-center w-20 px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 bg-green-100 text-green-800 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          className="inline-flex items-center justify-center w-20 px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 bg-admin-100 text-admin-foreground hover:bg-danger hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-danger"
                         >
                           <svg className="w-3 h-3 mr-1 group-hover:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -357,7 +357,7 @@ export function UserRoleManager() {
                         </button>
                       </div>
                     ) : (
-                      <span className="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded-md">
+                      <span className="inline-flex items-center px-3 py-1 text-xs font-medium text-admin-foreground bg-admin-100 rounded-md">
                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
@@ -367,9 +367,9 @@ export function UserRoleManager() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.role?.name === 'ADMIN' || user.role?.name === 'SUPER_ADMIN' ? 'bg-red-100 text-red-800' :
-                      user.role?.name === 'USER' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
+                      user.role?.name === 'ADMIN' || user.role?.name === 'SUPER_ADMIN' ? 'bg-danger/20 text-danger' :
+                      user.role?.name === 'USER' ? 'bg-admin-100 text-admin-foreground' :
+                      'bg-admin-100 text-admin-foreground'
                     }`}>
                       {user.role?.name || (user.roleId ? '없음' : '검증 대기')}
                     </span>
@@ -379,7 +379,7 @@ export function UserRoleManager() {
                       <select
                         value={user.roleId || ''}
                         onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md text-gray-900"
+                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-admin-border focus:outline-none focus:ring-admin-primary focus:border-admin-primary sm:text-sm rounded-md text-admin-foreground"
                       >
                         {roles
                           .filter(role => role.name !== 'SUPER_ADMIN' || isSuperAdminUser) // 슈퍼 관리자 역할은 슈퍼 관리자만 할당 가능
@@ -390,7 +390,7 @@ export function UserRoleManager() {
                           ))}
                       </select>
                     ) : (
-                      <span className="text-sm text-gray-900">변경 불가</span>
+                      <span className="text-sm text-admin-foreground">변경 불가</span>
                     )}
                   </td>
                 </tr>
@@ -408,21 +408,21 @@ export function UserRoleManager() {
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={!pagination.hasPrevPage}
-              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center px-4 py-2 border border-admin-border text-sm font-medium rounded-md text-admin-foreground bg-admin-50 hover:bg-admin-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               이전
             </button>
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={!pagination.hasNextPage}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-admin-border text-sm font-medium rounded-md text-admin-foreground bg-admin-50 hover:bg-admin-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               다음
             </button>
           </div>
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-admin-foreground">
                 <span className="font-medium">{pagination.totalCount}</span>명 중{' '}
                 <span className="font-medium">{((pagination.currentPage - 1) * pagination.limit) + 1}</span>
                 -
@@ -435,7 +435,7 @@ export function UserRoleManager() {
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={!pagination.hasPrevPage}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-admin-border bg-admin-50 text-sm font-medium text-admin-foreground hover:bg-admin-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="sr-only">이전</span>
                   <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -462,8 +462,8 @@ export function UserRoleManager() {
                       onClick={() => handlePageChange(pageNum)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                         pageNum === currentPage
-                          ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                          ? 'z-10 bg-admin-100 border-admin-primary text-admin-primary'
+                          : 'bg-admin-50 border-admin-border text-admin-foreground hover:bg-admin-100'
                       }`}
                     >
                       {pageNum}
@@ -474,7 +474,7 @@ export function UserRoleManager() {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={!pagination.hasNextPage}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-admin-border bg-admin-50 text-sm font-medium text-admin-foreground hover:bg-admin-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="sr-only">다음</span>
                   <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

@@ -79,7 +79,7 @@ export const useProfileEdit = () => {
       }
       
       // 프로필 이미지 설정 (카카오 이미지가 아닌 경우에만 설정)
-      if (profile.image && !profile.image.includes('k.kakaocdn.net')) {
+      if (profile.image && !profile.image.includes('kakaocdn.net')) {
         setCurrentImage(profile.image);
       }
       

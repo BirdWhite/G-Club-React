@@ -142,6 +142,12 @@ export function MobileGamePostDetailClient({ initialPost, userId }: MobileGamePo
     '게임 상태 변경 중 오류가 발생했습니다.'
   );
 
+  const handleCloseRecruitment = () => handleAction(
+    () => fetch(`/api/game-posts/${currentPost.id}/close-recruitment`, { method: 'PATCH' }),
+    '모집이 종료되었습니다.',
+    '모집 종료 중 오류가 발생했습니다.'
+  );
+
   const isOwner = currentPost.isOwner || false;
   const isParticipating = currentPost.isParticipating || false;
   const isWaiting = currentPost.isWaiting || false;
@@ -163,8 +169,7 @@ export function MobileGamePostDetailClient({ initialPost, userId }: MobileGamePo
       <div className="mt-8">
         <div className="flex items-center mb-4">
           <Users className="h-5 w-5 text-foreground mr-2" />
-          <h3 className="text-xl font-bold text-cyber-gray mr-3">참여자 목록</h3>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30">
+          <span className="text-xl font-bold text-foreground">
             {currentPost.participants?.filter(p => p.status === 'ACTIVE').length || 0}/{currentPost.maxParticipants}
           </span>
         </div>
@@ -219,6 +224,7 @@ export function MobileGamePostDetailClient({ initialPost, userId }: MobileGamePo
             onLeaveEarly={handleLeaveEarly}
             onWait={handleWait}
             onToggleStatus={handleToggleStatus}
+            onCloseRecruitment={handleCloseRecruitment}
             onWaitingListUpdate={refresh}
             loading={isSubmitting}
           />

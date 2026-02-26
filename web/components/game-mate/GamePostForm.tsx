@@ -23,7 +23,7 @@ import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect } from 'react';
 
 const formSchema = z.object({
-  title: z.string().min(2, '제목은 2자 이상 입력해주세요.').max(100, '제목은 100자를 초과할 수 없습니다.'),
+  title: z.string().min(2, '제목은 2자 이상 입력해주세요.').max(50, '제목은 50자를 초과할 수 없습니다.'),
   gameId: z.string().min(1, '게임을 선택해주세요.'),
   maxParticipants: z.number().min(2, '최소 2명 이상이어야 합니다.').max(100, '최대 100명까지 가능합니다.'),
   startDate: z.date({ message: '시작 날짜를 선택해주세요.' }),
@@ -190,8 +190,9 @@ const getDefaultParticipants = () => {
               <FormLabel>제목</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="파티원을 구하는 목적을 명확하게 보여주세요." 
+                  placeholder="파티원을 구하는 목적을 명확하게 보여주세요. (최대 50자)" 
                   className="bg-input border-border focus:bg-input"
+                  maxLength={50}
                   {...field} 
                 />
               </FormControl>

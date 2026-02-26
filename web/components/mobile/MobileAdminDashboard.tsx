@@ -19,43 +19,43 @@ export function MobileAdminDashboard({ initialTab, onTabChange }: MobileAdminDas
   };
 
   return (
-    <div className="h-full bg-cyber-black-200 p-4 overflow-y-auto scrollbar-visible">
+    <div className="h-full bg-admin-background p-4 overflow-y-auto scrollbar-visible">
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-cyber-black-100 rounded-lg border border-cyber-black-300 p-6">
-          <h1 className="text-2xl font-bold text-cyber-gray mb-6">관리자 대시보드</h1>
+        <div className="bg-admin-card rounded-lg border border-admin-border p-6">
+          <h1 className="text-2xl font-bold text-admin-foreground mb-6">관리자 대시보드</h1>
           
           {/* 모바일용 탭 - 세로 배치 */}
-          <div className="border-b border-cyber-black-300 mb-6">
+          <div className="border-b border-admin-border mb-6">
             <nav className="flex flex-col space-y-2">
               <button
                 onClick={() => handleTabChange('user')}
                 className={`${
                   tab === 'user' 
-                    ? 'border-cyber-blue text-cyber-blue bg-cyber-blue/10' 
-                    : 'border-transparent text-cyber-gray hover:text-cyber-blue hover:bg-cyber-black-200'
+                    ? 'border-admin-primary text-admin-foreground bg-admin-primary/20' 
+                    : 'border-transparent text-admin-foreground hover:text-admin-primary hover:bg-admin-100'
                 } text-left py-3 px-4 border-l-4 font-medium text-sm rounded-r-md transition-colors`}
               >
                 사용자 관리
               </button>
               <button
-                onClick={() => handleTabChange('permission')}
-                className={`${
-                  tab === 'permission' 
-                    ? 'border-cyber-blue text-cyber-blue bg-cyber-blue/10' 
-                    : 'border-transparent text-cyber-gray hover:text-cyber-blue hover:bg-cyber-black-200'
-                } text-left py-3 px-4 border-l-4 font-medium text-sm rounded-r-md transition-colors`}
-              >
-                권한 관리 (미구현)
-              </button>
-              <button
                 onClick={() => handleTabChange('games')}
                 className={`${
                   tab === 'games' 
-                    ? 'border-cyber-blue text-cyber-blue bg-cyber-blue/10' 
-                    : 'border-transparent text-cyber-gray hover:text-cyber-blue hover:bg-cyber-black-200'
+                    ? 'border-admin-primary text-admin-foreground bg-admin-primary/20' 
+                    : 'border-transparent text-admin-foreground hover:text-admin-primary hover:bg-admin-100'
                 } text-left py-3 px-4 border-l-4 font-medium text-sm rounded-r-md transition-colors`}
               >
                 게임 관리
+              </button>
+              <button
+                onClick={() => handleTabChange('permission')}
+                className={`${
+                  tab === 'permission' 
+                    ? 'border-admin-primary text-admin-foreground bg-admin-primary/20' 
+                    : 'border-transparent text-admin-foreground hover:text-admin-primary hover:bg-admin-100'
+                } text-left py-3 px-4 border-l-4 font-medium text-sm rounded-r-md transition-colors`}
+              >
+                권한 관리 (미구현)
               </button>
             </nav>
           </div>

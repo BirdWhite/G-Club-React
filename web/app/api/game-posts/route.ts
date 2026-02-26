@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 import { notificationService } from '@/lib/notifications/notificationService';
+import { sanitizeUserInput, INPUT_LIMITS } from '@/lib/utils/common';
 
 export async function GET(request: Request) {
   try {
@@ -177,6 +178,27 @@ export async function POST(request: Request) {
       );
     }
 
+    const sanitizedTitle = sanitizeUserInput(title);
+    const sanitizedContent = sanitizeUserInput(String(content || ''));
+    if (!sanitizedTitle) {
+      return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 });
+    }
+    if (sanitizedTitle.length > INPUT_LIMITS.GAME_POST_TITLE_MAX) {
+      return NextResponse.json(
+        { error: `제목은 ${INPUT_LIMITS.GAME_POST_TITLE_MAX}자 이하로 입력해주세요.` },
+        { status: 400 }
+      );
+    }
+    if (!sanitizedContent) {
+      return NextResponse.json({ error: '내용을 입력해주세요.' }, { status: 400 });
+    }
+    if (sanitizedContent.length > INPUT_LIMITS.GAME_POST_CONTENT_MAX) {
+      return NextResponse.json(
+        { error: `내용은 ${INPUT_LIMITS.GAME_POST_CONTENT_MAX}자 이하로 입력해주세요.` },
+        { status: 400 }
+      );
+    }
+
     // 최대 인원수 검증 (2~100명)
     if (maxParticipants < 2 || maxParticipants > 100) {
       return NextResponse.json(
@@ -190,8 +212,8 @@ export async function POST(request: Request) {
       // 모집글 생성
       const post = await prisma.gamePost.create({
         data: {
-          title,
-          content,
+          title: sanitizedTitle,
+          content: sanitizedContent,
           gameId,
           maxParticipants,
           startTime: new Date(startTime),

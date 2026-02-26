@@ -31,13 +31,10 @@ export default function GameMatePage() {
     return undefined;
   };
 
-  // 게임 포스트 데이터 - 최상위에서 한 번만 호출 (무한 스크롤 지원)
+  // 게임 포스트 데이터 - 최상위에서 한 번만 호출
   const { 
     posts, 
     loading: postsLoading, 
-    loadingMore, 
-    hasMore, 
-    loadMore, 
     setFilters 
   } = useGamePostListSubscription({
     status: getApiStatus(urlState.status),
@@ -82,9 +79,6 @@ export default function GameMatePage() {
     userId: profile?.userId || '',
     posts,
     loading: postsLoading,
-    loadingMore,
-    hasMore,
-    onLoadMore: loadMore,
     urlState,
     onGameChange: handleGameChange,
     onStatusChange: handleStatusChange,

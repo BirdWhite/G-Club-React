@@ -208,7 +208,7 @@ export function GameSearchUI({
                   className="h-4 w-4 rounded-sm object-cover"
                 />
               ) : (
-                <div className="h-4 w-4 rounded-sm bg-muted" />
+                <Gamepad2 className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
           )}

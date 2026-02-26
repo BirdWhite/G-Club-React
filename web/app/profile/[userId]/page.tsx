@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect, useState, use } from 'react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { redirect } from 'next/navigation';
 import { MobileProfileMenu } from '@/components/mobile/MobileProfileMenu';
 import { DesktopProfilePage } from '@/components/desktop/DesktopProfilePage';
 import type { FullUserProfile } from '@/lib/user';
@@ -63,6 +62,14 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     loadProfile();
   }, [userId, isOwnProfile, currentUserProfile, currentUserLoading, router]);
 
+  // NONE 역할 사용자는 자신의 프로필이 아닌 경우에만 대기 페이지로 리다이렉트 (렌더 중 redirect 시 훅 불일치 방지)
+  const isUnverifiedOtherProfile = targetProfile && (targetProfile as { role?: { name?: string } })?.role?.name === 'NONE' && !isOwnProfile;
+  useEffect(() => {
+    if (isUnverifiedOtherProfile) {
+      router.replace('/auth/pending');
+    }
+  }, [isUnverifiedOtherProfile, router]);
+
   if (isLoading || currentUserLoading) {
     return (
       <div className="flex justify-center items-center py-32">
@@ -82,11 +89,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     return null;
   }
 
-  // NONE 역할 사용자는 자신의 프로필이 아닌 경우에만 대기 페이지 표시
-  if ((targetProfile as { role?: { name?: string } })?.role?.name === 'NONE' && !isOwnProfile) {
-    redirect('/auth/pending');
+  if (isUnverifiedOtherProfile) {
+    return (
+      <div className="flex justify-center items-center py-32">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
-
 
   // 모바일에서는 MobileProfileMenu 컴포넌트 사용 (자신의 프로필일 때만)
   if (isOwnProfile) {

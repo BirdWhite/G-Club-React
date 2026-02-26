@@ -25,9 +25,13 @@ export const ProfileFormFields = ({
           type="text"
           id="name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v.length <= 10) setName(v);
+          }}
+          maxLength={10}
           className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-ring focus:border-ring bg-background text-foreground placeholder-muted-foreground"
-          placeholder="실명을 입력해주세요"
+          placeholder="실명을 입력해주세요 (최대 10자)"
           required
         />
       </div>

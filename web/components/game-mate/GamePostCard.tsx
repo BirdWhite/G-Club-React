@@ -2,13 +2,11 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format, isToday, isTomorrow, differenceInCalendarDays, differenceInYears } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { GamePost } from '@/types/models';
 import { Clock, Users, Edit, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
-// content가 이제 string 타입이므로 텍스트 추출 함수 제거
 
 interface GamePostCardProps {
   post: GamePost;
@@ -28,7 +26,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   const statusInfo = {
     OPEN: { text: '모집 중', className: 'bg-chart-3/20 text-chart-3 group-hover:bg-chart-3/30' },
     IN_PROGRESS: { text: '게임 중', className: 'bg-chart-2/20 text-chart-2 group-hover:bg-chart-2/30' },
-    COMPLETED: { text: '완료 됨', className: 'bg-card-foreground/20 text-card-foreground group-hover:bg-card-foreground/30' },
+    COMPLETED: { text: '종료', className: 'bg-card-foreground/20 text-card-foreground group-hover:bg-card-foreground/30' },
     EXPIRED: { text: '만료 됨', className: 'bg-red-400/20 text-red-400 group-hover:bg-red-400/30' },
   };
   
@@ -45,23 +43,47 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   };
   
   const currentStatus = getDisplayStatus();
-  const plainContent = post.content; // content가 이제 string 타입
+
+  // 1시간 5분(65분) 이내: 상대시간 | 65분 초과: 절대시간 | 오늘: 오늘 HH:mm | 내일: 내일 HH:mm | n일: n일 후/전 HH:mm | 한달+: M월 d일 HH:mm | 1년+: y년 M월 d일 HH:mm
+  const getStartTimeDisplay = () => {
+    if (!isMounted) return '...';
+    const startDate = new Date(post.startTime);
+    const now = new Date();
+    const diffMs = startDate.getTime() - now.getTime();
+    const diffMinutes = Math.abs(diffMs) / (60 * 1000);
+    const timeStr = format(startDate, 'HH:mm', { locale: ko });
+
+    if (diffMinutes <= 65) {
+      return formatDistanceToNow(startDate, { addSuffix: true, locale: ko });
+    }
+    if (differenceInYears(startDate, now) !== 0) {
+      return format(startDate, 'y년 M월 d일 HH:mm', { locale: ko });
+    }
+    const daysDiff = differenceInCalendarDays(startDate, now);
+    if (Math.abs(daysDiff) >= 30) {
+      return format(startDate, 'M월 d일 HH:mm', { locale: ko });
+    }
+    if (isTomorrow(startDate)) {
+      return `내일 ${timeStr}`;
+    }
+    if (isToday(startDate)) {
+      return `오늘 ${timeStr}`;
+    }
+    if (daysDiff > 0) {
+      return `${daysDiff}일 후 ${timeStr}`;
+    }
+    return `${Math.abs(daysDiff)}일 전 ${timeStr}`;
+  };
 
   return (
     <div className="group bg-card overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-border">
       <Link href={`/game-mate/${post.id}`} className="flex-1 flex flex-col p-4">
-        {/* 상단: 시간 및 상태 */}
+        {/* 상단: 상태(왼쪽) | 참여/작성자 아이콘(오른쪽) */}
         <div className="flex items-center justify-between mb-3 text-xs">
-          <div className="flex items-center text-chart-2">
-            <Clock className="h-4 w-4 mr-1 text-chart-2" />
-            <time dateTime={typeof post.startTime === 'string' ? post.startTime : post.startTime.toISOString()}>
-              {isMounted ? formatDistanceToNow(new Date(post.startTime), { 
-                addSuffix: true, 
-                locale: ko 
-              }) : '...'}
-            </time>
-          </div>
-          <div className="flex items-center gap-2">
+          <span className={`px-2 py-1 rounded-full font-semibold transition-colors duration-300 ${currentStatus.className}`}>
+            {currentStatus.text}
+          </span>
+          <div className="flex items-center">
             {isOwner && (
               <Edit className="h-4 w-4 text-green-600" />
             )}
@@ -71,48 +93,40 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
             {!isOwner && !isParticipating && isWaiting && (
               <Clock className="h-4 w-4 text-orange-600" />
             )}
-            <span className={`px-2 py-1 rounded-full font-semibold transition-colors duration-300 ${currentStatus.className}`}>
-              {currentStatus.text}
-            </span>
           </div>
         </div>
 
-        {/* 중단: 게임 정보, 제목, 작성자, 내용 */}
-        <div className="flex items-center min-w-0 mb-2">
-            {post.game?.iconUrl ? (
-              <div className="w-8 h-8 rounded-lg overflow-hidden mr-2 flex-shrink-0">
-                <Image 
-                  src={post.game.iconUrl} 
-                  alt={post.game.name}
-                  width={32}
-                  height={32}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-2 flex-shrink-0">
-                <span className="text-primary font-medium text-xs">
-                  {post.game?.name?.[0] || 'G'}
-                </span>
-              </div>
-            )}
-            <span className="text-sm font-medium text-foreground transition-colors duration-300 truncate">
-              {post.game?.name || '게임'}
-            </span>
-        </div>
-        
-        <div className="flex justify-between items-start gap-2 mb-1">
-            <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-300 truncate flex-1 min-w-0">
+        {/* 글제목·시간(왼쪽) + 게임 아이콘(오른쪽) */}
+        <div className="flex items-center justify-between min-w-0 mb-4">
+          <div className="flex flex-col flex-1 min-w-0 mr-2 text-left">
+            <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-300 truncate">
               {post.title}
             </h3>
-            <div className="text-sm text-card-foreground/70 group-hover:text-card-foreground transition-colors duration-300 flex-shrink-0 mt-1 ml-2">
-              {post.author?.name || '익명'}
+            <div className="flex items-center text-primary text-xs mt-1">
+              <Clock className="h-4 w-4 mr-1 text-primary flex-shrink-0" />
+              <time dateTime={typeof post.startTime === 'string' ? post.startTime : post.startTime.toISOString()}>
+                {getStartTimeDisplay()}
+              </time>
             </div>
+          </div>
+          {post.game?.iconUrl ? (
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
+              <Image 
+                src={post.game.iconUrl} 
+                alt={post.game?.name || '게임'}
+                width={32}
+                height={32}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-primary font-medium text-xs">
+                {post.game?.name?.[0] || 'G'}
+              </span>
+            </div>
+          )}
         </div>
-
-        <p className="text-sm text-card-foreground/80 group-hover:text-card-foreground transition-colors duration-300 truncate mb-4 flex-grow">
-          {plainContent}
-        </p>
 
         {/* 하단: 참여 인원 진행바 */}
           <div className="mt-auto pt-2 border-t border-border">

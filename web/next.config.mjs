@@ -63,6 +63,19 @@ const nextConfig = {
         hostname: 'pnu-ultimate.kro.kr',
         pathname: '/storage/v1/object/public/**',
       },
+      // 로컬 Supabase Storage (개발용)
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '8000',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8000',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
   },
   // 프로덕션 환경에서만 HTTPS 강제

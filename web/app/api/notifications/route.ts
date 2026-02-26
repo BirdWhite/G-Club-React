@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database/supabase/server';
 import prisma from '@/lib/database/prisma';
+import { getDisplayImageUrl } from '@/lib/utils/common';
 
 export async function GET(request: NextRequest) {
   try {
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest) {
         sender: receipt.notification.sender ? {
           userId: receipt.notification.sender.userId,
           nickname: receipt.notification.sender.name,
-          profileImage: receipt.notification.sender.image
+          profileImage: getDisplayImageUrl(receipt.notification.sender.image)
         } : undefined,
         gamePost: receipt.notification.gamePost,
         isRead: receipt.isRead,

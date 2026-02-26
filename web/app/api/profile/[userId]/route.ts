@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database/supabase';
 import { PrismaClient } from '@prisma/client';
+import { getDisplayImageUrl } from '@/lib/utils/common';
 
 const prisma = new PrismaClient();
 
@@ -41,13 +42,13 @@ export async function GET(
       );
     }
 
-    // 민감한 정보는 제외하고 반환
+    // 민감한 정보는 제외하고 반환 (카카오 이미지는 제외)
     const safeProfile = {
       id: profile.id,
       userId: profile.userId,
       name: profile.name,
       birthDate: profile.birthDate,
-      image: profile.image,
+      image: getDisplayImageUrl(profile.image),
       role: profile.role,
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt

@@ -4,7 +4,7 @@ import { useCallback, useState, useEffect } from 'react';
 import { useProfileCheck } from '@/hooks/useProfileCheck';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useProfile } from '@/contexts/ProfileProvider';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { MobileHomePage } from '@/components/mobile/MobileHomePage';
 import { DesktopHomePage } from '@/components/desktop/DesktopHomePage';
 
@@ -39,6 +39,7 @@ function HomeSkeleton() {
 
 export default function Home() {
   // 프로필 체크 로직 - 세션 확인 및 프로필 존재 여부에 따른 리다이렉션
+  const router = useRouter();
   const { isLoading } = useProfileCheck();
   const { profile } = useProfile();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -67,14 +68,16 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  // 검증되지 않은 사용자: roleId가 null이거나 NONE 역할 → 대기 페이지
-  const isUnverified = !profile?.roleId || profile?.role?.name === 'NONE';
-  if (!isLoading && isUnverified) {
-    redirect('/auth/pending');
-  }
+  // 검증되지 않은 사용자: roleId가 null이거나 NONE 역할 → 대기 페이지 (렌더 중 redirect 시 훅 불일치 방지)
+  const isUnverified = profile != null && (!profile.roleId || profile.role?.name === 'NONE');
+  useEffect(() => {
+    if (!isLoading && isUnverified) {
+      router.replace('/auth/pending');
+    }
+  }, [isLoading, isUnverified, router]);
 
-  // 프로필 체크 중: 페이지 레이아웃 즉시 표시, 스켈레톤은 250ms 후에만
-  if (isLoading) {
+  // 프로필 체크 중 또는 검증 대기: 페이지 레이아웃 즉시 표시, 스켈레톤은 250ms 후에만
+  if (isLoading || isUnverified) {
     return (
       <div className="h-full bg-background">
         {showSkeleton ? (
