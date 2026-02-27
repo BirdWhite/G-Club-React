@@ -1,8 +1,10 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import type { GamePost } from '@/types/models';
-import { ArrowLeft, Eye } from 'lucide-react';
+import { ProfileAvatar } from '@/components/common/ProfileAvatar';
+import { ChevronLeft, Eye } from 'lucide-react';
 import { formatAbsoluteTime } from '@/lib/utils/date';
 import { useEffect, useState } from 'react';
 
@@ -41,15 +43,15 @@ export function MobileGamePostHeader({
 
   return (
     <div className="pb-4">
-      {/* 첫 번째 줄: 뒤로가기 버튼과 수정/삭제 버튼 */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => window.history.back()}
-          className="flex items-center gap-2 text-cyber-gray hover:text-foreground transition-colors"
+      {/* 첫 번째 줄: 목록 버튼과 수정/삭제 버튼 */}
+      <div className="flex items-center justify-between mb-6">
+        <Link
+          href="/game-mate"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="text-sm font-medium">뒤로</span>
-        </button>
+          <ChevronLeft className="w-4 h-4" />
+          목록
+        </Link>
         
         {/* 수정/삭제 버튼들 */}
         {isOwner && (
@@ -64,7 +66,7 @@ export function MobileGamePostHeader({
             <button
               onClick={onDelete}
               disabled={loading}
-              className="px-3 py-1.5 text-sm font-medium text-cyber-red bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
+              className="px-3 py-1.5 text-sm font-medium text-destructive bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
             >
               삭제
             </button>
@@ -98,19 +100,39 @@ export function MobileGamePostHeader({
           )
         )}
       </div>
-      {/* 세 번째 줄: 작성자 · 시간 · 조회수 */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>{post.author?.name || '익명'}</span>
-        <span>•</span>
-        {post.createdAt && (
-          <time dateTime={typeof post.createdAt === 'string' ? post.createdAt : post.createdAt.toISOString?.()}>
-            {isMounted ? formatAbsoluteTime(post.createdAt) : '...'}
-          </time>
-        )}
-        <span>•</span>
-        <div className="flex items-center gap-1">
-          <Eye className="w-4 h-4 text-muted-foreground" />
-          <span>{post.viewCount}</span>
+      {/* 세 번째 줄: 작성자(왼쪽) | 시간·조회수(오른쪽) */}
+      <div className="flex items-center justify-between text-sm text-muted-foreground gap-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <ProfileAvatar
+            name={post.author?.name}
+            image={post.author?.image}
+            size="sm"
+          />
+          <span>{post.author?.name || '익명'}</span>
+        </div>
+        <div className="flex items-center gap-4 shrink-0">
+          {post.createdAt && (
+            <>
+              {(() => {
+                const created = new Date(post.createdAt).getTime();
+                const updated = post.updatedAt ? new Date(post.updatedAt).getTime() : created;
+                const wasModified = updated - created > 1000;
+                return wasModified ? (
+                  <span className="text-sm">
+                    (수정됨) {isMounted && post.updatedAt ? formatAbsoluteTime(post.updatedAt) : '...'}
+                  </span>
+                ) : (
+                  <time dateTime={typeof post.createdAt === 'string' ? post.createdAt : post.createdAt.toISOString?.()}>
+                    {isMounted ? formatAbsoluteTime(post.createdAt) : '...'}
+                  </time>
+                );
+              })()}
+            </>
+          )}
+          <div className="flex items-center gap-1">
+            <Eye className="w-4 h-4 text-muted-foreground" />
+            <span>{post.viewCount}</span>
+          </div>
         </div>
       </div>
     </div>

@@ -42,6 +42,7 @@ export function MobileDatePickerModal({
       {/* 헤더 */}
       <div className="flex-shrink-0 bg-background border-b border-border px-4 py-3 flex items-center justify-between">
         <button
+          type="button"
           onClick={onClose}
           className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-accent transition-colors"
         >
@@ -53,6 +54,7 @@ export function MobileDatePickerModal({
         </h2>
         
         <Button
+          type="button"
           onClick={handleConfirm}
           disabled={!selectedDate}
           size="sm"
@@ -88,6 +90,7 @@ export function MobileDatePickerModal({
           
           {/* 오늘로 설정 버튼 */}
           <Button
+            type="button"
             variant="outline"
             onClick={() => {
               const today = new Date();

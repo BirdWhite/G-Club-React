@@ -482,7 +482,7 @@ const getDefaultParticipants = () => {
                             maxLength={2000}
                           />
                           <div className="text-xs text-muted-foreground text-right mt-1">
-                            {field.value?.length || 0}/2000
+                            {field.value?.length ?? 0}/2000
                           </div>
                         </div>
                       </FormControl>

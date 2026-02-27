@@ -157,14 +157,14 @@ export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
                 }`}
               >
                 <div className="flex items-center space-x-4">
-                  <div className={item.isLogout ? 'text-red-400' : 'text-cyber-gray'}>
+                  <div className={item.isLogout ? 'text-destructive' : 'text-cyber-gray'}>
                     {item.icon}
                   </div>
-                  <span className={`font-medium text-base ${item.isLogout ? 'text-red-400' : 'text-cyber-gray'}`}>
+                  <span className={`font-medium text-base ${item.isLogout ? 'text-danger' : 'text-cyber-gray'}`}>
                     {item.label}
                   </span>
                 </div>
-                <svg className={`w-5 h-5 ${item.isLogout ? 'text-red-400' : 'text-cyber-darkgray'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-5 h-5 ${item.isLogout ? 'text-destructive' : 'text-cyber-darkgray'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>

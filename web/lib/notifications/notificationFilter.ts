@@ -274,17 +274,6 @@ export class NotificationFilter {
   }
   
   /**
-   * 좋아하는 게임인지 확인 (배치 처리용)
-   */
-  private static isFavoriteGame(userFavoriteGames: { gameId: string }[], gameId?: string): boolean {
-    if (!gameId) return false;
-    
-    // 현재 게임이 사용자의 관심 게임 목록에 포함되어 있는지 확인
-    return userFavoriteGames.some(fav => fav.gameId === gameId);
-  }
-  
-  
-  /**
    * 여러 사용자의 알림 설정을 일괄 확인 (배치 처리)
    */
   static async filterUsersForNotification(
@@ -390,95 +379,4 @@ export class NotificationFilter {
     }
   }
 
-  /**
-   * 게임 시작 전 알림 설정 확인
-   */
-  private static checkGameBeforeStartSettings(
-    settings: {
-      participatingGameEnabled: boolean;
-      participatingGameBeforeMeetingEnabled: boolean;
-      participatingGameBeforeMeetingMinutes: number;
-      participatingGameBeforeMeetingOnlyFull: boolean;
-      myGamePostEnabled: boolean;
-      myGamePostBeforeMeetingEnabled: boolean;
-      myGamePostBeforeMeetingMinutes: number;
-      myGamePostBeforeMeetingOnlyFull: boolean;
-    },
-    context?: NotificationContext
-  ): boolean {
-    const { isAuthor, minutesBefore, isFull } = context?.additionalData || {};
-    
-    if (isAuthor) {
-      // 작성자 알림 설정 확인
-      if (!settings.myGamePostEnabled || !settings.myGamePostBeforeMeetingEnabled) {
-        return false;
-      }
-      
-      if (settings.myGamePostBeforeMeetingMinutes !== minutesBefore) {
-        return false;
-      }
-      
-      if (settings.myGamePostBeforeMeetingOnlyFull && !isFull) {
-        return false;
-      }
-      
-      return true;
-    } else {
-      // 참여자 알림 설정 확인
-      if (!settings.participatingGameEnabled || !settings.participatingGameBeforeMeetingEnabled) {
-        return false;
-      }
-      
-      if (settings.participatingGameBeforeMeetingMinutes !== minutesBefore) {
-        return false;
-      }
-      
-      if (settings.participatingGameBeforeMeetingOnlyFull && !isFull) {
-        return false;
-      }
-      
-      return true;
-    }
-  }
-
-  /**
-   * 게임 시작 알림 설정 확인
-   */
-  private static checkGameStartSettings(
-    settings: {
-      participatingGameEnabled: boolean;
-      participatingGameMeetingStartEnabled: boolean;
-      participatingGameMeetingStartOnlyFull: boolean;
-      myGamePostEnabled: boolean;
-      myGamePostMeetingStartEnabled: boolean;
-      myGamePostMeetingStartOnlyFull: boolean;
-    },
-    context?: NotificationContext
-  ): boolean {
-    const { isAuthor, isFull } = context?.additionalData || {};
-    
-    if (isAuthor) {
-      // 작성자 알림 설정 확인
-      if (!settings.myGamePostEnabled || !settings.myGamePostMeetingStartEnabled) {
-        return false;
-      }
-      
-      if (settings.myGamePostMeetingStartOnlyFull && !isFull) {
-        return false;
-      }
-      
-      return true;
-    } else {
-      // 참여자 알림 설정 확인
-      if (!settings.participatingGameEnabled || !settings.participatingGameMeetingStartEnabled) {
-        return false;
-      }
-      
-      if (settings.participatingGameMeetingStartOnlyFull && !isFull) {
-        return false;
-      }
-      
-      return true;
-    }
-  }
 }

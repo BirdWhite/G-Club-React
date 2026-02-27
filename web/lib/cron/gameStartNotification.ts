@@ -1,6 +1,8 @@
 import cron from 'node-cron';
 import prisma from '@/lib/database/prisma';
 import { createAndSendNotification } from '@/lib/notifications/notificationService';
+import { NotificationDatabaseType, NotificationCategory, NotificationEventType } from '@/types/models';
+import { NotificationContentGenerator } from '@/lib/notifications/notificationContent';
 
 export function startGameStartNotification() {
   console.log('게임 시작 전 알림 스케줄러를 시작합니다...');
@@ -62,13 +64,12 @@ export function startGameStartNotification() {
         }
       });
       
-      // 1시간 후 시작하는 게임들 조회
       const oneHourGames = await prisma.gamePost.findMany({
         where: {
           status: 'OPEN',
           startTime: {
             gte: oneHourLater,
-            lt: new Date(oneHourLater.getTime() + 5 * 60 * 1000) // 5분 범위
+            lt: new Date(oneHourLater.getTime() + 5 * 60 * 1000)
           }
         },
         select: {
@@ -81,7 +82,8 @@ export function startGameStartNotification() {
           customGameName: true,
           game: {
             select: {
-              name: true
+              name: true,
+              iconUrl: true
             }
           },
           author: {
@@ -98,13 +100,12 @@ export function startGameStartNotification() {
         }
       });
       
-      // 30분 후 시작하는 게임들 조회
       const thirtyMinGames = await prisma.gamePost.findMany({
         where: {
           status: 'OPEN',
           startTime: {
             gte: thirtyMinutesLater,
-            lt: new Date(thirtyMinutesLater.getTime() + 5 * 60 * 1000) // 5분 범위
+            lt: new Date(thirtyMinutesLater.getTime() + 5 * 60 * 1000)
           }
         },
         select: {
@@ -117,7 +118,8 @@ export function startGameStartNotification() {
           customGameName: true,
           game: {
             select: {
-              name: true
+              name: true,
+              iconUrl: true
             }
           },
           author: {
@@ -187,13 +189,12 @@ export function startGameStartNotification() {
         }
       });
       
-      // 10분 후 시작하는 게임들 조회
       const tenMinGames = await prisma.gamePost.findMany({
         where: {
           status: 'OPEN',
           startTime: {
             gte: tenMinutesLater,
-            lt: new Date(tenMinutesLater.getTime() + 5 * 60 * 1000) // 5분 범위
+            lt: new Date(tenMinutesLater.getTime() + 5 * 60 * 1000)
           }
         },
         select: {
@@ -206,7 +207,8 @@ export function startGameStartNotification() {
           customGameName: true,
           game: {
             select: {
-              name: true
+              name: true,
+              iconUrl: true
             }
           },
           author: {
@@ -251,7 +253,7 @@ async function sendBeforeMeetingNotifications(
     authorId: string;
     gameId: string | null;
     customGameName: string | null;
-    game: { name: string } | null;
+    game: { name: string; iconUrl: string | null } | null;
     author: { userId: string; name: string };
     participants: Array<{ userId: string | null }>;
   },
@@ -315,24 +317,29 @@ async function sendBeforeMeetingNotifications(
     
     if (!shouldNotify) continue;
     
-    // 알림 발송
     try {
-      const gameName = game.game?.name || game.customGameName || '게임';
-      const title = `${gameName} 게임 ${minutesBefore}분 전 알림`;
-      const body = isAuthor 
-        ? `내가 작성한 "${game.title}" 게임이 ${minutesBefore}분 후 시작됩니다.`
-        : `참여한 "${game.title}" 게임이 ${minutesBefore}분 후 시작됩니다.`;
-      
+      const category = isAuthor
+        ? NotificationCategory.MY_GAME_POST
+        : NotificationCategory.PARTICIPATING_GAME;
+
+      const content = NotificationContentGenerator.generateNotification(
+        category,
+        NotificationEventType.BEFORE_MEETING,
+        game,
+        { minutesBefore }
+      );
+
       await createAndSendNotification({
-        type: 'GAME_BEFORE_START',
-        title,
-        body,
+        type: NotificationDatabaseType.GAME_POST_BEFORE_START,
+        title: content.title,
+        body: content.body,
+        icon: content.icon,
+        actionUrl: content.actionUrl,
         recipientId: user.userId,
         gamePostId: game.id,
         priority: 'NORMAL',
         data: {
           gameId: game.gameId || undefined,
-          gameName,
           startTime: gameStartTime.toISOString(),
           minutesBefore,
           isFull,

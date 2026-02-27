@@ -262,7 +262,6 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
 
       {/* 댓글 섹션 */}
       <div className="mt-8">
-        <h3 className="text-xl font-bold text-cyber-gray mb-4">댓글</h3>
         <CommentSection gamePostId={currentPost.id} />
       </div>
     </>

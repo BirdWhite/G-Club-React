@@ -279,7 +279,7 @@ export function GameManager() {
                   </button>
                   <button
                     onClick={() => handleDelete(game.id)}
-                    className="text-danger hover:text-danger/90"
+                    className="text-destructive hover:text-destructive/90"
                   >
                     <TrashIcon className="h-5 w-5" />
                   </button>

@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DateTimeDisplay } from '@/components/common/DateTimeDisplay';
 import { formatAbsoluteTime } from '@/lib/utils/date';
-import { Button } from '@/components/ui/button';
 import { RichTextViewer } from '@/components/editor/RichTextViewer';
 import { NoticeCommentSection } from '@/components/notices/NoticeCommentSection';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
@@ -151,37 +150,55 @@ export default function NoticeDetailPage() {
     <div className="bg-background">
       <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
         <div className="w-full max-w-4xl">
-        {/* 뒤로가기 버튼 */}
-        <div className="mb-6">
-          <Link
-            href="/notices"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            공지사항 목록
-          </Link>
-        </div>
+        {/* 목록 · 제목 · 작성자 (게임메이트와 동일한 3줄 구조) */}
+        <div className="pb-4">
+          {/* 첫 번째 줄: 목록(왼쪽) | 수정·삭제(오른쪽) */}
+          <div className="flex items-center justify-between mb-6">
+            <Link
+              href="/notices"
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              목록
+            </Link>
+            {canEditOrDelete() && (
+              <div className="flex items-center gap-2 ml-auto">
+                <Link
+                  href={`/notices/${noticeId}/edit`}
+                  className="px-4 py-2 text-sm font-medium text-foreground bg-transparent hover:underline focus:outline-none transition-colors duration-200"
+                >
+                  수정
+                </Link>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm font-medium text-destructive bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
+                >
+                  {isDeleting ? '삭제 중...' : '삭제'}
+                </button>
+              </div>
+            )}
+          </div>
 
-        {/* 공지사항 헤더 */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
+          {/* 두 번째 줄: 제목 + 배지 */}
+          <div className="flex items-center gap-3 mb-2 min-w-0">
+            <h1 className="text-3xl font-bold text-foreground truncate">
+              {notice.title}
+            </h1>
             {notice.isPinned && (
-              <span className="px-3 py-1 bg-primary text-primary-foreground text-sm rounded-full">
+              <span className="px-3 py-1 bg-primary text-primary-foreground text-sm rounded-full flex-shrink-0">
                 <Pin className="w-3 h-3 inline mr-1" />
                 고정
               </span>
             )}
             {!notice.isPublished && (
-              <span className="px-3 py-1 bg-yellow-500/20 text-yellow-600 text-sm rounded-full">
+              <span className="px-3 py-1 bg-yellow-500/20 text-yellow-600 text-sm rounded-full flex-shrink-0">
                 임시저장
               </span>
             )}
           </div>
-          
-          <h1 className="text-3xl font-bold text-foreground mb-4">
-            {notice.title}
-          </h1>
-          
+
+          {/* 세 번째 줄: 작성자(왼쪽) | 시간·조회수(오른쪽) */}
           <div className="flex items-center justify-between text-sm text-muted-foreground gap-4">
             <div className="flex items-center gap-2 min-w-0">
               <ProfileAvatar 
@@ -192,7 +209,7 @@ export default function NoticeDetailPage() {
               <span>{notice.author.name}</span>
               {notice.lastModifiedBy && notice.lastModifiedBy.userId !== notice.authorId && (
                 <span className="text-xs text-muted-foreground shrink-0">
-                  (수정됨: {notice.lastModifiedBy.name})
+                  (수정: {notice.lastModifiedBy.name})
                 </span>
               )}
             </div>
@@ -205,7 +222,7 @@ export default function NoticeDetailPage() {
                   <div className="flex items-center gap-4">
                     {wasModified ? (
                       <span className="text-sm">
-                        작성됨 {formatAbsoluteTime(notice.createdAt)} · 수정됨 {formatAbsoluteTime(notice.updatedAt)}
+                        (수정됨) {formatAbsoluteTime(notice.updatedAt)}
                       </span>
                     ) : (
                       <DateTimeDisplay 
@@ -225,8 +242,8 @@ export default function NoticeDetailPage() {
           </div>
         </div>
 
-        {/* 공지사항 내용 */}
-        <div className="bg-card p-8 rounded-2xl border border-border">
+        {/* 공지사항 내용 (게임메이트 GamePostContent와 동일한 패딩) */}
+        <div className="bg-card border border-border overflow-hidden rounded-lg px-4 py-5 sm:p-6">
           <RichTextViewer content={notice.content} />
         </div>
 
@@ -247,38 +264,9 @@ export default function NoticeDetailPage() {
             allowComments={notice.allowComments} 
           />
         </div>
-
-        {/* 액션 버튼들 */}
-        <div className="mt-8 flex justify-between">
-          <Link
-            href="/notices"
-            className="h-10 px-4 flex items-center bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
-          >
-            목록으로
-          </Link>
-          
-          {/* 수정/삭제 버튼은 권한이 있는 사용자에게만 표시 */}
-          {canEditOrDelete() && (
-            <div className="flex gap-2">
-              <Link
-                href={`/notices/${noticeId}/edit`}
-                className="h-10 px-4 flex items-center bg-primary text-primary-foreground rounded-lg hover:bg-primary/80 transition-colors"
-              >
-                수정
-              </Link>
-              <Button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                variant="destructive"
-                className="h-10 px-4"
-              >
-                {isDeleting ? '삭제 중...' : '삭제'}
-              </Button>
-            </div>
-          )}
-        </div>
         </div>
       </div>
     </div>
   );
 }
+

@@ -171,7 +171,7 @@ export default function NoticesPage() {
                           {notice.author.name}
                           {notice.lastModifiedBy && notice.lastModifiedBy.userId !== notice.authorId && (
                             <span className="text-muted-foreground">
-                              {' '}(수정됨: {notice.lastModifiedBy.name})
+                              {' '}(수정: {notice.lastModifiedBy.name})
                             </span>
                           )}
                         </span>

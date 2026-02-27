@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import type { Game } from '@/types/models';
 
+const LOADING_DELAY_MS = 250;
+
 interface GameSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,6 +22,7 @@ export function GameSearchModal({
   const [query, setQuery] = useState('');
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoading, setShowLoading] = useState(false);
 
   // 게임 검색
   const searchGames = useCallback(async (searchQuery: string) => {
@@ -58,6 +61,16 @@ export function GameSearchModal({
       setIsLoading(false);
     }
   }, [excludeGameIds]);
+
+  // 로딩이 250ms 이상 걸릴 때만 로딩 UI 표시
+  useEffect(() => {
+    if (!isLoading) {
+      setShowLoading(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowLoading(true), LOADING_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   // 모달이 열릴 때 기본 게임들 로드
   useEffect(() => {
@@ -127,7 +140,7 @@ export function GameSearchModal({
         
         {/* 검색 결과 */}
         <div className="max-h-80 overflow-y-auto">
-          {isLoading ? (
+          {showLoading ? (
             <div className="p-4 text-center">
               <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
               <p className="mt-2 text-muted-foreground">검색 중...</p>

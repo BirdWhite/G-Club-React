@@ -1,6 +1,8 @@
 import cron from 'node-cron';
 import prisma from '@/lib/database/prisma';
 import { createAndSendNotification } from '@/lib/notifications/notificationService';
+import { NotificationDatabaseType, NotificationCategory, NotificationEventType } from '@/types/models';
+import { NotificationContentGenerator } from '@/lib/notifications/notificationContent';
 
 export function startGameStartTimeNotification() {
   console.log('게임 시작 시간 알림 스케줄러를 시작합니다...');
@@ -37,7 +39,6 @@ export function startGameStartTimeNotification() {
         }
       });
       
-      // 현재 시간부터 5분 후까지 시작하는 게임들 조회
       const startingGames = await prisma.gamePost.findMany({
         where: {
           status: 'OPEN',
@@ -56,7 +57,8 @@ export function startGameStartTimeNotification() {
           customGameName: true,
           game: {
             select: {
-              name: true
+              name: true,
+              iconUrl: true
             }
           },
           author: {
@@ -101,7 +103,7 @@ async function sendGameStartNotifications(
     authorId: string;
     gameId: string | null;
     customGameName: string | null;
-    game: { name: string } | null;
+    game: { name: string; iconUrl: string | null } | null;
     author: { userId: string; name: string };
     participants: Array<{ userId: string | null }>;
   },
@@ -160,24 +162,28 @@ async function sendGameStartNotifications(
     
     if (!shouldNotify) continue;
     
-    // 알림 발송
     try {
-      const gameName = game.game?.name || game.customGameName || '게임';
-      const title = `${gameName} 게임 시작!`;
-      const body = isAuthor 
-        ? `내가 작성한 "${game.title}" 게임이 시작되었습니다!`
-        : `참여한 "${game.title}" 게임이 시작되었습니다!`;
-      
+      const category = isAuthor
+        ? NotificationCategory.MY_GAME_POST
+        : NotificationCategory.PARTICIPATING_GAME;
+
+      const content = NotificationContentGenerator.generateNotification(
+        category,
+        NotificationEventType.MEETING_START,
+        game,
+      );
+
       await createAndSendNotification({
-        type: 'GAME_START',
-        title,
-        body,
+        type: NotificationDatabaseType.GAME_POST_START,
+        title: content.title,
+        body: content.body,
+        icon: content.icon,
+        actionUrl: content.actionUrl,
         recipientId: user.userId,
         gamePostId: game.id,
         priority: 'HIGH',
         data: {
           gameId: game.gameId || undefined,
-          gameName,
           startTime: gameStartTime.toISOString(),
           isFull,
           isAuthor

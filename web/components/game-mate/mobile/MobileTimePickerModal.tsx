@@ -99,6 +99,7 @@ export function MobileTimePickerModal({
       {/* 헤더 */}
       <div className="flex-shrink-0 bg-background border-b border-border px-4 py-3 flex items-center justify-between">
         <button
+          type="button"
           onClick={onClose}
           className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-accent transition-colors"
         >
@@ -110,6 +111,7 @@ export function MobileTimePickerModal({
         </h2>
         
         <Button
+          type="button"
           onClick={handleConfirm}
           size="sm"
           className="px-4 py-2"
@@ -132,6 +134,7 @@ export function MobileTimePickerModal({
         {/* 화살표와 휠 피커 */}
         <div className="flex items-center justify-center gap-4 mb-8">
           <button
+            type="button"
             onClick={decreaseTime}
             className="w-14 h-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-lg"
           >
@@ -196,6 +199,7 @@ export function MobileTimePickerModal({
           </div>
 
           <button
+            type="button"
             onClick={increaseTime}
             className="w-14 h-14 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-lg"
           >
@@ -209,6 +213,7 @@ export function MobileTimePickerModal({
 
         {/* 현재 시간 버튼 */}
         <Button
+          type="button"
           variant="outline"
           onClick={handleCurrentTime}
           className="w-full max-w-xs bg-background border-2 border-primary/30 hover:bg-primary/10 text-foreground font-semibold"

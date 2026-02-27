@@ -1084,10 +1084,21 @@ export function useNoticeListSubscription() {
   };
 }
 
+// 알림 실시간 구독 훅 옵션
+export interface UseNotificationSubscriptionOptions {
+  /** 새 알림이 추가될 때 호출되는 콜백 (알림 목록 갱신 등) */
+  onNewNotification?: () => void;
+}
+
 // 알림 실시간 구독 훅
-export function useNotificationSubscription(userId: string | null) {
+export function useNotificationSubscription(
+  userId: string | null,
+  options?: UseNotificationSubscriptionOptions
+) {
   const [unreadCount, setUnreadCount] = useState(0);
   const supabase = useMemo(() => createClient(), []);
+  const onNewNotificationRef = useRef(options?.onNewNotification);
+  onNewNotificationRef.current = options?.onNewNotification;
 
   // 읽지 않은 알림 수 가져오기
   const fetchUnreadCount = useCallback(async () => {
@@ -1131,6 +1142,8 @@ export function useNotificationSubscription(userId: string | null) {
           console.log('새 알림 수신:', payload);
           // 새 알림이 추가되면 읽지 않은 수 증가
           setUnreadCount(prev => prev + 1);
+          // 알림 목록 갱신 콜백 호출 (알림 페이지 등)
+          onNewNotificationRef.current?.();
         }
       )
       .on(

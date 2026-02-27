@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { GamePostCard } from '@/components/game-mate/GamePostCard';
 import { ChevronRight, Gamepad2 } from 'lucide-react';
 import { useGamePostListSubscription } from '@/hooks/useRealtimeSubscription';
+import { useProfile } from '@/contexts/ProfileProvider';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -11,6 +12,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
 export function GamePostPreview() {
+  const { profile } = useProfile();
   // 실시간 구독 훅 사용 (모집 중인 글만)
   const { posts: allPosts, loading: isLoading } = useGamePostListSubscription({ 
     status: 'OPEN',
@@ -84,7 +86,7 @@ export function GamePostPreview() {
           >
             {posts.map((post) => (
               <SwiperSlide key={post.id} className="!w-full md:!w-[calc((100%-1.5rem)/2)] lg:!w-[calc((100%-3rem)/3)] flex-shrink-0">
-                <GamePostCard post={post} />
+                <GamePostCard post={post} currentUserId={profile?.userId} />
               </SwiperSlide>
             ))}
           </Swiper>

@@ -16,7 +16,7 @@ export function GamePostContent({ post }: GamePostContentProps) {
   }, []);
   
   return (
-    <div className="bg-card border border-border shadow-lg overflow-hidden rounded-lg">
+    <div className="bg-card border border-border overflow-hidden rounded-lg">
       <div className="px-4 py-5 sm:p-6">
         {/* 게임 시작 시간 */}
         {post.startTime && (

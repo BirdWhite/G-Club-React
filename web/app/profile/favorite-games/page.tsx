@@ -123,11 +123,11 @@ export default function FavoriteGamesPage() {
             </div>
           </div>
           
-          {/* 게임 추가 버튼 */}
+          {/* 게임 추가 버튼 - 데스크톱 */}
           <button
             onClick={() => setShowGameSearch(true)}
             disabled={isUpdating}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2 w-full sm:w-auto justify-center"
+            className="hidden sm:flex px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 items-center gap-2 justify-center"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -158,7 +158,7 @@ export default function FavoriteGamesPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
                 <p className="text-lg font-medium mb-2 text-foreground">아직 관심 게임이 없습니다</p>
-                <p className="text-sm mb-4">위의 &apos;게임 추가&apos; 버튼을 클릭하여 관심 게임을 추가해보세요!</p>
+                <p className="text-sm mb-4">게임 추가 버튼을 클릭하여 관심 게임을 추가해보세요!</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -167,8 +167,32 @@ export default function FavoriteGamesPage() {
                     key={favoriteGame.id}
                     className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                        {/* 순서 변경 버튼들 - 제일 왼쪽 */}
+                        <div className="flex flex-col gap-0.5 sm:gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => moveGameUp(index)}
+                            disabled={isUpdating || index === 0}
+                            className="p-2 sm:p-1 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/30 disabled:cursor-not-allowed transition-colors rounded-lg hover:bg-muted/50 active:bg-muted"
+                            title="위로 이동"
+                          >
+                            <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => moveGameDown(index)}
+                            disabled={isUpdating || index === favoriteGames.length - 1}
+                            className="p-2 sm:p-1 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/30 disabled:cursor-not-allowed transition-colors rounded-lg hover:bg-muted/50 active:bg-muted"
+                            title="아래로 이동"
+                          >
+                            <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+
                         {/* 순서 번호 */}
                         <div className="flex-shrink-0 w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-medium">
                           {index + 1}
@@ -209,43 +233,17 @@ export default function FavoriteGamesPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
-                        {/* 순서 변경 버튼들 */}
-                        <div className="flex flex-col space-y-1">
-                          <button
-                            onClick={() => moveGameUp(index)}
-                            disabled={isUpdating || index === 0}
-                            className="p-1 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/30 disabled:cursor-not-allowed transition-colors"
-                            title="위로 이동"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => moveGameDown(index)}
-                            disabled={isUpdating || index === favoriteGames.length - 1}
-                            className="p-1 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/30 disabled:cursor-not-allowed transition-colors"
-                            title="아래로 이동"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-                        </div>
-
-                        {/* 삭제 버튼 */}
-                        <button
-                          onClick={() => handleRemoveGame(favoriteGame.id)}
-                          disabled={isUpdating}
-                          className="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="관심 게임에서 제거"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
+                      {/* 삭제 버튼 */}
+                      <button
+                        onClick={() => handleRemoveGame(favoriteGame.id)}
+                        disabled={isUpdating}
+                        className="flex-shrink-0 p-2.5 sm:p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="관심 게임에서 제거"
+                      >
+                        <svg className="w-6 h-6 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -265,7 +263,7 @@ export default function FavoriteGamesPage() {
                   <div>
                     <h4 className="text-sm font-medium text-foreground">순서 변경</h4>
                     <p className="text-sm text-muted-foreground mt-1">
-                      각 게임 항목의 오른쪽 위/아래 화살표 버튼을 클릭하여 순서를 변경할 수 있습니다.
+                      각 게임 항목의 왼쪽 위/아래 화살표 버튼을 클릭하여 순서를 변경할 수 있습니다.
                     </p>
                   </div>
                 </div>
@@ -274,6 +272,18 @@ export default function FavoriteGamesPage() {
             </div>
           )}
       </div>
+
+      {/* 게임 추가 FAB - 모바일 전용 (오른쪽 아래 원형 플러스 버튼) */}
+      <button
+        onClick={() => setShowGameSearch(true)}
+        disabled={isUpdating}
+        className="sm:hidden fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center"
+        aria-label="게임 추가"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
 
       {/* 게임 검색 모달 */}
       <GameSearchModal

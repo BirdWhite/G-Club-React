@@ -136,7 +136,7 @@ export function ParticipantManager({
                       size="sm"
                       onClick={() => removeParticipant(index)}
                       disabled={disabled}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                     >
                       <X className="h-4 w-4" />
                     </Button>

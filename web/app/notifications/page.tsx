@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getDisplayImageUrl } from '@/lib/utils/common';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DateTimeDisplay } from '@/components/common/DateTimeDisplay';
 import { Bell, Megaphone } from 'lucide-react';
+import { useProfile } from '@/contexts/ProfileProvider';
+import { useNotificationSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface Notification {
   id: string;
@@ -16,18 +17,6 @@ interface Notification {
   icon?: string;
   actionUrl?: string;
   type: string;
-  sender?: {
-    userId: string;
-    nickname: string;
-    profileImage?: string;
-  };
-  gamePost?: {
-    id: string;
-    title: string;
-    game: {
-      name: string;
-    };
-  };
   isRead: boolean;
   readAt?: string;
   isClicked: boolean;
@@ -65,6 +54,7 @@ function NotificationSkeleton() {
 }
 
 export default function NotificationsPage() {
+  const { profile } = useProfile();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -76,6 +66,16 @@ export default function NotificationsPage() {
   const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(false); // 로딩이 250ms 이상일 때만 스켈레톤 표시
   const observerTarget = useRef<HTMLDivElement>(null);
+  const showUnreadOnlyRef = useRef(showUnreadOnly);
+  showUnreadOnlyRef.current = showUnreadOnly;
+
+  // 실시간 알림 구독: 새 알림 시 목록 갱신
+  const handleNewNotification = useCallback(() => {
+    fetchNotifications(1, showUnreadOnlyRef.current, false);
+  }, []);
+  useNotificationSubscription(profile?.userId ?? null, {
+    onNewNotification: handleNewNotification,
+  });
 
   // 지연 스켈레톤: 로딩이 250ms 이상 걸릴 때만 스켈레톤 표시
   useEffect(() => {
@@ -369,43 +369,6 @@ export default function NotificationsPage() {
                       <p className={`text-sm mb-3 ${notification.isRead ? 'text-muted-foreground' : 'text-foreground'}`}>
                         {notification.body}
                       </p>
-
-                      {/* 발송자 정보 */}
-                      {notification.sender && (
-                        <div className="flex items-center gap-2 mb-3">
-                          {(() => {
-                            const img = getDisplayImageUrl(notification.sender.profileImage);
-                            return img ? (
-                            <Image
-                              src={img}
-                              alt={notification.sender.nickname}
-                              width={24}
-                              height={24}
-                              className="w-6 h-6 rounded-full object-cover"
-                            />
-                            ) : (
-                            <div className="w-6 h-6 bg-background rounded-full flex items-center justify-center text-xs text-muted-foreground border border-border">
-                              {notification.sender.nickname.charAt(0)}
-                            </div>
-                          );
-                          })()}
-                          <span className="text-xs text-muted-foreground">
-                            {notification.sender.nickname}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* 게임 포스트 정보 */}
-                      {notification.gamePost && (
-                        <div className="mb-3 p-3 bg-muted rounded-lg">
-                          <p className="text-sm font-medium text-foreground">
-                            {notification.gamePost.game.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {notification.gamePost.title}
-                          </p>
-                        </div>
-                      )}
 
                       {/* 시간 정보 */}
                       <div className="flex items-center justify-between">

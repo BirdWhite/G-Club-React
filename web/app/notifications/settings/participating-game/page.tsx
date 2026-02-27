@@ -141,7 +141,7 @@ export default function ParticipatingGameNotificationSettings() {
           {/* 모임 참여 취소 알림 */}
           <div className="flex items-center justify-between p-3 sm:p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors gap-3">
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-              <HeartCrack className="w-5 h-5 sm:w-6 sm:h-6 text-red-500 flex-shrink-0" />
+              <HeartCrack className="w-5 h-5 sm:w-6 sm:h-6 text-destructive flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm sm:text-base text-foreground">모임 참여 취소 알림</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground">누군가가 모임 참여를 취소할 때마다 알림을 받습니다</p>
@@ -181,7 +181,7 @@ export default function ParticipatingGameNotificationSettings() {
           {/* 게임메이트 취소 알림 */}
           <div className="flex items-center justify-between p-3 sm:p-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors gap-3">
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-              <X className="w-5 h-5 sm:w-6 sm:h-6 text-red-500 flex-shrink-0" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6 text-destructive flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm sm:text-base text-foreground">게임메이트 취소 알림</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground">참여한 게임메이트가 취소될 때 알림을 받습니다</p>

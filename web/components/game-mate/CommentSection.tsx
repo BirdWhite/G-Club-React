@@ -1,19 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { formatRelativeTime } from '@/lib/utils/date';
 import { useCommentSubscription } from '@/hooks/useRealtimeSubscription';
-// import type { Comment } from '@/types/models'; // 현재 미사용
+import { Send } from 'lucide-react';
 
 interface CommentSectionProps {
   gamePostId: string;
 }
-
-// Comment 타입을 사용하므로 별도 인터페이스 불필요
 
 export function CommentSection({ gamePostId }: CommentSectionProps) {
   const { profile } = useProfile();
@@ -25,7 +21,6 @@ export function CommentSection({ gamePostId }: CommentSectionProps) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
 
   // 댓글 작성
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -82,70 +77,65 @@ export function CommentSection({ gamePostId }: CommentSectionProps) {
 
   return (
     <div className="space-y-4">
+      <h3 className="text-lg font-semibold text-foreground">댓글 ({comments.length})</h3>
+
       {/* 댓글 작성 폼 */}
-      <form onSubmit={handleSubmitComment} className="flex gap-2">
-        <Input
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="댓글을 입력하세요..."
-          maxLength={500}
-          className="flex-1 bg-input border-border text-foreground placeholder:text-muted-foreground h-10"
-        />
-        <Button 
-          type="submit" 
-          disabled={isSubmitting || !newComment.trim()}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-10"
-        >
-          {isSubmitting ? '작성 중...' : '작성'}
-        </Button>
-      </form>
+      {profile && (
+        <form onSubmit={handleSubmitComment} className="flex gap-2">
+          <input
+            type="text"
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="댓글을 입력하세요..."
+            className="flex-1 min-w-0 px-3 py-2.5 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            maxLength={500}
+          />
+          <button
+            type="submit"
+            disabled={!newComment.trim() || isSubmitting}
+            className="w-11 h-11 flex items-center justify-center bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+            aria-label="댓글 작성"
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </form>
+      )}
 
       {/* 댓글 목록 */}
       <div className="space-y-3">
         {isLoading ? (
-          <div className="text-center py-4 text-cyber-gray">
+          <div className="text-center py-4 text-muted-foreground">
             댓글을 불러오는 중...
           </div>
         ) : comments.length === 0 ? (
-          <div className="text-center py-4 text-cyber-gray">
-            아직 댓글이 없습니다. 첫 번째 댓글을 작성해보세요!
+          <div className="text-center py-4 text-muted-foreground">
+            아직 댓글이 없습니다.
           </div>
         ) : (
           comments.map((comment) => (
-            <div key={comment.id} className="flex gap-3 p-4 bg-cyber-dark/50 border border-cyber-gray/30 rounded-lg hover:bg-cyber-dark/70 transition-colors">
+            <div key={comment.id} className="flex gap-3 py-3 border-b border-border/50 last:border-b-0">
               <ProfileAvatar
                 name={comment.author.name}
                 image={comment.author.image}
                 size="sm"
               />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm text-foreground">
-                      {comment.author.name}
-                    </span>
-                    <time 
-                      dateTime={typeof comment.createdAt === 'string' ? comment.createdAt : comment.createdAt.toISOString()}
-                      className="text-xs text-foreground/70"
-                    >
-                      {isMounted ? formatRelativeTime(comment.createdAt) : '...'}
-                    </time>
-                  </div>
-                  {!comment.isDeleted && profile && (profile.userId === comment.authorId || 
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-foreground">{comment.author.name}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {isMounted ? formatRelativeTime(comment.createdAt) : '...'}
+                  </span>
+                  {profile && !comment.isDeleted && (profile.userId === comment.authorId ||
                     ['ADMIN', 'SUPER_ADMIN'].includes(profile.role?.name || '')) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <button
                       onClick={() => handleDeleteComment(comment.id)}
-                      className="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 h-auto"
+                      className="text-sm text-destructive hover:text-destructive/80 transition-colors ml-auto"
                     >
                       삭제
-                    </Button>
+                    </button>
                   )}
                 </div>
-                <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
-                  {comment.content}
-                </p>
+                <p className="text-foreground whitespace-pre-wrap leading-relaxed">{comment.content}</p>
               </div>
             </div>
           ))

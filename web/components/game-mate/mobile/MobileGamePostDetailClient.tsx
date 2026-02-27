@@ -175,7 +175,7 @@ export function MobileGamePostDetailClient({ initialPost, userId }: MobileGamePo
   const isWaiting = currentPost.isWaiting || false;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-8 sm:px-10 lg:px-12 py-8">
       <MobileGamePostHeader
         post={currentPost}
         onDelete={handleDeletePost}
@@ -266,7 +266,6 @@ export function MobileGamePostDetailClient({ initialPost, userId }: MobileGamePo
 
       {/* 댓글 섹션 */}
       <div className="mt-8">
-        <h3 className="text-xl font-bold text-cyber-gray mb-4">댓글</h3>
         <CommentSection gamePostId={currentPost.id} />
       </div>
     </div>

@@ -166,7 +166,7 @@ export function ActionButtons({
           <button
             onClick={onCloseRecruitment}
             disabled={loading}
-            className={`${commonButtonStyles} text-red-500 border-red-500 hover:text-red-600 hover:border-red-600`}
+            className={`${commonButtonStyles} text-destructive border-destructive hover:text-destructive/90 hover:border-destructive/90`}
           >
             <XCircle className="mr-2 h-5 w-5" />
             {loading ? '처리 중...' : '모집 취소'}

@@ -391,71 +391,6 @@ export const GamePostNotifications = {
     });
   },
 
-  // 게임 참여 승인 알림
-  async notifyParticipantJoined(gamePostId: string, participantId: string) {
-    const gamePost = await prisma.gamePost.findUnique({
-      where: { id: gamePostId },
-      include: {
-        game: true,
-        participants: {
-          where: { userId: participantId },
-          include: { user: true }
-        }
-      }
-    });
-
-    if (!gamePost || !gamePost.participants[0]) return;
-
-    const participant = gamePost.participants[0];
-
-    // NotificationContentGenerator를 사용하여 알림 콘텐츠 생성
-    const notificationContent = NotificationContentGenerator.generateNotification(
-      NotificationCategory.PARTICIPATING_GAME,
-      NotificationEventType.MEMBER_JOIN,
-      gamePost,
-      { participantName: participant.user?.name || participant.guestName || '알 수 없음' }
-    );
-
-    return createAndSendNotification({
-      type: 'GAME_POST_PARTICIPANT_JOINED',
-      title: notificationContent.title,
-      body: notificationContent.body,
-      icon: notificationContent.icon,
-      actionUrl: notificationContent.actionUrl,
-      priority: 'NORMAL',
-      recipientId: gamePost.authorId,
-      gamePostId
-    });
-  },
-
-  // 게임 시작 임박 알림
-  async notifyGameStartingSoon(gamePostId: string) {
-    const gamePost = await prisma.gamePost.findUnique({
-      where: { id: gamePostId },
-      include: {
-        game: true,
-        participants: true
-      }
-    });
-
-    if (!gamePost) return;
-
-
-    return createAndSendNotification({
-      type: 'GAME_POST_STARTING_SOON',
-      title: `게임 시작 임박!`,
-      body: `${gamePost.game?.name || gamePost.customGameName} 게임이 곧 시작됩니다.`,
-      icon: gamePost.game?.iconUrl || undefined,
-      actionUrl: `/game-mate/${gamePostId}`,
-      priority: 'HIGH',
-      senderId: gamePost.authorId,
-      isGroupSend: true,
-      groupType: 'GAME_PARTICIPANTS',
-      gamePostId
-    });
-  },
-
-  // 게임메이트 취소 알림
   async sendGamePostCancelledNotification(
     participantUserIds: string[],
     context: {
@@ -467,31 +402,35 @@ export const GamePostNotifications = {
   ) {
     if (participantUserIds.length === 0) return;
 
-    // 게임 정보 조회하여 아이콘 가져오기
     const gamePost = await prisma.gamePost.findUnique({
       where: { id: context.gamePostId },
       include: {
-        game: {
-          select: {
-            iconUrl: true
-          }
-        }
+        game: { select: { name: true, iconUrl: true } }
       }
     });
 
+    if (!gamePost) return;
+
+    const content = NotificationContentGenerator.generateNotification(
+      NotificationCategory.PARTICIPATING_GAME,
+      NotificationEventType.GAME_CANCELLED,
+      gamePost,
+      { authorName: context.authorName }
+    );
+
     return createAndSendNotification({
-      type: 'PARTICIPATING_GAME_UPDATE',
-      title: `게임메이트가 취소되었습니다`,
-      body: `${context.authorName}님이 "${context.title}" 게임메이트를 취소했습니다.`,
-      icon: gamePost?.game?.iconUrl || '/icons/maskable_icon_x512.png',
-      actionUrl: '/game-mate',
+      type: NotificationDatabaseType.GAME_POST_CANCELLED,
+      title: content.title,
+      body: content.body,
+      icon: content.icon,
+      actionUrl: content.actionUrl,
       priority: 'HIGH',
       isGroupSend: true,
       groupType: 'SPECIFIC_USERS',
       groupFilter: { userIds: participantUserIds },
       gamePostId: context.gamePostId,
       context: {
-        gameId: gamePost?.gameId || undefined,
+        gameId: gamePost.gameId || undefined,
         eventType: 'GAME_CANCELLED'
       }
     });
@@ -513,10 +452,9 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
-    // 작성자의 알림 설정 확인
     const shouldSend = await NotificationFilter.shouldSendNotification(
       gamePost.authorId,
-      'MY_GAME_POST_UPDATE',
+      NotificationCategory.MY_GAME_POST,
       {
         gameId: gamePost.gameId || undefined,
         eventType: 'MEMBER_JOIN'
@@ -536,7 +474,7 @@ export const GamePostNotifications = {
     );
 
     return createAndSendNotification({
-      type: 'MY_GAME_POST_UPDATE',
+      type: NotificationDatabaseType.GAME_POST_MEMBER_JOIN,
       title: content.title,
       body: content.body,
       icon: content.icon,
@@ -570,10 +508,9 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
-    // 다른 참여자들의 알림 설정 확인
     const filteredParticipantIds = await NotificationFilter.filterUsersForNotification(
       otherParticipantIds,
-      'PARTICIPATING_GAME_UPDATE',
+      NotificationCategory.PARTICIPATING_GAME,
       {
         gameId: gamePost.gameId || undefined,
         eventType: 'MEMBER_JOIN'
@@ -593,7 +530,7 @@ export const GamePostNotifications = {
     );
 
     return createAndSendNotification({
-      type: 'PARTICIPATING_GAME_UPDATE',
+      type: NotificationDatabaseType.GAME_POST_MEMBER_JOIN,
       title: content.title,
       body: content.body,
       icon: content.icon,
@@ -627,10 +564,9 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
-    // 참여자들의 알림 설정 확인
     const filteredParticipantIds = await NotificationFilter.filterUsersForNotification(
       participantIds,
-      'PARTICIPATING_GAME_UPDATE',
+      NotificationCategory.PARTICIPATING_GAME,
       {
         gameId: gamePost.gameId || undefined,
         eventType: 'GAME_FULL'
@@ -649,7 +585,7 @@ export const GamePostNotifications = {
     );
 
     return createAndSendNotification({
-      type: 'PARTICIPATING_GAME_UPDATE',
+      type: NotificationDatabaseType.GAME_POST_FULL,
       title: content.title,
       body: content.body,
       icon: content.icon,
@@ -682,10 +618,9 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
-    // 작성자의 알림 설정 확인
     const shouldSend = await NotificationFilter.shouldSendNotification(
       gamePost.authorId,
-      'MY_GAME_POST_UPDATE',
+      NotificationCategory.MY_GAME_POST,
       {
         gameId: gamePost.gameId || undefined,
         eventType: 'MEMBER_LEAVE'
@@ -705,7 +640,7 @@ export const GamePostNotifications = {
     );
 
     return createAndSendNotification({
-      type: 'MY_GAME_POST_UPDATE',
+      type: NotificationDatabaseType.GAME_POST_MEMBER_LEAVE,
       title: content.title,
       body: content.body,
       icon: content.icon,
@@ -739,10 +674,9 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
-    // 다른 참여자들의 알림 설정 확인
     const filteredParticipantIds = await NotificationFilter.filterUsersForNotification(
       otherParticipantIds,
-      'PARTICIPATING_GAME_UPDATE',
+      NotificationCategory.PARTICIPATING_GAME,
       {
         gameId: gamePost.gameId || undefined,
         eventType: 'MEMBER_LEAVE'
@@ -762,7 +696,7 @@ export const GamePostNotifications = {
     );
 
     return createAndSendNotification({
-      type: 'PARTICIPATING_GAME_UPDATE',
+      type: NotificationDatabaseType.GAME_POST_MEMBER_LEAVE,
       title: content.title,
       body: content.body,
       icon: content.icon,
@@ -794,10 +728,9 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
-    // 승격된 사용자의 알림 설정 확인
     const shouldSend = await NotificationFilter.shouldSendNotification(
       promotedUserId,
-      'WAITING_LIST_UPDATE',
+      NotificationCategory.WAITING_LIST,
       {
         gameId: gamePost.gameId || undefined,
         eventType: 'PROMOTED'
@@ -816,7 +749,7 @@ export const GamePostNotifications = {
     );
 
     return createAndSendNotification({
-      type: 'WAITING_LIST_UPDATE',
+      type: NotificationDatabaseType.WAITING_LIST_PROMOTED,
       title: content.title,
       body: content.body,
       icon: content.icon,
@@ -831,7 +764,6 @@ export const GamePostNotifications = {
     });
   },
 
-  // 게임 시간 변경 알림
   async sendGameTimeChangedNotification(
     recipientIds: string[],
     data: {
@@ -843,18 +775,46 @@ export const GamePostNotifications = {
       newStartTime: Date;
     }
   ) {
-    const { gamePostId, gameName, oldStartTime, newStartTime } = data;
+    const { gamePostId, oldStartTime, newStartTime } = data;
 
-    // 각 수신자에 대해 알림 설정 확인 및 발송
+    const gamePost = await prisma.gamePost.findUnique({
+      where: { id: gamePostId },
+      include: {
+        game: { select: { name: true, iconUrl: true } }
+      }
+    });
+
+    if (!gamePost) return;
+
+    const formatTime = (date: Date) => {
+      return date.toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        weekday: 'short'
+      });
+    };
+
+    const content = NotificationContentGenerator.generateNotification(
+      NotificationCategory.PARTICIPATING_GAME,
+      NotificationEventType.TIME_CHANGE,
+      gamePost,
+      {
+        oldTime: formatTime(oldStartTime),
+        newTime: formatTime(newStartTime)
+      }
+    );
+
     for (const recipientId of recipientIds) {
       try {
-        // 알림 설정 확인
         const shouldSend = await NotificationFilter.shouldSendNotification(
           recipientId,
-          'GAME_TIME_CHANGED',
+          NotificationCategory.PARTICIPATING_GAME,
           {
-            gameId: undefined, // 게임 ID는 별도로 전달되지 않음
-            eventType: 'TIME_CHANGED'
+            gameId: gamePost.gameId || undefined,
+            eventType: 'TIME_CHANGE'
           }
         );
 
@@ -863,30 +823,8 @@ export const GamePostNotifications = {
           continue;
         }
 
-        // 시간 포맷팅
-        const formatTime = (date: Date) => {
-          return date.toLocaleString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            weekday: 'short'
-          });
-        };
-
-        const oldTimeStr = formatTime(oldStartTime);
-        const newTimeStr = formatTime(newStartTime);
-
-        const content = {
-          title: '⏰ 게임 시간이 변경되었습니다',
-          body: `${gameName} 게임 시간이 변경되었습니다.\n이전: ${oldTimeStr}\n변경: ${newTimeStr}`,
-          icon: '/icons/game-icon.png',
-          actionUrl: `/game-mate/${gamePostId}`
-        };
-
         await createAndSendNotification({
-          type: 'GAME_TIME_CHANGED',
+          type: NotificationDatabaseType.GAME_POST_TIME_CHANGE,
           title: content.title,
           body: content.body,
           icon: content.icon,
@@ -895,18 +833,9 @@ export const GamePostNotifications = {
           recipientId,
           gamePostId,
           context: {
-            gameId: undefined,
-            eventType: 'TIME_CHANGED'
+            gameId: gamePost.gameId || undefined,
+            eventType: 'TIME_CHANGE'
           }
-        });
-
-        // 푸시 알림도 발송
-        await sendPushNotificationInternal({
-          userId: recipientId,
-          title: content.title,
-          body: content.body,
-          url: content.actionUrl,
-          tag: 'game-time-changed'
         });
 
       } catch (error) {
