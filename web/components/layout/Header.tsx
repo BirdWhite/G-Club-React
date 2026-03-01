@@ -135,35 +135,6 @@ export function Header() {
     };
   }, [fetchUser, router, supabase.auth, pathname]);
   
-  // 프로필 메뉴 열림 상태
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  
-  // 드롭다운 외부 클릭 시 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (isProfileMenuOpen && !target.closest('.profile-dropdown')) {
-        setIsProfileMenuOpen(false);
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isProfileMenuOpen) {
-        setIsProfileMenuOpen(false);
-      }
-    };
-
-    if (isProfileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isProfileMenuOpen]);
-  
   // 프로필 업데이트 이벤트 리스너
   useEffect(() => {
     if (!session?.user) return;
@@ -186,51 +157,6 @@ export function Header() {
     };
   }, [session?.user]);
 
-  
-  // 로그아웃 처리
-  const handleSignOut = async () => {
-    try {
-      // 먼저 세션 확인
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        // 이미 로그아웃된 상태
-        window.location.href = '/';
-        return;
-      }
-      
-      // Supabase 로그아웃
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      // 카카오 OAuth 세션도 로그아웃 (카카오 계정이면)
-      if (session.user?.app_metadata?.provider === 'kakao') {
-        try {
-          // 카카오 로그아웃 URL로 리다이렉트
-          const kakaoLogoutUrl = 'https://kauth.kakao.com/oauth/logout?client_id=' + 
-            process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID + 
-            '&logout_redirect_uri=' + encodeURIComponent(window.location.origin + '/auth/login');
-          
-          // 카카오 로그아웃 후 로그인 페이지로 리다이렉트
-          window.location.href = kakaoLogoutUrl;
-          return;
-        } catch (kakaoError) {
-          console.error('카카오 로그아웃 중 오류:', kakaoError);
-          // 카카오 로그아웃 실패해도 계속 진행
-        }
-      }
-      
-      // 상태 초기화
-      setSession(null);
-      
-      // 홈페이지로 리다이렉트 (새로고침하여 모든 상태 초기화)
-      window.location.href = '/';
-    } catch (error) {
-      console.error('로그아웃 중 오류 발생:', error);
-      // 오류가 발생해도 강제로 로그아웃 처리
-      setSession(null);
-      window.location.href = '/';
-    }
-  };
   
   return (
     <>
@@ -330,10 +256,9 @@ export function Header() {
             {/* 프로필 영역 - 우측 상단 */}
             <div className="flex items-center">
               {isNavLoading && showSkeleton ? (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center">
                   {/* 프로필 스켈레톤 - 250ms 이상 로딩 시에만 표시 */}
                   <div className="h-8 w-8 bg-muted animate-pulse rounded-full" aria-hidden />
-                  <div className="hidden md:block h-5 w-5 bg-muted animate-pulse rounded" aria-hidden />
                 </div>
               ) : isNavLoading ? (
                 /* 빠른 로딩 시: 스켈레톤 대신 투명 placeholder (깜빡임 방지) */
@@ -365,49 +290,6 @@ export function Header() {
                           )}
                         </div>
                       </Link>
-
-                      {/* 로그아웃 드롭다운 - 데스크톱에서만 표시 */}
-                      <div className="hidden md:block relative profile-dropdown">
-                        <button
-                          onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                          className="flex items-center justify-center rounded-full p-1 hover:bg-opacity-10 focus:outline-none focus:ring-2 focus:ring-cyber-blue focus:ring-offset-2 focus:ring-offset-transparent"
-                          aria-expanded={isProfileMenuOpen}
-                          aria-haspopup="true"
-                        >
-                          <span className="sr-only">로그아웃 메뉴 열기</span>
-                          <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            className={`h-5 w-5 transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`} 
-                            fill="none" 
-                            viewBox="0 0 24 24" 
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                        
-                        {/* 드롭다운 메뉴 */}
-                        {isProfileMenuOpen && (
-                          <div className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md border border-cyber-black-300 bg-cyber-black-50 py-1 shadow-xl ring-1 ring-cyber-black-300 ring-opacity-20 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 duration-200">
-                            <Link
-                              href={profile?.userId ? `/profile/${profile.userId}` : "/profile"}
-                              onClick={() => setIsProfileMenuOpen(false)}
-                              className="block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 hover:bg-cyber-black-100 hover:text-cyber-gray focus:bg-cyber-blue/20 focus:text-cyber-gray focus:outline-none"
-                            >
-                              내 프로필
-                            </Link>
-                            <button
-                              onClick={() => {
-                                setIsProfileMenuOpen(false);
-                                handleSignOut();
-                              }}
-                              className="block w-full px-4 py-2 text-left text-sm text-cyber-gray transition-colors duration-200 hover:bg-cyber-black-100 hover:text-cyber-gray focus:bg-cyber-orange/20 focus:text-cyber-gray focus:outline-none cursor-pointer"
-                            >
-                              로그아웃
-                            </button>
-                          </div>
-                        )}
-                      </div>
 
                     </div>
                   ) : (
