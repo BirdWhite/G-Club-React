@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { cn, getDisplayImageUrl } from '@/lib/utils/common';
+import { cn, getDisplayImageUrl, isKakaoImageUrl } from '@/lib/utils/common';
 
 interface ProfileAvatarProps {
   name?: string | null;
@@ -43,7 +43,7 @@ export function ProfileAvatar({
           fill
           sizes={`${size === 'sm' ? '32px' : size === 'md' ? '40px' : '48px'}`}
           className="object-cover rounded-full"
-          unoptimized={unoptimized}
+          unoptimized={unoptimized || isKakaoImageUrl(image)}
         />
       </div>
     );

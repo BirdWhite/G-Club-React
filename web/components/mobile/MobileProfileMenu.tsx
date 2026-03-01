@@ -105,13 +105,14 @@ export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
               onClick={() => router.push('/profile/edit')}
               className="w-24 h-24 rounded-full overflow-hidden border-4 border-cyber-blue/30 bg-white hover:border-cyber-blue/50 transition-colors duration-200"
             >
-              {profile?.image && !profile.image.includes('kakaocdn.net') ? (
+              {profile?.image ? (
                 <Image
                   src={profile.image}
                   alt={profile.name || '프로필 이미지'}
                   width={96}
                   height={96}
                   className="w-full h-full object-cover"
+                  unoptimized={profile.image.includes('kakaocdn.net')}
                 />
               ) : (
                 <div className="w-full h-full bg-cyber-gray/20 flex items-center justify-center">

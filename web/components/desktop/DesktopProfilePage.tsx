@@ -86,14 +86,14 @@ export function DesktopProfilePage({ targetProfile, isOwnProfile }: DesktopProfi
         <div className="flex flex-col md:flex-row gap-6">
           {/* 프로필 이미지 */}
           <div className="w-32 h-32 md:w-40 md:h-40 relative rounded-full overflow-hidden border-4 border-border bg-white">
-            {targetProfile.image && !targetProfile.image.includes('kakaocdn.net') ? (
+            {targetProfile.image ? (
               <Image
                 src={targetProfile.image}
                 alt={displayName}
                 fill
                 className="object-cover"
                 priority
-                unoptimized={targetProfile.image.includes('127.0.0.1') || targetProfile.image.includes('pnu-ultimate.kro.kr')}
+                unoptimized={targetProfile.image.includes('127.0.0.1') || targetProfile.image.includes('pnu-ultimate.kro.kr') || targetProfile.image.includes('kakaocdn.net')}
               />
             ) : (
               <div className="w-full h-full bg-background flex items-center justify-center text-muted-foreground">

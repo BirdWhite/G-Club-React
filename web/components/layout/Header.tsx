@@ -275,14 +275,14 @@ export function Header() {
                         }`}>
                           <ProfileAvatar
                             name={profile?.name}
-                            image={profile?.image && !profile.image.includes('kakaocdn.net') ? profile.image : null}
+                            image={profile?.image}
                             size="md"
                             className={`transition-all duration-200 group-hover:scale-110 ${
                               pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit'
                                 ? 'shadow-lg shadow-primary/50'
                                 : ''
                             }`}
-                            unoptimized={profile?.image?.includes('127.0.0.1')}
+                            unoptimized={profile?.image?.includes('127.0.0.1') || profile?.image?.includes('kakaocdn.net')}
                           />
                           {/* 사이버 블루 원 효과 - 활성 상태일 때만 표시 */}
                           {(pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit') && (

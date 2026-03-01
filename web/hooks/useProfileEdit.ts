@@ -78,8 +78,8 @@ export const useProfileEdit = () => {
         setBirthDate(formattedDate);
       }
       
-      // 프로필 이미지 설정 (카카오 이미지가 아닌 경우에만 설정)
-      if (profile.image && !profile.image.includes('kakaocdn.net')) {
+      // 프로필 이미지 설정 (카카오 기본 프로필 포함)
+      if (profile.image) {
         setCurrentImage(profile.image);
       }
       

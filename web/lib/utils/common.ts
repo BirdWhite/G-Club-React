@@ -7,17 +7,17 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * 카카오 CDN 이미지 URL인지 확인 (k.kakaocdn.net, img1.kakaocdn.net, t1.kakaocdn.net 등)
- * 웹사이트에서 카카오 이미지는 표시하지 않음 (Next.js Image 도메인 미허용)
+ * Next.js Image에서 unoptimized 모드로 로드할 때 사용
  */
 export function isKakaoImageUrl(url: string | null | undefined): boolean {
   return Boolean(url && String(url).includes('kakaocdn.net'))
 }
 
 /**
- * 표시용 프로필 이미지 URL 반환. 카카오 이미지는 null로 변환
+ * 표시용 프로필 이미지 URL 반환 (카카오 기본 프로필 포함)
  */
 export function getDisplayImageUrl(url: string | null | undefined): string | null {
-  return url && !isKakaoImageUrl(url) ? String(url) : null
+  return url ? String(url) : null
 }
 
 /** 유저 입력 필드별 글자 수 제한 */
