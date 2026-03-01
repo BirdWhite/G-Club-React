@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import type { UserProfile, Role } from '@prisma/client';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { isSuperAdmin } from '@/lib/database/auth';
+import { ProfileAvatar } from '@/components/common/ProfileAvatar';
+import { formatAbsoluteTime } from '@/lib/utils/date';
+import { cn } from '@/lib/utils/common';
 
 type UserWithRole = UserProfile & { role: Role | null };
 
@@ -315,10 +318,12 @@ export function UserRoleManager() {
           <table className="min-w-full divide-y divide-admin-border">
           <thead className="bg-admin-100">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">이미지</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">사용자 이름</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">이메일</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">가입일</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">Supabase UID</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">부원 확인</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">현재 역할</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-admin-foreground uppercase">역할 변경</th>
             </tr>
           </thead>
@@ -327,7 +332,21 @@ export function UserRoleManager() {
               const canModify = canChangeRole(user);
               return (
                 <tr key={user.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <ProfileAvatar
+                      name={user.name}
+                      image={user.image}
+                      size="sm"
+                      unoptimized={user.image?.includes('127.0.0.1') || user.image?.includes('kakaocdn.net') || user.image?.includes('pnu-ultimate.kro.kr')}
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap font-medium text-admin-foreground">{user.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-admin-foreground">
+                    {user.email || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-admin-foreground">
+                    {formatAbsoluteTime(user.createdAt)}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-admin-foreground">{user.userId}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {(!user.roleId || user.role?.name === 'NONE') ? (
@@ -365,21 +384,17 @@ export function UserRoleManager() {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.role?.name === 'ADMIN' || user.role?.name === 'SUPER_ADMIN' ? 'bg-danger/20 text-danger' :
-                      user.role?.name === 'USER' ? 'bg-admin-100 text-admin-foreground' :
-                      'bg-admin-100 text-admin-foreground'
-                    }`}>
-                      {user.role?.name || (user.roleId ? '없음' : '검증 대기')}
-                    </span>
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     {canModify ? (
                       <select
                         value={user.roleId || ''}
                         onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-admin-border focus:outline-none focus:ring-admin-primary focus:border-admin-primary sm:text-sm rounded-md text-admin-foreground"
+                        className={cn(
+                          'mt-1 block w-full pl-3 pr-10 py-2 text-base border-admin-border focus:outline-none focus:ring-admin-primary focus:border-admin-primary sm:text-sm rounded-md text-admin-foreground',
+                          user.role?.name === 'USER' && 'bg-cyber-green/20',
+                          (user.role?.name === 'ADMIN' || user.role?.name === 'SUPER_ADMIN') && 'bg-danger/20',
+                          (!user.role?.name || user.role?.name === 'NONE') && 'bg-transparent'
+                        )}
                       >
                         {roles
                           .filter(role => role.name !== 'SUPER_ADMIN' || isSuperAdminUser) // 슈퍼 관리자 역할은 슈퍼 관리자만 할당 가능
