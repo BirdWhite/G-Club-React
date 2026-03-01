@@ -47,7 +47,6 @@ export function ActionButtons({
   
   const commonButtonStyles = "w-full inline-flex items-center justify-center px-6 py-3 bg-transparent border rounded-md text-base font-medium text-foreground border-foreground focus:outline-none focus:ring-0 disabled:opacity-50 hover:underline";
   const primaryButtonStyles = "w-full inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground border border-primary rounded-md text-base font-medium focus:outline-none focus:ring-0 disabled:opacity-50 hover:bg-primary/90";
-  const leftAlignedButtonStyles = "inline-flex items-center justify-center px-6 py-3 bg-transparent border rounded-md text-base font-medium text-foreground border-foreground focus:outline-none focus:ring-0 disabled:opacity-50 hover:underline";
   const disabledButtonStyles = "text-muted-foreground border-muted-foreground cursor-not-allowed no-underline";
 
 
