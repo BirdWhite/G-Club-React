@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useProfileCheck } from '@/hooks/useProfileCheck';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useProfile } from '@/contexts/ProfileProvider';
@@ -8,27 +8,57 @@ import { useRouter } from 'next/navigation';
 import { MobileHomePage } from '@/components/mobile/MobileHomePage';
 import { DesktopHomePage } from '@/components/desktop/DesktopHomePage';
 
-// 홈 스켈레톤 (로딩이 250ms 이상일 때만 표시)
+// 홈 스켈레톤 (로딩이 250ms 이상일 때만 표시) - HeroSection 구조와 동일
 function HomeSkeleton() {
   return (
     <section className="h-full flex flex-col justify-start items-center px-8 sm:px-10 lg:px-12 py-8">
       <div className="w-full max-w-4xl space-y-6">
-        <div className="px-0 py-6">
-          <div className="h-7 w-32 bg-muted animate-pulse rounded mb-4" />
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                <div className="h-3 bg-muted rounded w-1/2" />
-              </div>
-            ))}
+        {/* 1행: 공지사항 + 알림 (HeroSection의 grid와 동일) */}
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+          {/* 공지사항 스켈레톤 */}
+          <div className="px-0 py-6">
+            <div className="h-7 w-32 bg-muted animate-pulse rounded mb-4" />
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex min-h-[5.5rem] rounded-lg bg-muted/50 animate-pulse overflow-hidden"
+                >
+                  <div className="shrink-0 w-[100px] sm:w-[120px] aspect-video bg-muted" />
+                  <div className="flex-1 min-w-0 p-4 space-y-2">
+                    <div className="h-4 bg-muted rounded w-3/4" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                    <div className="h-3 bg-muted rounded w-1/4 mt-auto" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* 알림 스켈레톤 */}
+          <div className="px-0 py-6">
+            <div className="h-7 w-24 bg-muted animate-pulse rounded mb-4" />
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="block p-4 min-h-[5.5rem] rounded-lg bg-muted/50 animate-pulse"
+                >
+                  <div className="h-4 bg-muted rounded w-full mb-2" />
+                  <div className="h-3 bg-muted rounded w-2/3" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+        {/* 2행: 게임메이트 (GamePostPreview와 동일) */}
         <div className="px-0 py-6">
-          <div className="h-7 w-32 bg-muted animate-pulse rounded mb-4" />
-          <div className="flex gap-4 overflow-hidden">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex-shrink-0 w-80 h-48 bg-muted animate-pulse rounded-lg" />
+          <div className="h-7 w-28 bg-muted animate-pulse rounded mb-2" />
+          <div className="flex gap-6 overflow-x-auto overflow-y-hidden pb-2">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="flex-shrink-0 w-full md:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)] h-48 bg-muted animate-pulse rounded-lg"
+              />
             ))}
           </div>
         </div>
@@ -57,14 +87,22 @@ export default function Home() {
   }, []);
 
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const loadingResolvedRef = useRef(false);
 
   // 지연 스켈레톤: 로딩이 250ms 이상 걸릴 때만 스켈레톤 표시
+  // 로딩이 빨리 끝나면 타이머 콜백에서 스켈레톤 표시를 건너뛰어 깜빡임 방지
   useEffect(() => {
     if (!isLoading) {
+      loadingResolvedRef.current = true;
       setShowSkeleton(false);
       return;
     }
-    const timer = setTimeout(() => setShowSkeleton(true), 250);
+    loadingResolvedRef.current = false;
+    const timer = setTimeout(() => {
+      if (!loadingResolvedRef.current) {
+        setShowSkeleton(true);
+      }
+    }, 250);
     return () => clearTimeout(timer);
   }, [isLoading]);
 
