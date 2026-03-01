@@ -27,7 +27,7 @@ const formSchema = z.object({
   maxParticipants: z.number().min(2, '최소 2명 이상이어야 합니다.').max(100, '최대 100명까지 가능합니다.'),
   startDate: z.date({ message: '시작 날짜를 선택해주세요.' }),
   startTime: z.string().min(1, '시작 시간을 선택해주세요.'),
-  content: z.string().min(1, '내용을 입력해주세요.').max(2000, '내용은 2000자를 초과할 수 없습니다.'),
+  content: z.string().max(2000, '내용은 2000자를 초과할 수 없습니다.'),
   participants: z.array(z.object({
     name: z.string().min(1, '이름은 필수입니다.'),
     userId: z.string().optional(),
@@ -180,6 +180,7 @@ const getDefaultParticipants = () => {
 
       const payload = {
         ...data,
+        content: (data.content?.trim() || '') ? data.content.trim() : data.title,
         startTime: utcStartTime,
       };
 
@@ -477,7 +478,7 @@ const getDefaultParticipants = () => {
                         <div className="pb-2">
                           <textarea
                             {...field}
-                            placeholder="게임메이트 모집 내용을 입력하세요."
+                            placeholder="비워두면 제목과 동일한 내용으로 작성됩니다. (예: 함께 즐길 파티원을 모집합니다!)"
                             className="w-full min-h-[100px] px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-vertical text-sm"
                             maxLength={2000}
                           />

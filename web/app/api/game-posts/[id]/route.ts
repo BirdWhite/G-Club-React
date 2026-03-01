@@ -192,12 +192,13 @@ export async function PATCH(
     
     const { title, content, maxParticipants, startDate, startTime, participants = [] } = requestBody;
 
-    if (!title || !content || maxParticipants === undefined || !startDate || !startTime) {
+    if (!title || maxParticipants === undefined || !startDate || !startTime) {
       return NextResponse.json({ error: '모든 필수 항목을 입력해주세요.' }, { status: 400 });
     }
 
     const sanitizedTitle = sanitizeUserInput(title);
-    const sanitizedContent = sanitizeUserInput(String(content || ''));
+    const sanitizedContent = sanitizeUserInput(String(content || '').trim());
+    const finalContent = sanitizedContent || sanitizedTitle;
     if (!sanitizedTitle) {
       return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 });
     }
@@ -207,10 +208,7 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    if (!sanitizedContent) {
-      return NextResponse.json({ error: '내용을 입력해주세요.' }, { status: 400 });
-    }
-    if (sanitizedContent.length > INPUT_LIMITS.GAME_POST_CONTENT_MAX) {
+    if (finalContent.length > INPUT_LIMITS.GAME_POST_CONTENT_MAX) {
       return NextResponse.json(
         { error: `내용은 ${INPUT_LIMITS.GAME_POST_CONTENT_MAX}자 이하로 입력해주세요.` },
         { status: 400 }
@@ -296,7 +294,7 @@ export async function PATCH(
         where: { id },
         data: {
           title: sanitizedTitle,
-          content: sanitizedContent,
+          content: finalContent,
           maxParticipants,
           startTime: combinedDateTime,
         },
