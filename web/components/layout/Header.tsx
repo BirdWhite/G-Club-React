@@ -161,7 +161,7 @@ export function Header() {
   return (
     <>
       <header className="header-container">
-        <div className="flex justify-center px-8 sm:px-10 lg:px-12">
+        <div className="flex justify-center page-content-padding">
           <div className="w-full max-w-4xl flex items-center justify-between h-16">
             {/* 로고 영역 - 좌측 */}
             <div className="flex items-center">

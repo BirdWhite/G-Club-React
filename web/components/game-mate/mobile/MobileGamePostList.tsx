@@ -52,7 +52,7 @@ export function MobileGamePostList({
     }
 
     return (
-      <div className="grid gap-4 px-4">
+      <div className="grid gap-4">
         {filteredPosts.map((post: GamePost) => (
           <GamePostCard 
             key={post.id}
@@ -67,7 +67,7 @@ export function MobileGamePostList({
   return (
     <div>
       {/* 플로팅 필터 - 스크롤 시에도 고정 */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4 mb-4">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border py-4 mb-4">
         <MobileGameFilter
           selectedGame={urlState.gameId}
           onGameChange={onGameChange}

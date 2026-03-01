@@ -11,7 +11,7 @@ import { DesktopHomePage } from '@/components/desktop/DesktopHomePage';
 // 홈 스켈레톤 (로딩이 250ms 이상일 때만 표시) - HeroSection 구조와 동일
 function HomeSkeleton() {
   return (
-    <section className="h-full flex flex-col justify-start items-center px-8 sm:px-10 lg:px-12 py-8">
+    <section className="h-full flex flex-col justify-start items-center page-content-padding py-8">
       <div className="w-full max-w-4xl space-y-6">
         {/* 1행: 공지사항 + 알림 (HeroSection의 grid와 동일) */}
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">

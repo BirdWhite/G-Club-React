@@ -235,6 +235,7 @@ html {
     flex: 1;
     min-height: 0; /* flexbox에서 스크롤 문제 해결 */
     padding-bottom: 4rem; /* 모바일 네비게이션바 공간 확보 */
+    scrollbar-gutter: stable; /* 스크롤바 공간 항상 확보 → 로딩 전/후 패딩 시프트 방지 */
   }
 
   /* 모바일 네비게이션바를 위한 패딩 조정 */
@@ -248,6 +249,24 @@ html {
   .mobile-overscroll {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: auto;
+  }
+
+  /* 페이지 콘텐츠 - 헤더와 동일한 좌우 패딩 (px-8 sm:px-10 lg:px-12) */
+  .page-content-padding {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  @media (min-width: 640px) {
+    .page-content-padding {
+      padding-left: 2.5rem;
+      padding-right: 2.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .page-content-padding {
+      padding-left: 3rem;
+      padding-right: 3rem;
+    }
   }
 
   /* 헤더 스타일 */

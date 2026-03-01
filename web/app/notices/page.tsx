@@ -80,7 +80,7 @@ export default function NoticesPage() {
 
   return (
     <div className="bg-background">
-      <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
+      <div className="flex flex-col items-center page-content-padding py-8">
         <div className="w-full max-w-4xl">
         {/* 헤더 */}
         <div className="mb-8">

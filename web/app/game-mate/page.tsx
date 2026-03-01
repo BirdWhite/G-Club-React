@@ -89,7 +89,7 @@ export default function GameMatePage() {
       {isMobile ? (
         <div className="h-full bg-background overflow-y-auto scrollbar-visible relative mobile-overscroll">
           {/* 모바일용 콘텐츠 */}
-          <main className="px-4 py-4">
+          <main className="page-content-padding py-8">
             <MobileGamePostList {...commonProps} />
           </main>
           
@@ -121,7 +121,7 @@ export default function GameMatePage() {
       ) : (
         <div className="h-full bg-background overflow-y-auto scrollbar-visible">
           {/* 데스크톱용 콘텐츠 */}
-          <main className="flex flex-col items-center py-8 px-8 sm:px-10 lg:px-12">
+          <main className="flex flex-col items-center page-content-padding py-8">
           <div className="w-full max-w-4xl">
             <DesktopGamePostList {...commonProps} />
           </div>
