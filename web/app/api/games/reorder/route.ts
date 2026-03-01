@@ -30,9 +30,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '게임을 찾을 수 없습니다.' }, { status: 404 });
     }
 
-    // 모든 게임을 order로 정렬하여 가져오기
+    // 모든 게임을 order로 정렬하여 가져오기 (order가 같을 경우 id로 2차 정렬하여 일관성 확보)
     const allGames = await prisma.game.findMany({
-      orderBy: { order: 'asc' }
+      orderBy: [
+        { order: 'asc' },
+        { id: 'asc' }
+      ]
     });
 
     const currentIndex = allGames.findIndex(game => game.id === gameId);
@@ -53,19 +56,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '더 이상 이동할 수 없습니다.' }, { status: 400 });
     }
 
-    // 두 게임의 order 값을 교환
-    const targetGame = allGames[targetIndex];
-    
-    await prisma.$transaction([
-      prisma.game.update({
-        where: { id: currentGame.id },
-        data: { order: targetGame.order }
-      }),
-      prisma.game.update({
-        where: { id: targetGame.id },
-        data: { order: currentGame.order }
-      })
-    ]);
+    // 이동할 게임을 배열에서 제거 후 목표 위치에 삽입
+    const reorderedGames = [...allGames];
+    const [movedGame] = reorderedGames.splice(currentIndex, 1);
+    reorderedGames.splice(targetIndex, 0, movedGame);
+
+    // 1부터 순차적으로 order 값 재할당 (갭/중복 제거로 안정적 동작 보장)
+    await prisma.$transaction(
+      reorderedGames.map((game, index) =>
+        prisma.game.update({
+          where: { id: game.id },
+          data: { order: index + 1 }
+        })
+      )
+    );
 
     return NextResponse.json({ 
       message: '게임 순서가 변경되었습니다.',

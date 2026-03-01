@@ -110,18 +110,22 @@ export default function GameMateHistoryPage() {
     }
   };
 
-  // 게임 상태 표시
+  // 게임 상태 표시 (GamePostStatus: OPEN, IN_PROGRESS, COMPLETED, EXPIRED)
   const getStatusText = (post: GamePost) => {
-    if (post.status === 'CLOSED') return '모집 마감';
-    if (post.status === 'CANCELLED') return '취소됨';
-    if (post.isFull) return '모집 완료';
-    return '모집 중';
+    if (post.status === 'IN_PROGRESS') return '게임 중';
+    if (post.status === 'COMPLETED') return '종료';
+    if (post.status === 'EXPIRED') return '만료';
+    if (post.isFull && post.status === 'OPEN') return '가득 참';
+    if (post.status === 'OPEN') return '모집 중';
+    return '종료';
   };
 
   const getStatusColor = (post: GamePost) => {
-    if (post.status === 'CLOSED' || post.status === 'CANCELLED') return 'text-red-500';
-    if (post.isFull) return 'text-green-500';
-    return 'text-blue-500';
+    if (post.status === 'IN_PROGRESS') return 'text-purple-500';
+    if (post.status === 'COMPLETED' || post.status === 'EXPIRED') return 'text-muted-foreground';
+    if (post.isFull && post.status === 'OPEN') return 'text-orange-500';
+    if (post.status === 'OPEN') return 'text-green-500';
+    return 'text-muted-foreground';
   };
 
   if (profileLoading || isLoading) {

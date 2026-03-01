@@ -79,22 +79,14 @@ export function GamePostHeader({
             {currentStatus.text}
           </span>
         </div>
-        {post.game && (
-          post.game.iconUrl ? (
-            <Image
-              src={post.game.iconUrl}
-              alt={post.game.name || '게임'}
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-lg object-cover flex-shrink-0"
-            />
-          ) : (
-            <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-bold text-muted-foreground">
-                {post.game?.name?.[0] || 'G'}
-              </span>
-            </div>
-          )
+        {post.game?.iconUrl && (
+          <Image
+            src={post.game.iconUrl}
+            alt={post.game.name || '게임'}
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-lg object-cover flex-shrink-0"
+          />
         )}
       </div>
       {/* 세 번째 줄: 작성자(왼쪽) | 시간·조회수(오른쪽) */}

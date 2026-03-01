@@ -79,7 +79,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
               </time>
             </div>
           </div>
-          {post.game?.iconUrl ? (
+          {post.game?.iconUrl && (
             <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
               <Image 
                 src={post.game.iconUrl} 
@@ -88,12 +88,6 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
                 height={32}
                 className="w-full h-full object-cover"
               />
-            </div>
-          ) : (
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-primary font-medium text-xs">
-                {post.game?.name?.[0] || 'G'}
-              </span>
             </div>
           )}
         </div>

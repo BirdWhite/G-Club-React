@@ -16,7 +16,10 @@ export async function GET(request: Request) {
           where: {
             id: { in: gameIds }
           },
-          orderBy: { order: 'asc' },
+          orderBy: [
+            { order: 'asc' },
+            { id: 'asc' }
+          ],
         });
         return NextResponse.json(games);
       }
@@ -28,7 +31,10 @@ export async function GET(request: Request) {
         
         // 모든 게임을 가져와서 JavaScript에서 필터링
         const allGames = await prisma.game.findMany({
-          orderBy: { order: 'asc' },
+          orderBy: [
+            { order: 'asc' },
+            { id: 'asc' }
+          ],
         });
         
         const searchQueryLower = searchQuery.toLowerCase();
@@ -55,7 +61,10 @@ export async function GET(request: Request) {
     } else {
       // 검색 쿼리가 없는 경우 일반 조회
       const games = await prisma.game.findMany({
-        orderBy: { order: 'asc' },
+        orderBy: [
+          { order: 'asc' },
+          { id: 'asc' }
+        ],
       });
       return NextResponse.json(games);
     }
