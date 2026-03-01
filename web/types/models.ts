@@ -195,6 +195,7 @@ export interface GamePost {
   isOwner?: boolean;
   isParticipating?: boolean;
   isWaiting?: boolean;
+  canDelete?: boolean; // 작성자 또는 어드민/슈퍼어드민이 삭제 가능
   createdAt: Date;
   updatedAt: Date;
 }

@@ -9,7 +9,7 @@ import { formatAbsoluteTime } from '@/lib/utils/date';
 import { RichTextViewer } from '@/components/editor/RichTextViewer';
 import { NoticeCommentSection } from '@/components/notices/NoticeCommentSection';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
-import { Eye, ChevronLeft, X, Pin } from 'lucide-react';
+import { Eye, ChevronLeft, Pin } from 'lucide-react';
 import { useProfile } from '@/contexts/ProfileProvider';
 import type { Notice } from '@/types/models';
 
@@ -19,7 +19,6 @@ export default function NoticeDetailPage() {
   const { profile, isLoading: profileLoading } = useProfile();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const noticeId = params.id as string;
@@ -54,18 +53,19 @@ export default function NoticeDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setNotice(data);
-        setError(null);
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || '공지사항을 불러오는데 실패했습니다');
+        // 잘못된 링크(404 등) - 공지사항 목록으로 이동
+        router.replace('/notices');
+        return;
       }
     } catch (error) {
       console.error('공지사항 조회 실패:', error);
-      setError('서버 오류가 발생했습니다');
+      router.replace('/notices');
+      return;
     } finally {
       setIsLoading(false);
     }
-  }, [noticeId]);
+  }, [noticeId, router]);
 
   // 공지사항 삭제
   const handleDelete = async () => {
@@ -120,28 +120,11 @@ export default function NoticeDetailPage() {
     );
   }
 
-  if (error || !notice) {
+  // 로딩 후 notice가 없으면 리다이렉트 중 (fetchNotice에서 처리)
+  if (!notice) {
     return (
-      <div className="bg-background">
-        <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
-        <div className="w-full max-w-4xl">
-          <div className="text-center py-12">
-            <X className="w-16 h-16 mx-auto mb-4 text-red-500" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">
-              공지사항을 찾을 수 없습니다
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              {error || '요청하신 공지사항이 존재하지 않거나 삭제되었습니다.'}
-            </p>
-            <Link
-              href="/notices"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/80 transition-colors"
-            >
-              공지사항 목록으로 돌아가기
-            </Link>
-          </div>
-        </div>
-        </div>
+      <div className="bg-background flex items-center justify-center py-32">
+        <LoadingSpinner />
       </div>
     );
   }

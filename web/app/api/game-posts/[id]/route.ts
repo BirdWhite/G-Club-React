@@ -79,6 +79,17 @@ export async function GET(
     });
 
     if (!post) {
+      // 삭제된 글인지 vs 애초에 없는 글인지 구분
+      const deletedPost = await prisma.gamePost.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+      if (deletedPost?.status === 'DELETED') {
+        return NextResponse.json(
+          { error: '삭제된 게시글입니다.', deleted: true },
+          { status: 410 } // 410 Gone: 과거에 존재했으나 삭제됨
+        );
+      }
       return NextResponse.json(
         { error: '모집글을 찾을 수 없습니다.' },
         { status: 404 }
@@ -125,6 +136,7 @@ export async function GET(
         isOwner: userId === post.author.userId,
         isParticipating: userId ? participants.some((p) => p.userId === userId && p.status === 'ACTIVE') : false,
         isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w) => w.userId === userId && w.status !== 'CANCELED') : false,
+        canDelete: userId === post.author.userId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
       };
       return NextResponse.json(responseData);
     }
@@ -156,6 +168,7 @@ export async function GET(
       isOwner: userId === post.author.userId,
       isParticipating: userId ? participants.some((p) => p.userId === userId && p.status === 'ACTIVE') : false,
       isWaiting: isWaiting,
+      canDelete: userId === post.author.userId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
     };
     
     

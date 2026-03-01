@@ -13,6 +13,7 @@ interface MobileGamePostHeaderProps {
   onDelete: () => void;
   onEdit: () => void;
   isOwner: boolean;
+  canDelete?: boolean; // 작성자 또는 어드민/슈퍼어드민
   loading: boolean;
 }
 
@@ -21,6 +22,7 @@ export function MobileGamePostHeader({
   onDelete, 
   onEdit, 
   isOwner, 
+  canDelete = false,
   loading 
 }: MobileGamePostHeaderProps) {
   // 상태 정보 정의 (사이버펑크 테마에 맞게 수정)
@@ -54,22 +56,26 @@ export function MobileGamePostHeader({
         </Link>
         
         {/* 수정/삭제 버튼들 */}
-        {isOwner && (
+        {(isOwner || canDelete) && (
           <div className="flex items-center gap-2">
-            <button
-              onClick={onEdit}
-              disabled={loading}
-              className="px-3 py-1.5 text-sm font-medium text-foreground bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
-            >
-              수정
-            </button>
-            <button
-              onClick={onDelete}
-              disabled={loading}
-              className="px-3 py-1.5 text-sm font-medium text-destructive bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
-            >
-              삭제
-            </button>
+            {isOwner && (
+              <button
+                onClick={onEdit}
+                disabled={loading}
+                className="px-3 py-1.5 text-sm font-medium text-foreground bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
+              >
+                수정
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={onDelete}
+                disabled={loading}
+                className="px-3 py-1.5 text-sm font-medium text-destructive bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
+              >
+                삭제
+              </button>
+            )}
           </div>
         )}
       </div>

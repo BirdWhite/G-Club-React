@@ -13,6 +13,7 @@ import { ParticipantList } from '@/components/game-mate/ParticipantList';
 import { WaitingList } from '@/components/game-mate/WaitingList';
 import { ActionButtons } from '@/components/game-mate/ActionButtons';
 import { CommentSection } from '@/components/game-mate/CommentSection';
+import { DeletedGamePostMessage } from '@/components/game-mate/DeletedGamePostMessage';
 
 interface GamePostDetailClientProps {
   initialPost: GamePost;
@@ -46,15 +47,12 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
     }
   }, [initialPost.id]);
 
-  // 게시글이 삭제된 경우 리다이렉트
-  useEffect(() => {
-    if (post === null) {
-      toast.error('게시글이 삭제되었습니다.');
-      router.push('/game-mate');
-    }
-  }, [post, router]);
-  
   const currentPost = post || initialPost;
+
+  // 게시글이 삭제된 경우 (보던 중 삭제됨)
+  if (post === null && initialPost) {
+    return <DeletedGamePostMessage />;
+  }
 
   const handleAction = async (action: () => Promise<Response>, successMessage: string, errorMessage: string) => {
     if (isSubmitting) return;
@@ -175,6 +173,7 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
       <GamePostHeader
         post={currentPost}
         isOwner={isOwner || false}
+        canDelete={currentPost.canDelete ?? isOwner ?? false}
         onDelete={handleDeletePost}
         onEdit={handleEditPost}
         loading={isSubmitting}

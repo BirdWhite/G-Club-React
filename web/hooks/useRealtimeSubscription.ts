@@ -85,7 +85,14 @@ export function useGamePostListSubscription(
   const fetchSinglePost = useCallback(async (postId: string) => {
     try {
       const response = await fetch(`/api/game-posts/${postId}?list=true`);
-      if (!response.ok) throw new Error('Failed to fetch post');
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 410) {
+          // 삭제된(410) 또는 존재하지 않는(404) 게시글 - 목록에서 제거
+          setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+          return;
+        }
+        throw new Error('Failed to fetch post');
+      }
       
       const updatedPost = await response.json();
       setPosts(prevPosts => 
@@ -121,7 +128,10 @@ export function useGamePostListSubscription(
   const addNewPost = useCallback(async (postId: string) => {
     try {
       const response = await fetch(`/api/game-posts/${postId}?list=true`);
-      if (!response.ok) throw new Error('Failed to fetch post');
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 410) return; // 삭제됨/없음 - 무시
+        throw new Error('Failed to fetch post');
+      }
       
       const newPost = await response.json();
       
@@ -323,6 +333,10 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
     refreshTimeoutRef.current = setTimeout(async () => {
       try {
         const response = await fetch(`/api/game-posts/${postId}`);
+        if (response.status === 404 || response.status === 410) {
+          setPost(null); // 삭제됨(410) 또는 없음(404)
+          return;
+        }
         if (response.ok) {
           const data = await response.json();
           setPost(data);
@@ -338,8 +352,8 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
     try {
       const response = await fetch(`/api/game-posts/${postId}`);
       if (!response.ok) {
-        if (response.status === 404) {
-          // 게시글이 삭제된 경우
+        if (response.status === 404 || response.status === 410) {
+          // 삭제됨(410) 또는 없음(404)
           setPost(null);
           return;
         }
@@ -372,7 +386,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
         try {
           const response = await fetch(`/api/game-posts/${postId}`);
           if (!response.ok) {
-            if (response.status === 404) {
+            if (response.status === 404 || response.status === 410) {
               setPost(null);
               return;
             }
@@ -523,6 +537,10 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
         async () => {
           try {
             const response = await fetch(`/api/game-posts/${postId}`);
+            if (response.status === 404 || response.status === 410) {
+              setPost(null);
+              return;
+            }
             if (response.ok) {
               const data = await response.json();
               setPost(data);
@@ -543,6 +561,10 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
         async () => {
           try {
             const response = await fetch(`/api/game-posts/${postId}`);
+            if (response.status === 404 || response.status === 410) {
+              setPost(null);
+              return;
+            }
             if (response.ok) {
               const data = await response.json();
               setPost(data);
@@ -563,6 +585,10 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
         async () => {
           try {
             const response = await fetch(`/api/game-posts/${postId}`);
+            if (response.status === 404 || response.status === 410) {
+              setPost(null);
+              return;
+            }
             if (response.ok) {
               const data = await response.json();
               setPost(data);
@@ -602,6 +628,10 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
             const refreshPost = async () => {
               try {
                 const response = await fetch(`/api/game-posts/${postId}`);
+                if (response.status === 404 || response.status === 410) {
+                  setPost(null);
+                  return;
+                }
                 if (response.ok) {
                   const data = await response.json();
                   setPost(data);
