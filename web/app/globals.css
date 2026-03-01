@@ -552,6 +552,16 @@ html {
   }
 }
 
+/* 게임메이트 프리뷰 Swiper: 호버 시 카드 상단 잘림 방지
+ * .swiper(overflow:hidden) 때문에 hover 시 잘림 → 패딩으로 여유 확보
+ * 공지/알림과 헤더-컨텐츠 간격 맞추기 위해 padding만 최소화(0.5rem) */
+.game-post-swiper-container .swiper {
+  padding-top: 0.5rem !important; /* 호버 업 4px + shadow 여유, swiper padding:0 덮어씀 */
+}
+.game-post-swiper-container .swiper-wrapper {
+  margin-top: 0;
+}
+
 /* 캐러셀 스크롤바 숨김 */
 .scrollbar-hide {
   -ms-overflow-style: none;

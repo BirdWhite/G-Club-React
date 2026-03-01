@@ -25,7 +25,7 @@ export function GamePostPreview() {
   if (isLoading) {
     return (
       <div className="px-0 py-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <Link
             href="/game-mate"
             className="flex items-center gap-2 text-xl font-bold text-foreground hover:text-primary transition-colors group"
@@ -46,7 +46,7 @@ export function GamePostPreview() {
 
   return (
     <div className="px-0 py-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <Link
           href="/game-mate"
           className="flex items-center gap-2 text-xl font-bold text-foreground hover:text-primary transition-colors group"
