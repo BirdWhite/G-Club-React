@@ -79,7 +79,7 @@ export function startCalendarEventReminder() {
               type: 'CALENDAR_EVENT_REMINDER',
               title: `${minuteLabel} 후 일정이 있습니다`,
               body: event.title,
-              icon: '/icons/calendar.png',
+              icon: '/icons/calendar.svg',
               actionUrl: `/calendar/${event.id}`,
               calendarEventId: event.id,
               isGroupSend: true,

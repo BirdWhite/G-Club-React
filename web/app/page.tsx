@@ -13,7 +13,7 @@ function HomeSkeleton() {
   return (
     <section className="h-full flex flex-col justify-start items-center page-content-padding py-8">
       <div className="w-full max-w-4xl space-y-6">
-        {/* 1행: 공지사항 + 알림 (HeroSection의 grid와 동일) */}
+        {/* 1행: 공지사항 + 일정 (HeroSection의 grid와 동일) */}
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
           {/* 공지사항 스켈레톤 */}
           <div className="px-0 py-6">
@@ -34,17 +34,17 @@ function HomeSkeleton() {
               ))}
             </div>
           </div>
-          {/* 알림 스켈레톤 */}
+          {/* 일정 스켈레톤 */}
           <div className="px-0 py-6">
-            <div className="h-7 w-24 bg-muted animate-pulse rounded mb-4" />
+            <div className="h-7 w-28 bg-muted animate-pulse rounded mb-4" />
             <div className="space-y-3">
               {[...Array(3)].map((_, i) => (
                 <div
                   key={i}
                   className="block p-4 min-h-[5.5rem] rounded-lg bg-muted/50 animate-pulse"
                 >
-                  <div className="h-4 bg-muted rounded w-full mb-2" />
-                  <div className="h-3 bg-muted rounded w-2/3" />
+                  <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
                 </div>
               ))}
             </div>
@@ -59,6 +59,21 @@ function HomeSkeleton() {
                 key={i}
                 className="flex-shrink-0 w-full md:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)] h-48 bg-muted animate-pulse rounded-lg"
               />
+            ))}
+          </div>
+        </div>
+        {/* 3행: 알림 (NotificationPreview와 동일) */}
+        <div className="px-0 py-6">
+          <div className="h-7 w-24 bg-muted animate-pulse rounded mb-4" />
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="block p-4 min-h-[5.5rem] rounded-lg bg-muted/50 animate-pulse"
+              >
+                <div className="h-4 bg-muted rounded w-full mb-2" />
+                <div className="h-3 bg-muted rounded w-2/3" />
+              </div>
             ))}
           </div>
         </div>

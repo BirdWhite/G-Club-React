@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const category = searchParams.get('category');
+    const includeOngoing = searchParams.get('includeOngoing') === 'true';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const skip = (page - 1) * limit;
@@ -25,6 +26,9 @@ export async function GET(request: NextRequest) {
     if (startDate && endDate) {
       whereClause.startAt = { gte: new Date(startDate) };
       whereClause.endAt = { lte: new Date(endDate) };
+    } else if (startDate && includeOngoing) {
+      // 진행중 + 다가오는 일정: endAt >= startDate (아직 끝나지 않은 일정)
+      whereClause.endAt = { gte: new Date(startDate) };
     } else if (startDate) {
       whereClause.startAt = { gte: new Date(startDate) };
     } else if (endDate) {
@@ -165,7 +169,7 @@ export async function POST(request: NextRequest) {
             type: 'CALENDAR_EVENT_NEW',
             title: '새로운 일정이 등록되었습니다',
             body: title.trim(),
-            icon: '/icons/calendar.png',
+            icon: '/icons/calendar.svg',
             actionUrl: `/calendar/${event.id}`,
             calendarEventId: event.id,
             isGroupSend: true,
