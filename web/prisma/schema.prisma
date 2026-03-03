@@ -69,6 +69,29 @@ enum WaitingStatus {
   CANCELED // 대기 취소
 }
 
+// 캘린더 일정 카테고리
+enum CalendarEventCategory {
+  REGULAR      // 정기모임
+  TOURNAMENT   // 대회
+  EVENT        // 이벤트
+  SOCIAL       // 친목/회식
+  GENERAL      // 기타/일반
+}
+
+// 캘린더 일정 상태 (iCal STATUS 매핑)
+enum CalendarEventStatus {
+  TENTATIVE    // 미확정
+  CONFIRMED    // 확정
+  CANCELLED    // 취소
+}
+
+// RSVP 상태 (iCal PARTSTAT 매핑)
+enum RsvpStatus {
+  ACCEPTED     // 참석
+  DECLINED     // 불참
+  TENTATIVE    // 미정
+}
+
 // ========== Models ==========
 
 // 권한 모델
@@ -141,6 +164,10 @@ model UserProfile {
   receivedNotifications Notification[]        @relation("ReceivedNotifications")
   notificationReceipts  NotificationReceipt[] @relation("NotificationReceipts")
   notificationSettings NotificationSetting?  @relation("UserNotificationSettings")
+  
+  // 캘린더 관련
+  calendarEvents     CalendarEvent[]   @relation("UserProfileCalendarEvents")
+  eventRsvps         EventRsvp[]       @relation("UserProfileEventRsvps")
 }
 
 
@@ -394,6 +421,9 @@ model Notification {
   gamePostId   String?              // 게임 포스트 관련 알림
   gamePost     GamePost?            @relation("GamePostNotifications", fields: [gamePostId], references: [id], onDelete: Cascade)
   
+  calendarEventId String?           // 캘린더 이벤트 관련 알림
+  calendarEvent   CalendarEvent?    @relation("CalendarEventNotifications", fields: [calendarEventId], references: [id], onDelete: Cascade)
+  
   // 알림 상태
   status       NotificationStatus   @default(PENDING)
   scheduledAt  DateTime?            // 예약 발송 시간
@@ -413,6 +443,7 @@ model Notification {
   @@index([type, createdAt])
   @@index([status, scheduledAt])
   @@index([gamePostId])
+  @@index([calendarEventId])
 }
 
 // 알림 수신 내역 (개별 사용자별 읽음/안읽음 상태)
@@ -514,6 +545,12 @@ model NotificationSetting {
   // 공지사항 알림 설정
   noticeEnabled       Boolean   @default(true) // 공지사항 알림 받기
   
+  // 캘린더 일정 알림 설정
+  calendarEventEnabled         Boolean @default(true)  // 캘린더 알림 전체 토글
+  calendarEventNewEnabled      Boolean @default(true)  // 새 일정 등록 알림
+  calendarEventReminderEnabled Boolean @default(true)  // 일정 전 리마인더 알림
+  calendarEventReminderMinutes Int     @default(60)    // 리마인더 몇 분 전 (기본 60분)
+  
   // 메타데이터
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -585,4 +622,57 @@ model Notice {
   @@index([isPublished, isPinned, priority, createdAt])
   @@index([authorId])
   @@index([isDeleted])
+}
+
+// 캘린더 일정 모델 (iCal VEVENT 매핑)
+model CalendarEvent {
+  id              String                @id @default(cuid())
+  uid             String                @unique // iCal UID ({uuid}@gclub)
+  title           String                // iCal SUMMARY
+  description     String?               @db.Text // iCal DESCRIPTION
+  location        String?               // iCal LOCATION
+  category        CalendarEventCategory @default(GENERAL) // iCal CATEGORIES
+  status          CalendarEventStatus   @default(CONFIRMED) // iCal STATUS
+  startAt         DateTime              // iCal DTSTART
+  endAt           DateTime              // iCal DTEND
+  isAllDay        Boolean               @default(false) // 종일 이벤트 여부
+  url             String?               // iCal URL
+  sequence        Int                   @default(0) // iCal SEQUENCE (수정 시 +1)
+  rrule           String?               // 향후 반복 일정용 (iCal RRULE)
+  
+  organizerId     String
+  organizer       UserProfile           @relation("UserProfileCalendarEvents", fields: [organizerId], references: [userId])
+  
+  maxParticipants Int?                  // 최대 참석 인원 (null=무제한)
+  color           String?               // 캘린더 표시 색상
+  
+  rsvps           EventRsvp[]           @relation("CalendarEventRsvps")
+  notifications   Notification[]        @relation("CalendarEventNotifications")
+  
+  createdAt       DateTime              @default(now()) // iCal CREATED
+  updatedAt       DateTime              @updatedAt      // iCal LAST-MODIFIED
+  
+  @@index([startAt, endAt])
+  @@index([category])
+  @@index([status, startAt])
+  @@index([organizerId])
+}
+
+// 일정 참석 여부 (iCal ATTENDEE / PARTSTAT 매핑)
+model EventRsvp {
+  id          String        @id @default(cuid())
+  eventId     String
+  event       CalendarEvent @relation("CalendarEventRsvps", fields: [eventId], references: [id], onDelete: Cascade)
+  userId      String
+  user        UserProfile   @relation("UserProfileEventRsvps", fields: [userId], references: [userId], onDelete: Cascade)
+  status      RsvpStatus    @default(TENTATIVE)
+  comment     String?       // 참석 메모
+  respondedAt DateTime?     // 응답 시간
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
 }

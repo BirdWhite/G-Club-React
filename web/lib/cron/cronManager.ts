@@ -3,6 +3,7 @@ import { startGamePostCleanup } from './gamePostCleanup';
 import { startNotificationCleanup } from './notificationCleanup';
 import { startGameStartNotification } from './gameStartNotification';
 import { startGameStartTimeNotification } from './gameStartTimeNotification';
+import { startCalendarEventReminder } from './calendarEventReminder';
 
 // 전역 변수로 크론 작업 시작 상태 관리
 declare global {
@@ -32,6 +33,9 @@ if (typeof window === 'undefined' && !(global as GlobalWithCronJobs).__cronJobsI
   
   // 게임 시작 시간 알림 크론 잡
   startGameStartTimeNotification();
+  
+  // 캘린더 일정 리마인더 크론 잡
+  startCalendarEventReminder();
   
   console.log('서버 시작: 모든 크론 작업이 성공적으로 시작되었습니다.');
 }
@@ -67,6 +71,9 @@ export function initializeCronJobs(includeNotificationCleanup: boolean = true): 
     
     // 게임 시작 시간 알림 크론 잡
     startGameStartTimeNotification();
+    
+    // 캘린더 일정 리마인더 크론 잡
+    startCalendarEventReminder();
     
     console.log('수동 크론 작업이 성공적으로 시작되었습니다.');
   }

@@ -56,6 +56,10 @@ export function Header() {
     if (pathname === '/notices/new') return '공지사항 작성';
     if (pathname.startsWith('/notices/') && pathname.includes('/edit')) return '공지사항 수정';
     if (pathname.startsWith('/notices/')) return '공지사항';
+    if (pathname === '/calendar') return '캘린더';
+    if (pathname === '/calendar/new') return '일정 등록';
+    if (pathname.startsWith('/calendar/') && pathname.includes('/edit')) return '일정 수정';
+    if (pathname.startsWith('/calendar/')) return '일정 상세';
     if (pathname.startsWith('/channels/')) return '채널';
     if (pathname.startsWith('/notifications')) return '알림';
     return ''; // 기본값을 빈 문자열로 변경
@@ -227,6 +231,7 @@ export function Header() {
                   ) : session && !isPendingMember ? (
                     <>
                       <NavLink href="/game-mate" pathname={pathname}>게임메이트</NavLink>
+                      <NavLink href="/calendar" pathname={pathname}>캘린더</NavLink>
                       <NavLink href="/notifications" pathname={pathname} showBadge={true} badgeCount={unreadNotificationCount}>알림</NavLink>
                       {isAdmin && (
                         <NavLink href="/admin/dashboard" pathname={pathname}>

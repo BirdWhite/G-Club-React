@@ -42,6 +42,26 @@ export enum GamePostStatus {
   EXPIRED = 'EXPIRED'
 }
 
+export enum CalendarEventCategory {
+  REGULAR = 'REGULAR',
+  TOURNAMENT = 'TOURNAMENT',
+  EVENT = 'EVENT',
+  SOCIAL = 'SOCIAL',
+  GENERAL = 'GENERAL'
+}
+
+export enum CalendarEventStatus {
+  TENTATIVE = 'TENTATIVE',
+  CONFIRMED = 'CONFIRMED',
+  CANCELLED = 'CANCELLED'
+}
+
+export enum RsvpStatus {
+  ACCEPTED = 'ACCEPTED',
+  DECLINED = 'DECLINED',
+  TENTATIVE = 'TENTATIVE'
+}
+
 // ========== 알림 관련 Enums ==========
 
 // 알림 카테고리 (대분류 - 알림 설정의 메인 카테고리)
@@ -50,7 +70,8 @@ export enum NotificationCategory {
   PARTICIPATING_GAME = 'PARTICIPATING_GAME',          // 참여중인 모임
   MY_GAME_POST = 'MY_GAME_POST',                      // 내가 작성한 모임
   WAITING_LIST = 'WAITING_LIST',                      // 예비 참여
-  NOTICE = 'NOTICE'                                   // 공지사항
+  NOTICE = 'NOTICE',                                   // 공지사항
+  CALENDAR_EVENT = 'CALENDAR_EVENT'                    // 캘린더 일정
 }
 
 // 알림 이벤트 타입 (소분류 - 구체적인 이벤트)
@@ -70,7 +91,12 @@ export enum NotificationEventType {
   PROMOTED = 'PROMOTED',                // 대기자 승격
   
   // 공지사항
-  NOTICE_PUBLISHED = 'NOTICE_PUBLISHED' // 공지사항 발행
+  NOTICE_PUBLISHED = 'NOTICE_PUBLISHED', // 공지사항 발행
+  
+  // 캘린더 일정
+  EVENT_CREATED = 'EVENT_CREATED',       // 새 일정 등록
+  EVENT_REMINDER = 'EVENT_REMINDER',     // 일정 리마인더
+  EVENT_CANCELLED = 'EVENT_CANCELLED'    // 일정 취소
 }
 
 // 데이터베이스 저장용 알림 타입 (Prisma type 필드)
@@ -87,7 +113,10 @@ export enum NotificationDatabaseType {
   WAITING_LIST_INVITED = 'WAITING_LIST_INVITED',
   NOTICE_NEW = 'NOTICE_NEW',
   NOTICE_UPDATED = 'NOTICE_UPDATED',
-  SYSTEM_ANNOUNCEMENT = 'SYSTEM_ANNOUNCEMENT'
+  SYSTEM_ANNOUNCEMENT = 'SYSTEM_ANNOUNCEMENT',
+  CALENDAR_EVENT_NEW = 'CALENDAR_EVENT_NEW',
+  CALENDAR_EVENT_REMINDER = 'CALENDAR_EVENT_REMINDER',
+  CALENDAR_EVENT_CANCELLED = 'CALENDAR_EVENT_CANCELLED'
 }
 
 // ========== Models ==========
@@ -287,6 +316,8 @@ export interface Notification {
   sender?: UserProfile;
   gamePostId?: string;
   gamePost?: GamePost;
+  calendarEventId?: string;
+  calendarEvent?: CalendarEvent;
   receipts: NotificationReceipt[];
   createdAt: Date;
   updatedAt: Date;
@@ -361,6 +392,12 @@ export interface NotificationSetting {
   
   // 공지사항 알림 설정
   noticeEnabled: boolean;
+  
+  // 캘린더 일정 알림 설정
+  calendarEventEnabled: boolean;
+  calendarEventNewEnabled: boolean;
+  calendarEventReminderEnabled: boolean;
+  calendarEventReminderMinutes: number;
   
   createdAt: Date;
   updatedAt: Date;
@@ -438,6 +475,47 @@ export interface Comment {
   author: UserProfile;
   content: string;
   isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 캘린더 일정 모델
+export interface CalendarEvent {
+  id: string;
+  uid: string;
+  title: string;
+  description?: string;
+  location?: string;
+  category: CalendarEventCategory;
+  status: CalendarEventStatus;
+  startAt: Date;
+  endAt: Date;
+  isAllDay: boolean;
+  url?: string;
+  sequence: number;
+  rrule?: string;
+  organizerId: string;
+  organizer: UserProfile;
+  maxParticipants?: number;
+  color?: string;
+  rsvps: EventRsvp[];
+  _count?: {
+    rsvps: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 일정 RSVP 모델
+export interface EventRsvp {
+  id: string;
+  eventId: string;
+  event?: CalendarEvent;
+  userId: string;
+  user: UserProfile;
+  status: RsvpStatus;
+  comment?: string;
+  respondedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
