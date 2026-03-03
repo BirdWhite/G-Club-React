@@ -111,12 +111,6 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   }
 
   return (
-    <>
-      {isMobile ? (
-        <div>모바일에서는 다른 사용자 프로필을 볼 수 없습니다.</div>
-      ) : (
-        <DesktopProfilePage targetProfile={targetProfile as FullUserProfile} isOwnProfile={isOwnProfile} />
-      )}
-    </>
+    <DesktopProfilePage targetProfile={targetProfile as FullUserProfile} isOwnProfile={isOwnProfile} />
   );
 }
