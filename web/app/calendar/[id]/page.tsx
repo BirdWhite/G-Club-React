@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -65,6 +65,8 @@ export default function CalendarEventDetailPage() {
 
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
+  const loadingResolvedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -92,6 +94,20 @@ export default function CalendarEventDetailPage() {
   useEffect(() => {
     fetchEvent();
   }, [fetchEvent]);
+
+  // 로딩이 250ms 이상 걸릴 때만 로딩 UI 표시
+  useEffect(() => {
+    if (!isLoading) {
+      loadingResolvedRef.current = true;
+      setShowLoading(false);
+      return;
+    }
+    loadingResolvedRef.current = false;
+    const timer = setTimeout(() => {
+      if (!loadingResolvedRef.current) setShowLoading(true);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   const handleDelete = async () => {
     if (!confirm('정말 이 일정을 취소하시겠습니까?')) return;
@@ -121,12 +137,16 @@ export default function CalendarEventDetailPage() {
     window.open(`/api/calendar/events/${id}/ical`, '_blank');
   };
 
-  if (isLoading) {
+  if (isLoading && showLoading) {
     return (
       <div className="bg-background flex items-center justify-center py-32">
         <LoadingSpinner />
       </div>
     );
+  }
+
+  if (isLoading && !showLoading) {
+    return <div className="bg-background min-h-[50vh]" />;
   }
 
   if (error || !event) {
@@ -153,13 +173,13 @@ export default function CalendarEventDetailPage() {
         <div className="w-full max-w-2xl">
           {/* 상단 네비 */}
           <div className="flex items-center justify-between mb-6">
-            <button
-              onClick={() => router.back()}
+            <Link
+              href="/calendar"
               className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              뒤로
-            </button>
+              캘린더로
+            </Link>
             {event.isAdmin && !isCancelled && (
               <div className="flex items-center gap-2">
                 <Link

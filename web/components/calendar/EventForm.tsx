@@ -55,6 +55,26 @@ export function EventForm({ initialData, mode }: EventFormProps) {
     initialData?.maxParticipants?.toString() || ''
   );
 
+  const formatLocalDatetime = (date: Date): string => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d}T${h}:${min}`;
+  };
+
+  const handleStartChange = (newStart: string) => {
+    setStartAt(newStart);
+    if (isAllDay) {
+      setEndAt(newStart.slice(0, 10));
+    } else {
+      const startDate = new Date(newStart);
+      const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+      setEndAt(formatLocalDatetime(endDate));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -63,21 +83,33 @@ export function EventForm({ initialData, mode }: EventFormProps) {
     setIsSubmitting(true);
 
     try {
+      let startDate: Date;
+      let endDate: Date;
+
+      if (isAllDay) {
+        const startStr = startAt.slice(0, 10);
+        const endStr = endAt.slice(0, 10);
+        startDate = new Date(startStr + 'T00:00:00.000');
+        endDate = new Date(endStr + 'T00:00:00.000');
+        if (endStr === startStr) {
+          endDate = new Date(endStr + 'T23:59:59.999');
+        }
+      } else {
+        startDate = new Date(startAt);
+        endDate = new Date(endAt);
+      }
+
       const payload = {
         title,
         description: description || null,
         location: location || null,
         category,
         status: eventStatus,
-        startAt: isAllDay
-          ? new Date(startAt).toISOString()
-          : new Date(startAt).toISOString(),
-        endAt: isAllDay
-          ? new Date(endAt).toISOString()
-          : new Date(endAt).toISOString(),
+        startAt: startDate.toISOString(),
+        endAt: endDate.toISOString(),
         isAllDay,
         url: url || null,
-        maxParticipants: maxParticipants ? parseInt(maxParticipants) : null,
+        maxParticipants: maxParticipants ? parseInt(maxParticipants, 10) : null,
         color: CATEGORY_CONFIG[category]?.color || null,
       };
 
@@ -189,7 +221,7 @@ export function EventForm({ initialData, mode }: EventFormProps) {
           <input
             type={isAllDay ? 'date' : 'datetime-local'}
             value={isAllDay ? startAt.slice(0, 10) : startAt}
-            onChange={(e) => setStartAt(e.target.value)}
+            onChange={(e) => handleStartChange(e.target.value)}
             required
             className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Plus, CalendarDays } from 'lucide-react';
 import {
@@ -11,6 +11,7 @@ import {
 } from 'date-fns';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { CalendarView } from '@/components/calendar/CalendarView';
+import type { View } from 'react-big-calendar';
 import { CalendarSubscribe } from '@/components/calendar/CalendarSubscribe';
 import { CATEGORY_CONFIG } from '@/lib/calendar/constants';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -31,6 +32,8 @@ interface CalendarEventItem {
   _count: { rsvps: number };
 }
 
+const LOADING_DELAY_MS = 250;
+
 function getRangeBounds(rangeStart: Date, rangeEnd: Date): { start: Date; end: Date } {
   const start = startOfWeek(rangeStart, { weekStartsOn: 0 });
   const end = endOfWeek(rangeEnd, { weekStartsOn: 0 });
@@ -40,8 +43,12 @@ function getRangeBounds(rangeStart: Date, rangeEnd: Date): { start: Date; end: D
 export default function CalendarPage() {
   const { profile } = useProfile();
   const [date, setDate] = useState(new Date());
+  const [view, setView] = useState<View>('month');
   const [events, setEvents] = useState<CalendarEventItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
+  const loadingResolvedRef = useRef(false);
+
   const [activeCategories, setActiveCategories] = useState<Set<CalendarEventCategory>>(
     new Set(Object.keys(CATEGORY_CONFIG) as CalendarEventCategory[])
   );
@@ -79,6 +86,20 @@ export default function CalendarPage() {
     const monthEnd = endOfMonth(today);
     fetchEvents(monthStart, monthEnd);
   }, [fetchEvents]);
+
+  // 로딩이 250ms 이상 걸릴 때만 로딩 UI 표시
+  useEffect(() => {
+    if (!isLoading) {
+      loadingResolvedRef.current = true;
+      setShowLoading(false);
+      return;
+    }
+    loadingResolvedRef.current = false;
+    const timer = setTimeout(() => {
+      if (!loadingResolvedRef.current) setShowLoading(true);
+    }, LOADING_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   const handleRangeChange = useCallback(
     (rangeStart: Date, rangeEnd: Date) => {
@@ -157,16 +178,18 @@ export default function CalendarPage() {
             })}
           </div>
 
-          {/* 캘린더 뷰 */}
-          <div className="rounded-2xl border border-border bg-card p-4 mb-6">
-            {isLoading && events.length === 0 ? (
+          {/* 캘린더 뷰 - 모바일: 카드 없음+좌우 패딩 제거, 데스크톱(md 이상): 카드형 */}
+          <div className="calendar-full-width-mobile p-0 md:p-4 md:rounded-2xl md:border md:border-border md:bg-card mb-6">
+            {isLoading && events.length === 0 && showLoading ? (
               <div className="flex items-center justify-center h-[500px]">
                 <LoadingSpinner />
               </div>
             ) : (
               <CalendarView
                 date={date}
+                view={view}
                 onNavigate={setDate}
+                onView={setView}
                 onRangeChange={handleRangeChange}
                 events={filteredEvents}
               />

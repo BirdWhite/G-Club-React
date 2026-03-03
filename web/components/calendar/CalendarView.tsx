@@ -2,7 +2,8 @@
 
 import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import { Calendar, dateFnsLocalizer, type View, type ToolbarProps } from 'react-big-calendar';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   format,
   parse,
@@ -21,6 +22,60 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+
+function CustomToolbar({ label, onNavigate, onView, view, views, localizer }: ToolbarProps<RBCEvent>) {
+  const { messages } = localizer;
+  const viewNames = Array.isArray(views) ? views : Object.keys(views);
+
+  return (
+    <div className="rbc-toolbar">
+      <div className="rbc-toolbar-row1">
+        <span className="rbc-btn-group">
+          <button
+            type="button"
+            className="rbc-today-btn"
+            onClick={() => onNavigate('TODAY')}
+          >
+            {messages.today}
+          </button>
+        </span>
+        {viewNames.length > 1 && (
+          <span className="rbc-btn-group rbc-toolbar-views-group">
+            {viewNames.map((name) => (
+              <button
+                type="button"
+                key={name}
+                className={`rbc-view-btn ${view === name ? 'rbc-active' : ''}`}
+                onClick={() => onView(name as View)}
+              >
+                {(messages as Record<string, string>)[name] ?? name}
+              </button>
+            ))}
+          </span>
+        )}
+      </div>
+      <span className="rbc-toolbar-label-wrapper rbc-toolbar-row2">
+        <button
+          type="button"
+          className="rbc-nav-chevron"
+          onClick={() => onNavigate('PREV')}
+          aria-label={String(messages.previous ?? '이전')}
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <span className="rbc-toolbar-label">{label}</span>
+        <button
+          type="button"
+          className="rbc-nav-chevron"
+          onClick={() => onNavigate('NEXT')}
+          aria-label={String(messages.next ?? '다음')}
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </span>
+    </div>
+  );
+}
 
 export interface RBCEvent {
   id: string;
@@ -48,7 +103,9 @@ interface CalendarEventSource {
 
 interface CalendarViewProps {
   date: Date;
+  view: View;
   onNavigate?: (newDate: Date) => void;
+  onView?: (view: View) => void;
   onRangeChange: (rangeStart: Date, rangeEnd: Date) => void;
   events: CalendarEventSource[];
 }
@@ -70,7 +127,9 @@ function toRBCEvents(source: CalendarEventSource[]): RBCEvent[] {
 
 export function CalendarView({
   date,
+  view,
   onNavigate,
+  onView,
   onRangeChange,
   events,
 }: CalendarViewProps) {
@@ -94,6 +153,13 @@ export function CalendarView({
       onNavigate?.(newDate);
     },
     [onNavigate]
+  );
+
+  const handleViewChange = useCallback(
+    (newView: View) => {
+      onView?.(newView);
+    },
+    [onView]
   );
 
   const handleSelectEvent = useCallback(
@@ -126,10 +192,13 @@ export function CalendarView({
       titleAccessor="title"
       culture="ko"
       date={date}
+      view={view}
       onNavigate={handleNavigate}
+      onView={handleViewChange}
       onRangeChange={handleRangeChange}
       onSelectEvent={handleSelectEvent}
       eventPropGetter={eventPropGetter}
+      components={{ toolbar: CustomToolbar }}
       views={['month', 'week', 'day', 'agenda']}
       style={{ height: 500 }}
       messages={{
