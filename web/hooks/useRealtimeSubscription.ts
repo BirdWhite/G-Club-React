@@ -1,6 +1,95 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/database/supabase';
+import toast from 'react-hot-toast';
 import type { GamePost, Comment } from '@/types/models';
+
+type SupabaseInstance = ReturnType<typeof createClient>;
+type RealtimeChannelType = ReturnType<SupabaseInstance['channel']>;
+
+let reloadToastShown = false;
+
+/**
+ * Supabase 실시간 채널 관리 헬퍼 훅
+ * - 탭 비활성화/활성화 시 자동 재연결
+ * - 네트워크 온라인 복구 시 자동 재연결
+ * - CHANNEL_ERROR/TIMED_OUT 시 지수 백오프 재연결 (최대 5회)
+ * - 최대 재연결 실패 시 새로고침 안내
+ */
+function useStableChannel(
+  supabase: SupabaseInstance,
+  channelBaseName: string | null,
+  configureChannel: (channel: RealtimeChannelType) => RealtimeChannelType,
+) {
+  const configureRef = useRef(configureChannel);
+  configureRef.current = configureChannel;
+
+  useEffect(() => {
+    if (!channelBaseName) return;
+
+    let channel: RealtimeChannelType | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let reconnectAttempts = 0;
+    let isDestroyed = false;
+    const MAX_RECONNECT = 5;
+
+    const connect = () => {
+      if (isDestroyed) return;
+      if (channel) { supabase.removeChannel(channel); channel = null; }
+      if (reconnectTimeout) { clearTimeout(reconnectTimeout); reconnectTimeout = null; }
+
+      const newChannel = supabase.channel(`${channelBaseName}_${Date.now()}`, {
+        config: { broadcast: { self: false } },
+      });
+      channel = configureRef.current(newChannel);
+
+      channel.subscribe((status) => {
+        if (isDestroyed) return;
+        if (status === 'SUBSCRIBED') {
+          reconnectAttempts = 0;
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          if (reconnectAttempts < MAX_RECONNECT) {
+            reconnectAttempts++;
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
+            reconnectTimeout = setTimeout(connect, delay);
+          } else if (!reloadToastShown) {
+            reloadToastShown = true;
+            toast('실시간 연결이 끊어졌습니다.\n페이지를 새로고침해주세요.', {
+              icon: '⚠️',
+              duration: 10000,
+              position: 'bottom-center',
+            });
+          }
+        }
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !isDestroyed) {
+        reconnectAttempts = 0;
+        connect();
+      }
+    };
+
+    const handleOnline = () => {
+      if (!isDestroyed) {
+        reconnectAttempts = 0;
+        connect();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+    connect();
+
+    return () => {
+      isDestroyed = true;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+      if (channel) supabase.removeChannel(channel);
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
+  }, [supabase, channelBaseName]);
+}
 
 // 게임메이트 목록을 위한 실시간 구독 훅 (무한 스크롤 지원)
 export function useGamePostListSubscription(
@@ -175,22 +264,16 @@ export function useGamePostListSubscription(
     fetchPosts(filters, 1, false);
   }, [filters]); // fetchPosts 의존성 제거
 
-  // 실시간 구독 설정 - 부분 업데이트 방식
-  useEffect(() => {
-    let pollingInterval: NodeJS.Timeout | null = null;
-
-    const channel = supabase.channel(`game_post_list_${Date.now()}`, {
-      config: { broadcast: { self: false } },
-    });
-    
-    // GamePost 테이블 변경사항 처리
-    channel
+  // 실시간 구독 설정 - 부분 업데이트 방식 (자동 재연결 포함)
+  useStableChannel(
+    supabase,
+    'game_post_list',
+    (channel) => channel
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
         table: 'GamePost' 
       }, (payload) => {
-        // 새 게시글 추가 - 목록 맨 앞에 추가
         if (payload.new) {
           addNewPost(payload.new.id);
         }
@@ -200,7 +283,6 @@ export function useGamePostListSubscription(
         schema: 'public', 
         table: 'GamePost' 
       }, (payload) => {
-        // 게시글 업데이트 (참여자 수 변경 포함)
         if (payload.new) {
           fetchSinglePost(payload.new.id);
         }
@@ -210,14 +292,12 @@ export function useGamePostListSubscription(
         schema: 'public', 
         table: 'GamePost' 
       }, (payload) => {
-        // 게시글 삭제
         if (payload.old) {
           setPosts(prevPosts => 
             prevPosts.filter(post => post.id !== payload.old!.id)
           );
         }
       })
-      // 참여자 수 변경을 위해 다시 추가
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -225,28 +305,22 @@ export function useGamePostListSubscription(
       }, (payload) => {
         let postId = (payload.new as any)?.gamePostId || (payload.old as any)?.gamePostId;
         
-        // DELETE 이벤트 시 캐시에서 postId 찾기
         if (!postId && payload.eventType === 'DELETE' && (payload.old as any)?.userId) {
           postId = participantCache.get((payload.old as any).userId);
           if (postId) {
-            // 캐시에서 제거
             participantCache.delete((payload.old as any).userId);
           } else {
-            // 캐시에 없으면 전체 목록 새로고침
             fetchPosts(filters);
             return;
           }
         }
         
-        // INSERT 이벤트 시 캐시에 추가
         if (payload.eventType === 'INSERT' && (payload.new as any)?.userId && (payload.new as any)?.gamePostId) {
           participantCache.set((payload.new as any).userId, (payload.new as any).gamePostId);
         }
         
         if (postId) {
           debouncedFetchSinglePost(postId);
-          
-          // 참여자 제거 시 즉시 업데이트 (더 안정적)
           if (payload.eventType === 'DELETE') {
             setTimeout(() => {
               fetchSinglePost(postId);
@@ -261,20 +335,16 @@ export function useGamePostListSubscription(
       }, (payload) => {
         let postId = (payload.new as any)?.gamePostId || (payload.old as any)?.gamePostId;
         
-        // DELETE 이벤트 시 캐시에서 postId 찾기
         if (!postId && payload.eventType === 'DELETE' && (payload.old as any)?.userId) {
           postId = participantCache.get((payload.old as any).userId);
           if (postId) {
-            // 캐시에서 제거
             participantCache.delete((payload.old as any).userId);
           } else {
-            // 캐시에 없으면 전체 목록 새로고침
             fetchPosts(filters);
             return;
           }
         }
         
-        // INSERT 이벤트 시 캐시에 추가
         if (payload.eventType === 'INSERT' && (payload.new as any)?.userId && (payload.new as any)?.gamePostId) {
           participantCache.set((payload.new as any).userId, (payload.new as any).gamePostId);
         }
@@ -282,24 +352,8 @@ export function useGamePostListSubscription(
         if (postId) {
           debouncedFetchSinglePost(postId);
         }
-      })
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.log('게임 포스트 실시간 구독 실패, 폴링으로 대체');
-          // 실시간 연결 실패 시 폴링으로 대체
-          pollingInterval = setInterval(() => {
-            fetchPosts(filters);
-          }, 5000); // 5초마다 폴링
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [supabase, filters, fetchPosts]); // 필요한 의존성만 유지
+      }),
+  );
 
   return { 
     posts, 
@@ -423,14 +477,11 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
     }
   }, [initialPost, participantCache, postId]);
 
-  // 실시간 구독 설정 - 개별 필드 업데이트 방식
-  useEffect(() => {
-    let pollingInterval: NodeJS.Timeout | null = null;
-
-    const channel = supabase
-      .channel(`game_post:${postId}`, {
-        config: { broadcast: { self: false } },
-      })
+  // 실시간 구독 설정 - 개별 필드 업데이트 방식 (자동 재연결 포함)
+  useStableChannel(
+    supabase,
+    `game_post_detail_${postId}`,
+    (channel) => channel
       .on(
         'postgres_changes' as any,
         {
@@ -440,12 +491,9 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           filter: `gamePostId=eq.${postId}`,
         },
         async (payload: { new?: { userId: string } }) => {
-          console.log('GameParticipant INSERT for post:', postId, payload);
-          // 캐시에 새 참여자 추가
           if (payload.new && payload.new.userId) {
             participantCache.set(payload.new.userId, postId);
           }
-          // 디바운싱된 새로고침
           debouncedRefresh();
         }
       )
@@ -457,18 +505,10 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'GameParticipant',
           filter: `gamePostId=eq.${postId}`,
         },
-        async (payload: { old?: { userId: string }; new?: { userId: string }; eventType?: string }) => {
-          console.log('GameParticipant DELETE for post:', postId, payload);
-          console.log('DELETE payload details:', {
-            old: payload.old,
-            new: payload.new,
-            eventType: payload.eventType
-          });
-          // 캐시에서 해당 참여자 제거
+        async (payload: { old?: { userId: string } }) => {
           if (payload.old && payload.old.userId) {
             participantCache.delete(payload.old.userId);
           }
-          // 디바운싱된 새로고침
           debouncedRefresh();
         }
       )
@@ -480,10 +520,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'WaitingParticipant',
           filter: `gamePostId=eq.${postId}`,
         },
-        () => {
-          console.log('WaitingParticipant INSERT for post:', postId);
-          debouncedRefresh();
-        }
+        () => { debouncedRefresh(); }
       )
       .on(
         'postgres_changes' as any,
@@ -493,10 +530,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'WaitingParticipant',
           filter: `gamePostId=eq.${postId}`,
         },
-        () => {
-          console.log('WaitingParticipant UPDATE for post:', postId);
-          debouncedRefresh();
-        }
+        () => { debouncedRefresh(); }
       )
       .on(
         'postgres_changes' as any,
@@ -506,10 +540,7 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'WaitingParticipant',
           filter: `gamePostId=eq.${postId}`,
         },
-        () => {
-          console.log('WaitingParticipant DELETE for post:', postId);
-          debouncedRefresh();
-        }
+        () => { debouncedRefresh(); }
       )
       .on(
         'postgres_changes' as any,
@@ -519,17 +550,12 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'GamePost',
           filter: `id=eq.${postId}`,
         },
-        (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
-          // 게시글 정보 변경 시 전체 데이터 새로고침 (참여자 정보 포함)
-          console.log('GamePost updated:', payload);
-          debouncedRefresh();
-        }
+        () => { debouncedRefresh(); }
       )
-      // 댓글 실시간 구독 추가
       .on(
         'postgres_changes' as any,
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'Comment',
           filter: `gamePostId=eq.${postId}`,
@@ -546,59 +572,10 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
               setPost(data);
             }
           } catch (error) {
-            console.error('Error fetching post after Comment INSERT:', error);
+            console.error('Error fetching post after Comment change:', error);
           }
         }
       )
-      .on(
-        'postgres_changes' as any,
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'Comment',
-          filter: `gamePostId=eq.${postId}`,
-        },
-        async () => {
-          try {
-            const response = await fetch(`/api/game-posts/${postId}`);
-            if (response.status === 404 || response.status === 410) {
-              setPost(null);
-              return;
-            }
-            if (response.ok) {
-              const data = await response.json();
-              setPost(data);
-            }
-          } catch (error) {
-            console.error('Error fetching post after Comment UPDATE:', error);
-          }
-        }
-      )
-      .on(
-        'postgres_changes' as any,
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'Comment',
-          filter: `gamePostId=eq.${postId}`,
-        },
-        async () => {
-          try {
-            const response = await fetch(`/api/game-posts/${postId}`);
-            if (response.status === 404 || response.status === 410) {
-              setPost(null);
-              return;
-            }
-            if (response.ok) {
-              const data = await response.json();
-              setPost(data);
-            }
-          } catch (error) {
-            console.error('Error fetching post after Comment DELETE:', error);
-          }
-        }
-      )
-      // 백업: 모든 GameParticipant 이벤트 감지 (필터 없이)
       .on(
         'postgres_changes' as any,
         {
@@ -607,24 +584,12 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
           table: 'GameParticipant',
         },
         (payload: { new?: { gamePostId: string }; old?: { gamePostId: string }; eventType?: string }) => {
-          console.log('GameParticipant ANY event:', payload);
-          
-          // 해당 게시글의 이벤트인지 확인
-          let isForOurPost = false;
-          
-          if (payload.new && payload.new.gamePostId === postId) {
-            isForOurPost = true;
-          } else if (payload.old && payload.old.gamePostId === postId) {
-            isForOurPost = true;
-          } else if (payload.eventType === 'DELETE') {
-            // DELETE 이벤트의 경우 항상 해당 게시글의 이벤트로 간주
-            isForOurPost = true;
-          }
-          
+          const isForOurPost =
+            (payload.new && payload.new.gamePostId === postId) ||
+            (payload.old && payload.old.gamePostId === postId) ||
+            payload.eventType === 'DELETE';
+
           if (isForOurPost) {
-            console.log('This event is for our post, updating...');
-            
-            // 모든 이벤트에 대해 직접 API 호출
             const refreshPost = async () => {
               try {
                 const response = await fetch(`/api/game-posts/${postId}`);
@@ -637,38 +602,14 @@ export function useGamePostDetailSubscription(postId: string, initialPost: GameP
                   setPost(data);
                 }
               } catch (error) {
-                console.error('Error fetching post after GameParticipant ANY event:', error);
+                console.error('Error fetching post after GameParticipant event:', error);
               }
             };
-            
-            if (payload.eventType === 'DELETE') {
-              // DELETE 이벤트의 경우 전체 새로고침 (안전한 방법)
-              console.log('Handling DELETE event, refreshing post data...');
-              refreshPost();
-            } else {
-              // 다른 이벤트의 경우 전체 새로고침
-              refreshPost();
-            }
+            refreshPost();
           }
         }
-      )
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.log('게임 포스트 상세 실시간 구독 실패, 폴링으로 대체');
-          // 실시간 연결 실패 시 폴링으로 대체
-          pollingInterval = setInterval(() => {
-            fetchPost();
-          }, 15000); // 15초마다 폴링
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [postId, supabase, fetchPost]);
+      ),
+  );
 
   return { post, loading, refresh: fetchPost };
 }
@@ -698,66 +639,17 @@ export function useCommentSubscription(gamePostId: string) {
     fetchComments(true);
   }, [fetchComments]);
 
-  // 실시간 구독 설정 - 업데이트 시 로딩 표시 없이 백그라운드 갱신
-  useEffect(() => {
-    let pollingInterval: NodeJS.Timeout | null = null;
-
-    const channel = supabase
-      .channel(`comments_${gamePostId}_${Date.now()}`, {
-        config: { broadcast: { self: false } },
-      })
+  // 실시간 구독 설정 - 백그라운드 갱신 (자동 재연결 포함)
+  useStableChannel(
+    supabase,
+    `comments_${gamePostId}`,
+    (channel) => channel
       .on(
         'postgres_changes' as any,
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'Comment',
-          filter: `gamePostId=eq.${gamePostId}`,
-        },
-        () => {
-          fetchComments(false);
-        }
-      )
-      .on(
-        'postgres_changes' as any,
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'Comment',
-          filter: `gamePostId=eq.${gamePostId}`,
-        },
-        () => {
-          fetchComments(false);
-        }
-      )
-      .on(
-        'postgres_changes' as any,
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'Comment',
-          filter: `gamePostId=eq.${gamePostId}`,
-        },
-        () => {
-          fetchComments(false);
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.log('댓글 실시간 구독 실패, 폴링으로 대체');
-          pollingInterval = setInterval(() => {
-            fetchComments(false);
-          }, 10000);
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [gamePostId, supabase, fetchComments]);
+        { event: '*', schema: 'public', table: 'Comment', filter: `gamePostId=eq.${gamePostId}` },
+        () => { fetchComments(false); }
+      ),
+  );
 
   return { comments, loading, refresh: fetchComments };
 }
@@ -797,68 +689,17 @@ export function useNoticeCommentSubscription(noticeId: string | null) {
     }
   }, [noticeId, fetchComments]);
 
-  // 실시간 구독 설정 (noticeId가 있을 때만)
-  useEffect(() => {
-    if (!noticeId) return;
-
-    let pollingInterval: NodeJS.Timeout | null = null;
-
-    const channel = supabase
-      .channel(`notice_comments_${noticeId}_${Date.now()}`, {
-        config: { broadcast: { self: false } },
-      })
+  // 실시간 구독 설정 (자동 재연결 포함, noticeId가 null이면 비활성)
+  useStableChannel(
+    supabase,
+    noticeId ? `notice_comments_${noticeId}` : null,
+    (channel) => channel
       .on(
         'postgres_changes' as any,
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'Comment',
-          filter: `noticeId=eq.${noticeId}`,
-        },
-        () => {
-          fetchComments(false); // 실시간 업데이트 시 로딩 표시 없음
-        }
-      )
-      .on(
-        'postgres_changes' as any,
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'Comment',
-          filter: `noticeId=eq.${noticeId}`,
-        },
-        () => {
-          fetchComments(false);
-        }
-      )
-      .on(
-        'postgres_changes' as any,
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'Comment',
-          filter: `noticeId=eq.${noticeId}`,
-        },
-        () => {
-          fetchComments(false);
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.log('공지사항 댓글 실시간 구독 실패, 폴링으로 대체');
-          pollingInterval = setInterval(() => {
-            fetchComments(false);
-          }, 10000);
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [noticeId, supabase, fetchComments]);
+        { event: '*', schema: 'public', table: 'Comment', filter: `noticeId=eq.${noticeId}` },
+        () => { fetchComments(false); }
+      ),
+  );
 
   return { comments, loading, refresh: fetchComments };
 }
@@ -900,11 +741,10 @@ export function useRealtimeSubscription<T extends { id: string }>(
     setData((prev: T[]) => prev.filter((item: T) => item.id !== id));
   }, []);
 
-  useEffect(() => {
-    let pollingInterval: NodeJS.Timeout | null = null;
-
-    const channel = supabase
-      .channel(`realtime_${table}_${Date.now()}`)
+  useStableChannel(
+    supabase,
+    `realtime_${table}`,
+    (channel) => channel
       .on(
         'postgres_changes' as any,
         {
@@ -914,8 +754,6 @@ export function useRealtimeSubscription<T extends { id: string }>(
           filter: options.filter,
         },
         (payload: { eventType?: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
-          console.log('Realtime update received:', payload);
-          
           switch (payload.eventType) {
             case 'INSERT':
               if (options.onInsert) {
@@ -924,7 +762,6 @@ export function useRealtimeSubscription<T extends { id: string }>(
                 addItem(payload.new as T);
               }
               break;
-              
             case 'UPDATE':
               if (options.onUpdate) {
                 options.onUpdate(payload);
@@ -934,7 +771,6 @@ export function useRealtimeSubscription<T extends { id: string }>(
                 }
               }
               break;
-              
             case 'DELETE':
               if (options.onDelete) {
                 options.onDelete(payload);
@@ -946,25 +782,8 @@ export function useRealtimeSubscription<T extends { id: string }>(
               break;
           }
         }
-      )
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.log(`${table} 실시간 구독 실패, 폴링으로 대체`);
-          // 실시간 연결 실패 시 폴링으로 대체 (기본 30초)
-          pollingInterval = setInterval(() => {
-            // 폴링 로직은 각 훅에서 개별적으로 구현
-            console.log(`${table} 폴링 실행`);
-          }, 30000);
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [supabase, table, options.event, options.schema, options.filter, options.onInsert, options.onUpdate, options.onDelete, addItem, updateItem, removeItem]);
+      ),
+  );
 
   return {
     data,
@@ -1052,14 +871,11 @@ export function useNoticeListSubscription() {
     fetchNotices();
   }, []); // fetchNotices 의존성 제거
 
-  // 실시간 구독 설정 (한 번만 실행)
-  useEffect(() => {
-    let pollingInterval: NodeJS.Timeout | null = null;
-
-    const channel = supabase
-      .channel(`notice_list_${Date.now()}`, {
-        config: { broadcast: { self: false } },
-      })
+  // 실시간 구독 설정 (자동 재연결 포함)
+  useStableChannel(
+    supabase,
+    'notice_list',
+    (channel) => channel
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
@@ -1088,24 +904,8 @@ export function useNoticeListSubscription() {
             prevNotices.filter(notice => notice.id !== payload.old!.id)
           );
         }
-      })
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.log('공지사항 실시간 구독 실패, 폴링으로 대체');
-          // 실시간 연결 실패 시 폴링으로 대체
-          pollingInterval = setInterval(() => {
-            fetchNotices();
-          }, 30000); // 30초마다 폴링
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [supabase, addNewNotice, updateNotice, fetchNotices]); // 의존성 추가
+      }),
+  );
 
   return {
     notices,
@@ -1150,16 +950,11 @@ export function useNotificationSubscription(
     fetchUnreadCount();
   }, [fetchUnreadCount]);
 
-  // 실시간 구독 설정
-  useEffect(() => {
-    if (!userId) return;
-
-    let pollingInterval: NodeJS.Timeout | null = null;
-
-    const channel = supabase
-      .channel(`notifications_${userId}`, {
-        config: { broadcast: { self: false } },
-      })
+  // 실시간 구독 설정 (자동 재연결 포함)
+  useStableChannel(
+    supabase,
+    userId ? `notifications_${userId}` : null,
+    (channel) => channel
       .on(
         'postgres_changes' as any,
         {
@@ -1168,11 +963,8 @@ export function useNotificationSubscription(
           table: 'NotificationReceipt',
           filter: `userId=eq.${userId}`,
         },
-        (payload) => {
-          console.log('새 알림 수신:', payload);
-          // 새 알림이 추가되면 읽지 않은 수 증가
+        () => {
           setUnreadCount(prev => prev + 1);
-          // 알림 목록 갱신 콜백 호출 (알림 페이지 등)
           onNewNotificationRef.current?.();
         }
       )
@@ -1184,14 +976,10 @@ export function useNotificationSubscription(
           table: 'NotificationReceipt',
           filter: `userId=eq.${userId}`,
         },
-        (payload) => {
-          console.log('알림 상태 변경:', payload);
-          // 알림이 읽음 처리되면 읽지 않은 수 감소
+        (payload: { new?: { isRead?: boolean }; old?: { isRead?: boolean } }) => {
           if (payload.new?.isRead && !payload.old?.isRead) {
             setUnreadCount(prev => Math.max(0, prev - 1));
-          }
-          // 알림이 읽지 않음으로 변경되면 읽지 않은 수 증가
-          else if (!payload.new?.isRead && payload.old?.isRead) {
+          } else if (!payload.new?.isRead && payload.old?.isRead) {
             setUnreadCount(prev => prev + 1);
           }
         }
@@ -1204,31 +992,13 @@ export function useNotificationSubscription(
           table: 'NotificationReceipt',
           filter: `userId=eq.${userId}`,
         },
-        (payload) => {
-          console.log('알림 삭제:', payload);
-          // 알림이 삭제되면 읽지 않은 수 감소 (삭제된 알림이 읽지 않았던 경우)
+        (payload: { old?: { isRead?: boolean } }) => {
           if (!payload.old?.isRead) {
             setUnreadCount(prev => Math.max(0, prev - 1));
           }
         }
-      )
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.log('알림 실시간 구독 실패, 폴링으로 대체');
-          // 실시간 연결 실패 시 폴링으로 대체
-          pollingInterval = setInterval(() => {
-            fetchUnreadCount();
-          }, 10000); // 10초마다 폴링
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [userId, supabase, fetchUnreadCount]); // fetchUnreadCount 의존성 추가
+      ),
+  );
 
   return {
     unreadCount,
