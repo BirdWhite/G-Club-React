@@ -2,10 +2,10 @@ import cron from 'node-cron';
 import prisma from '@/lib/database/prisma';
 
 export function startCalendarEventReminder() {
-  console.log('캘린더 일정 리마인더 스케줄러를 시작합니다...');
+  console.log('일정 리마인더 스케줄러를 시작합니다...');
 
   cron.schedule('0,30 * * * *', async () => {
-    console.log(`[${new Date().toISOString()}] 캘린더 일정 리마인더 작업 시작...`);
+    console.log(`[${new Date().toISOString()}] 일정 리마인더 작업 시작...`);
 
     try {
       const now = new Date();
@@ -108,20 +108,20 @@ export function startCalendarEventReminder() {
 
           totalSent += targetUsers.length;
           console.log(
-            `캘린더 리마인더 발송: "${event.title}" - ${targetUsers.length}명 (${minuteLabel} 전)`
+            `일정 리마인더 발송: "${event.title}" - ${targetUsers.length}명 (${minuteLabel} 전)`
           );
         }
       }
 
       console.log(
-        `[${new Date().toISOString()}] 캘린더 일정 리마인더 작업 완료 (총 ${totalSent}건 발송)`
+        `[${new Date().toISOString()}] 일정 리마인더 작업 완료 (총 ${totalSent}건 발송)`
       );
     } catch (error) {
-      console.error('캘린더 일정 리마인더 작업 중 오류 발생:', error);
+      console.error('일정 리마인더 작업 중 오류 발생:', error);
     }
   }, {
     timezone: 'Asia/Seoul',
   });
 
-  console.log('캘린더 일정 리마인더 스케줄러가 성공적으로 시작되었습니다.');
+  console.log('일정 리마인더 스케줄러가 성공적으로 시작되었습니다.');
 }

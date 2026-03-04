@@ -155,7 +155,7 @@ export default function CalendarEventDetailPage() {
         <div className="flex flex-col items-center page-content-padding py-16">
           <p className="text-destructive mb-4">{error || '일정을 찾을 수 없습니다.'}</p>
           <Link href="/calendar" className="text-primary hover:underline">
-            캘린더로 돌아가기
+            일정으로 돌아가기
           </Link>
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function CalendarEventDetailPage() {
               className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              캘린더로
+              일정으로
             </Link>
             {event.isAdmin && !isCancelled && (
               <div className="flex items-center gap-2">

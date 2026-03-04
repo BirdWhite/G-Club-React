@@ -59,7 +59,7 @@
   border-right: 1px solid var(--card-elevated) !important;
 }
 
-/* 모바일: 캘린더 페이지 좌우 패딩 제거하여 캘린더만 최대 너비 활용 */
+/* 모바일: 일정 페이지 좌우 패딩 제거하여 일정만 최대 너비 활용 */
 @media (max-width: 767px) {
   .calendar-full-width-mobile {
     margin-left: -2rem !important;
@@ -69,7 +69,7 @@
   }
 }
 
-/* 모바일: 캘린더 일정 글자 크기 축소 (노출 글자 확대), 말줄임 대신 잘림 */
+/* 모바일: 일정 글자 크기 축소 (노출 글자 확대), 말줄임 대신 잘림 */
 @media (max-width: 767px) {
   .rbc-month-view .rbc-event-content,
   .rbc-month-view .rbc-event-label,
@@ -145,7 +145,7 @@
   color: var(--foreground) !important;
 }
 
-/* 캘린더 툴바 버튼 공통: 오늘, 월/주/일/목록 */
+/* 일정 툴바 버튼 공통: 오늘, 월/주/일/목록 */
 .rbc-today-btn,
 .rbc-view-btn {
   border-radius: var(--radius, 0.375rem) !important;

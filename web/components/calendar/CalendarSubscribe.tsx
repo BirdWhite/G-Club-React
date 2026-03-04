@@ -33,7 +33,7 @@ export function CalendarSubscribe({ userId }: CalendarSubscribeProps) {
     <div className="rounded-lg border border-border bg-muted/30 p-4">
       <div className="flex items-center gap-2 mb-2">
         <LinkIcon className="w-4 h-4 text-muted-foreground" />
-        <span className="text-sm font-medium text-foreground">캘린더 구독</span>
+        <span className="text-sm font-medium text-foreground">일정 구독</span>
       </div>
       <p className="text-xs text-muted-foreground mb-3">
         Google Calendar, Apple Calendar 등에서 이 URL을 구독하면 일정이 자동으로 동기화됩니다.

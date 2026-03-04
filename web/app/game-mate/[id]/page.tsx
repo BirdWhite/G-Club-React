@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getCurrentUser } from '@/lib/database/supabase';
-import { GamePost } from '@/types/models';
+import { GamePost, GameParticipant } from '@/types/models';
 import { GamePostDetailClient } from '@/components/game-mate/GamePostDetailClient';
 import { MobileGamePostDetailClient } from '@/components/game-mate/mobile/MobileGamePostDetailClient';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -28,11 +28,13 @@ type ExtendedUser = Omit<User, 'role'> & {
 
 export default function GamePostDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [post, setPost] = useState<GamePost | null>(null);
   const [user, setUser] = useState<ExtendedUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDeleted, setIsDeleted] = useState(false);
   const isMobile = useMediaQuery('(max-width: 767px)');
+  const autoJoinAttempted = useRef(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -45,12 +47,10 @@ export default function GamePostDetailPage({ params }: { params: Promise<{ id: s
 
         if (!postResponse.ok) {
           if (postResponse.status === 410) {
-            // 삭제된 게시글 (과거에 존재했으나 삭제됨)
             setIsDeleted(true);
             return;
           }
           if (postResponse.status === 404) {
-            // 존재하지 않는 링크 - 게임메이트로 이동
             router.replace('/game-mate');
             return;
           }
@@ -74,6 +74,35 @@ export default function GamePostDetailPage({ params }: { params: Promise<{ id: s
 
         setPost(postData);
         setUser(userData);
+
+        if (
+          searchParams.get('action') === 'join' &&
+          !autoJoinAttempted.current
+        ) {
+          autoJoinAttempted.current = true;
+          const isAlreadyParticipating = postData.participants?.some(
+            (p: GameParticipant) => p.userId === userData.id && p.status === 'ACTIVE'
+          );
+          const isAuthor = userData.id === postData.author?.userId;
+          const isOpen = postData.status === 'OPEN' || postData.status === 'IN_PROGRESS';
+
+          if (!isAlreadyParticipating && !isAuthor && isOpen) {
+            try {
+              const joinRes = await fetch(`/api/game-posts/${id}/participate`, { method: 'POST' });
+              if (joinRes.ok) {
+                toast.success('게임 참여가 완료되었습니다.');
+              } else {
+                const joinData = await joinRes.json().catch(() => ({}));
+                if (joinRes.status !== 409) {
+                  toast.error((joinData as { error?: string }).error ?? '참여 처리 중 오류가 발생했습니다.');
+                }
+              }
+            } catch {
+              toast.error('참여 처리 중 오류가 발생했습니다.');
+            }
+          }
+          router.replace(`/game-mate/${id}`, { scroll: false });
+        }
       } catch (error) {
         console.error('데이터 로딩 실패:', error);
         toast.error('게시글을 불러올 수 없습니다.');
@@ -84,7 +113,7 @@ export default function GamePostDetailPage({ params }: { params: Promise<{ id: s
     };
 
     loadData();
-  }, [params, router]);
+  }, [params, router, searchParams]);
 
   if (loading) {
     return <LoadingSpinner />;

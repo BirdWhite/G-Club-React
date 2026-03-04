@@ -69,7 +69,7 @@ enum WaitingStatus {
   CANCELED // 대기 취소
 }
 
-// 캘린더 일정 카테고리
+// 일정 카테고리
 enum CalendarEventCategory {
   REGULAR      // 정기모임
   TOURNAMENT   // 대회
@@ -78,7 +78,7 @@ enum CalendarEventCategory {
   GENERAL      // 기타/일반
 }
 
-// 캘린더 일정 상태 (iCal STATUS 매핑)
+// 일정 상태 (iCal STATUS 매핑)
 enum CalendarEventStatus {
   TENTATIVE    // 미확정
   CONFIRMED    // 확정
@@ -165,7 +165,7 @@ model UserProfile {
   notificationReceipts  NotificationReceipt[] @relation("NotificationReceipts")
   notificationSettings NotificationSetting?  @relation("UserNotificationSettings")
   
-  // 캘린더 관련
+  // 일정 관련
   calendarEvents     CalendarEvent[]   @relation("UserProfileCalendarEvents")
   eventRsvps         EventRsvp[]       @relation("UserProfileEventRsvps")
 }
@@ -421,7 +421,7 @@ model Notification {
   gamePostId   String?              // 게임 포스트 관련 알림
   gamePost     GamePost?            @relation("GamePostNotifications", fields: [gamePostId], references: [id], onDelete: Cascade)
   
-  calendarEventId String?           // 캘린더 이벤트 관련 알림
+  calendarEventId String?           // 일정 관련 알림
   calendarEvent   CalendarEvent?    @relation("CalendarEventNotifications", fields: [calendarEventId], references: [id], onDelete: Cascade)
   
   // 알림 상태
@@ -545,8 +545,8 @@ model NotificationSetting {
   // 공지사항 알림 설정
   noticeEnabled       Boolean   @default(true) // 공지사항 알림 받기
   
-  // 캘린더 일정 알림 설정
-  calendarEventEnabled         Boolean @default(true)  // 캘린더 알림 전체 토글
+  // 일정 알림 설정
+  calendarEventEnabled         Boolean @default(true)  // 일정 알림 전체 토글
   calendarEventNewEnabled      Boolean @default(true)  // 새 일정 등록 알림
   calendarEventReminderEnabled Boolean @default(true)  // 일정 전 리마인더 알림
   calendarEventReminderMinutes Int     @default(60)    // 리마인더 몇 분 전 (기본 60분)
@@ -624,7 +624,7 @@ model Notice {
   @@index([isDeleted])
 }
 
-// 캘린더 일정 모델 (iCal VEVENT 매핑)
+// 일정 모델 (iCal VEVENT 매핑)
 model CalendarEvent {
   id              String                @id @default(cuid())
   uid             String                @unique // iCal UID ({uuid}@gclub)
@@ -644,7 +644,7 @@ model CalendarEvent {
   organizer       UserProfile           @relation("UserProfileCalendarEvents", fields: [organizerId], references: [userId])
   
   maxParticipants Int?                  // 최대 참석 인원 (null=무제한)
-  color           String?               // 캘린더 표시 색상
+  color           String?               // 일정 표시 색상
   
   rsvps           EventRsvp[]           @relation("CalendarEventRsvps")
   notifications   Notification[]        @relation("CalendarEventNotifications")

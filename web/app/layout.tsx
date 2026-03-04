@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { PWAInstaller } from "@/components/common/PWAInstaller";
@@ -73,6 +74,11 @@ export default function RootLayout({
           </PWAManager>
         </ProfileProvider>
       </body>
+      <Script
+        src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.0/kakao.min.js"
+        crossOrigin="anonymous"
+        strategy="lazyOnload"
+      />
     </html>
   );
 }

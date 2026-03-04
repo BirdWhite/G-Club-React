@@ -6,6 +6,7 @@ import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 import { ChevronLeft, Eye } from 'lucide-react';
 import { formatAbsoluteTime } from '@/lib/utils/date';
 import { useEffect, useState } from 'react';
+import { KakaoShareButton } from '@/components/game-mate/KakaoShareButton';
 
 interface GamePostHeaderProps {
   post: GamePost;
@@ -53,28 +54,27 @@ export function GamePostHeader({
           <ChevronLeft className="h-5 w-5" />
           목록
         </button>
-        {(isOwner || canDelete) && (
-          <div className="flex items-center gap-2 ml-auto">
-            {isOwner && (
-              <button
-                onClick={onEdit}
-                disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-foreground bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
-              >
-                수정
-              </button>
-            )}
-            {canDelete && (
-              <button
-                onClick={onDelete}
-                disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-destructive bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
-              >
-                삭제
-              </button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2 ml-auto">
+          <KakaoShareButton post={post} />
+          {isOwner && (
+            <button
+              onClick={onEdit}
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-foreground bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
+            >
+              수정
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={onDelete}
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-destructive bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
+            >
+              삭제
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 두 번째 줄: 제목+상태뱃지(왼쪽) | 게임 아이콘(오른쪽) */}

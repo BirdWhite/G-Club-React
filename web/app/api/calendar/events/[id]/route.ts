@@ -45,7 +45,7 @@ export async function GET(
       event: { ...event, myRsvp, isAdmin },
     });
   } catch (error) {
-    console.error('캘린더 일정 상세 조회 오류:', error);
+    console.error('일정 상세 조회 오류:', error);
     return NextResponse.json(
       { error: '일정을 불러오는 중 오류가 발생했습니다.' },
       { status: 500 }
@@ -130,7 +130,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, event });
   } catch (error) {
-    console.error('캘린더 일정 수정 오류:', error);
+    console.error('일정 수정 오류:', error);
     return NextResponse.json(
       { error: '일정 수정 중 오류가 발생했습니다.' },
       { status: 500 }
@@ -210,12 +210,12 @@ export async function DELETE(
         });
       }
     } catch (notificationError) {
-      console.error('캘린더 일정 취소 알림 발송 실패:', notificationError);
+      console.error('일정 취소 알림 발송 실패:', notificationError);
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('캘린더 일정 삭제 오류:', error);
+    console.error('일정 삭제 오류:', error);
     return NextResponse.json(
       { error: '일정 삭제 중 오류가 발생했습니다.' },
       { status: 500 }

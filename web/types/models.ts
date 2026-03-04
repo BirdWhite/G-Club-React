@@ -71,7 +71,7 @@ export enum NotificationCategory {
   MY_GAME_POST = 'MY_GAME_POST',                      // 내가 작성한 모임
   WAITING_LIST = 'WAITING_LIST',                      // 예비 참여
   NOTICE = 'NOTICE',                                   // 공지사항
-  CALENDAR_EVENT = 'CALENDAR_EVENT'                    // 캘린더 일정
+  CALENDAR_EVENT = 'CALENDAR_EVENT'                    // 일정
 }
 
 // 알림 이벤트 타입 (소분류 - 구체적인 이벤트)
@@ -93,7 +93,7 @@ export enum NotificationEventType {
   // 공지사항
   NOTICE_PUBLISHED = 'NOTICE_PUBLISHED', // 공지사항 발행
   
-  // 캘린더 일정
+  // 일정
   EVENT_CREATED = 'EVENT_CREATED',       // 새 일정 등록
   EVENT_REMINDER = 'EVENT_REMINDER',     // 일정 리마인더
   EVENT_CANCELLED = 'EVENT_CANCELLED'    // 일정 취소
@@ -393,7 +393,7 @@ export interface NotificationSetting {
   // 공지사항 알림 설정
   noticeEnabled: boolean;
   
-  // 캘린더 일정 알림 설정
+  // 일정 알림 설정
   calendarEventEnabled: boolean;
   calendarEventNewEnabled: boolean;
   calendarEventReminderEnabled: boolean;
@@ -479,7 +479,7 @@ export interface Comment {
   updatedAt: Date;
 }
 
-// 캘린더 일정 모델
+// 일정 모델
 export interface CalendarEvent {
   id: string;
   uid: string;

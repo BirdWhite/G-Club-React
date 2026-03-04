@@ -141,7 +141,7 @@ export default function CalendarPage() {
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
               <CalendarDays className="w-8 h-8" />
-              캘린더
+              일정
             </h1>
             {isAdmin && (
               <Link
@@ -178,7 +178,7 @@ export default function CalendarPage() {
             })}
           </div>
 
-          {/* 캘린더 뷰 - 모바일: 카드 없음+좌우 패딩 제거, 데스크톱(md 이상): 카드형 */}
+          {/* 일정 뷰 - 모바일: 카드 없음+좌우 패딩 제거, 데스크톱(md 이상): 카드형 */}
           <div className="calendar-full-width-mobile p-0 md:p-4 md:rounded-2xl md:border md:border-border md:bg-card mb-6">
             {isLoading && events.length === 0 && showLoading ? (
               <div className="flex items-center justify-center h-[500px]">

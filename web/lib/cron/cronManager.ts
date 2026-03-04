@@ -34,7 +34,7 @@ if (typeof window === 'undefined' && !(global as GlobalWithCronJobs).__cronJobsI
   // 게임 시작 시간 알림 크론 잡
   startGameStartTimeNotification();
   
-  // 캘린더 일정 리마인더 크론 잡
+  // 일정 리마인더 크론 잡
   startCalendarEventReminder();
   
   console.log('서버 시작: 모든 크론 작업이 성공적으로 시작되었습니다.');
@@ -72,7 +72,7 @@ export function initializeCronJobs(includeNotificationCleanup: boolean = true): 
     // 게임 시작 시간 알림 크론 잡
     startGameStartTimeNotification();
     
-    // 캘린더 일정 리마인더 크론 잡
+    // 일정 리마인더 크론 잡
     startCalendarEventReminder();
     
     console.log('수동 크론 작업이 성공적으로 시작되었습니다.');

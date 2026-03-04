@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('캘린더 일정 목록 조회 오류:', error);
+    console.error('일정 목록 조회 오류:', error);
     return NextResponse.json(
       { error: '일정을 불러오는 중 오류가 발생했습니다.' },
       { status: 500 }
@@ -193,12 +193,12 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (notificationError) {
-      console.error('캘린더 일정 알림 발송 실패:', notificationError);
+      console.error('일정 알림 발송 실패:', notificationError);
     }
 
     return NextResponse.json({ success: true, event }, { status: 201 });
   } catch (error) {
-    console.error('캘린더 일정 생성 오류:', error);
+    console.error('일정 생성 오류:', error);
     return NextResponse.json(
       { error: '일정 생성 중 오류가 발생했습니다.' },
       { status: 500 }
