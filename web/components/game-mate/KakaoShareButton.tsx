@@ -42,9 +42,7 @@ export function KakaoShareButton({ post }: KakaoShareButtonProps) {
       ? `${gameName} | 얼티메이트`
       : '얼티메이트';
 
-    const imageUrl = post.game?.iconUrl
-      ? (post.game.iconUrl.startsWith('http') ? post.game.iconUrl : `${baseUrl}${post.game.iconUrl}`)
-      : `${baseUrl}/icons/maskable_icon_x192.png`;
+    const imageUrl = `${baseUrl}/icons/maskable_icon_x512.png`;
 
     window.Kakao!.Share.sendDefault({
       objectType: 'feed',
