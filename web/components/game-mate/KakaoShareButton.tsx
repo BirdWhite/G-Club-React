@@ -32,7 +32,7 @@ export function KakaoShareButton({ post }: KakaoShareButtonProps) {
     }
 
     const activeCount = post.participants?.filter(p => p.status === 'ACTIVE').length ?? 0;
-    const baseUrl = window.location.origin;
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pnu-ultimate.kro.kr';
     const postUrl = `${baseUrl}/game-mate/${post.id}`;
     const joinUrl = `${postUrl}?action=join`;
 

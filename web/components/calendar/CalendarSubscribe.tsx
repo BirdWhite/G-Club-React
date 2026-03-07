@@ -10,7 +10,8 @@ interface CalendarSubscribeProps {
 export function CalendarSubscribe({ userId }: CalendarSubscribeProps) {
   const [copied, setCopied] = useState(false);
 
-  const subscribeUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/calendar/ical?token=${userId}`;
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pnu-ultimate.kro.kr';
+  const subscribeUrl = `${baseUrl}/api/calendar/ical?token=${userId}`;
 
   const handleCopy = async () => {
     try {
