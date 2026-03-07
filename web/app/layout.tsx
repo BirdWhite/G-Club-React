@@ -9,7 +9,7 @@ import { ClientLayout } from "@/components/layout/ClientLayout";
 
 // 크론 작업 초기화는 next.config.mjs에서 서버 시작 시에만 실행
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   display: 'swap',  // 폰트 로드 전에도 텍스트 표시
   preload: true,    // 폰트 미리 로드
@@ -17,7 +17,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "얼티메이트",
-  description: "부산대학교 게임 동아리 얼티메이트 홈페이지",
+  description: "부산대학교 E-스포츠 동아리 홈페이지",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -29,8 +29,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "얼티메이트",
-    title: "얼티메이트 - 부산대학교 게임 동아리",
-    description: "부산대학교 게임 동아리 얼티메이트 홈페이지",
+    title: "얼티메이트 - 부산대학교 E-스포츠 동아리",
+    description: "부산대학교 E-스포츠 동아리 홈페이지",
   },
   icons: {
     icon: "/icons/maskable_icon_x192.png",

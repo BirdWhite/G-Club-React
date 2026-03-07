@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, AlertCircle } from 'lucide-react';
+import { createClient } from '@/lib/database/supabase';
 
 export default function TermsAgreementPage() {
   const router = useRouter();
@@ -26,6 +27,37 @@ export default function TermsAgreementPage() {
     }));
   };
 
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    setIsSubmitting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await supabase.auth.signOut();
+
+      if (session?.user?.app_metadata?.provider === 'kakao') {
+        try {
+          const kakaoLogoutUrl = 'https://kauth.kakao.com/oauth/logout?client_id=' +
+            process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID +
+            '&logout_redirect_uri=' + encodeURIComponent(window.location.origin + '/auth/login');
+          window.location.href = kakaoLogoutUrl;
+          return;
+        } catch (kakaoError) {
+          console.error('카카오 로그아웃 중 오류:', kakaoError);
+        }
+      }
+
+      router.refresh();
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('로그아웃 중 오류 발생:', error);
+      router.refresh();
+      router.push('/auth/login');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!agreements.terms) {
       setError('필수 약관에 동의해주세요.');
@@ -38,7 +70,7 @@ export default function TermsAgreementPage() {
     try {
       // useTermsAgreement 훅의 updateAgreementStatus 함수 사용
       const success = await updateAgreementStatus(agreements.terms, agreements.terms);
-      
+
       if (success) {
         // 성공 시 페이지 새로고침 후 메인 페이지로 이동
         window.location.href = '/';
@@ -66,7 +98,7 @@ export default function TermsAgreementPage() {
               얼티메이트 커뮤니티 서비스를 이용하기 위해 다음 약관에 동의해주세요.
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="space-y-6">
             {error && (
               <Alert variant="destructive">
@@ -78,7 +110,7 @@ export default function TermsAgreementPage() {
             {/* 필수 약관 */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-card-foreground">필수 약관</h3>
-              
+
               {/* 얼티메이트 커뮤니티 개인정보처리방침 및 이용약관 */}
               <div className="space-y-3">
                 <div className="flex items-start space-x-3">
@@ -97,33 +129,33 @@ export default function TermsAgreementPage() {
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="ml-6 p-3 bg-muted rounded-lg max-h-64 overflow-y-auto">
                   <div className="text-xs text-muted-foreground space-y-3">
                     <p><strong>1. 서비스 개요</strong></p>
                     <p>본 서비스(이하 &#39;얼티메이트 커뮤니티&#39;)는 얼티메이트 동아리 내에서 사용되는 커뮤니티 웹 애플리케이션으로, 회원 간 소통과 정보 공유를 지원합니다.</p>
-                    
+
                     <p><strong>2. 수집하는 개인정보 항목</strong></p>
                     <p>• 이름, 이메일 주소</p>
                     <p>• 카카오 프로필 정보(닉네임, 프로필 사진 등)</p>
-                    
+
                     <p><strong>3. 개인정보 수집 및 이용 목적</strong></p>
                     <p>• 회원 관리: 서비스 이용자의 본인 식별 및 인증</p>
                     <p>• 서비스 제공: 기능적 서비스 제공 및 개선</p>
                     <p>• 마케팅 및 공지: 서비스 관련 안내 및 이벤트 등 홍보</p>
-                    
+
                     <p><strong>4. 개인정보 보유 및 이용 기간</strong></p>
                     <p>회원 아이디가 존재하는 동안 개인정보를 보유 및 이용하며, 회원 탈퇴 시 해당 정보를 파기합니다.</p>
-                    
+
                     <p><strong>5. 개인정보 제3자 제공</strong></p>
                     <p>현재 개인정보를 제3자에게 제공하지 않습니다.</p>
-                    
+
                     <p><strong>6. 회원 권리 및 행사 방법</strong></p>
                     <p>회원은 수집된 개인정보에 대해 열람, 정정, 삭제를 요구할 권리가 있으며, 관련 요청은 관리자에게 문의하여 처리할 수 있습니다.</p>
-                    
+
                     <p><strong>7. 회원 탈퇴 및 서비스 이용 제한</strong></p>
                     <p>회원은 자유롭게 탈퇴할 수 있으며, 얼티메이트 동아리 부원이 아니게 되는 경우 관리자에 의해 탈퇴 절차가 진행될 수 있습니다.</p>
-                    
+
                     <p><strong>8. 분쟁 해결</strong></p>
                     <p>본 서비스는 동아리 내 한정 서비스로, 분쟁 발생 시 우선 대화를 통한 해결을 권장합니다.</p>
                   </div>
@@ -155,11 +187,11 @@ export default function TermsAgreementPage() {
             <div className="flex space-x-3">
               <Button
                 variant="outline"
-                onClick={() => router.back()}
+                onClick={handleLogout}
                 className="flex-1"
                 disabled={isSubmitting}
               >
-                이전
+                로그아웃
               </Button>
               <Button
                 onClick={handleSubmit}
