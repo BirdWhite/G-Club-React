@@ -1,6 +1,33 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+function getRedirectUrl(request: NextRequest, path: string): URL {
+  const url = request.nextUrl.clone();
+  url.pathname = path;
+
+  // Nginx 등 리버스 프록시 환경에서 원래 호스트와 프로토콜 복원
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+
+  if (forwardedHost) {
+    url.host = forwardedHost;
+    url.protocol = forwardedProto ? `${forwardedProto}:` : url.protocol;
+    url.port = ''; // 호스트에 포트가 포함되어 있을 수 있으므로 초기화
+  } else if (process.env.NEXT_PUBLIC_SITE_URL) {
+    // 환경변수에 설정된 사이트 URL이 있으면 우선 사용 (localhost 방지)
+    try {
+      const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL);
+      url.host = siteUrl.host;
+      url.protocol = siteUrl.protocol;
+      url.port = siteUrl.port;
+    } catch (e) {
+      console.error('Invalid NEXT_PUBLIC_SITE_URL:', e);
+    }
+  }
+
+  return url;
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -52,13 +79,13 @@ export async function updateSession(request: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    
+
     const currentPath = request.nextUrl.pathname;
-    
+
     // 정적 파일 패턴 (확장자가 있는 파일들)
     const PUBLIC_FILE = /\.(.*)$/;
     const isPublicFiles = PUBLIC_FILE.test(currentPath);
-    
+
     // 허용된 경로들 (인증 없이 접근 가능)
     // /auth/callback: OAuth 코드 교환용 - 세션 없이 접근해야 함
     const publicPaths = [
@@ -70,34 +97,32 @@ export async function updateSession(request: NextRequest) {
       '/auth/pending',
       '/profile/register',
     ];
-    
+
     // 사용자의 프로필 경로 패턴 (자신의 프로필만)
     const profilePathPattern = /^\/profile\/[^\/]+$/;
-    
+
     // 정적 파일이거나 공개 경로이거나 자신의 프로필 페이지인 경우 통과
     if (isPublicFiles || publicPaths.includes(currentPath) || profilePathPattern.test(currentPath)) {
       return supabaseResponse;
     }
-    
+
     // 인증이 필요한 경로에 접근하는 경우
     if (!user) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/auth/login';
-      // request.nextUrl은 이미 올바른 origin(호스트+포트)을 포함함 - 그대로 사용
-      url.href = `${url.origin}/auth/login${url.search}`;
-      return NextResponse.redirect(url);
+      const redirectUrl = getRedirectUrl(request, '/auth/login');
+      // 기존 쿼리 파라미터 유지
+      redirectUrl.search = request.nextUrl.search;
+      return NextResponse.redirect(redirectUrl);
     }
-    
+
     // 인증된 사용자의 경우 모든 경로 접근 허용
     // 이용약관 동의 상태는 클라이언트 사이드에서 확인
     // 역할 기반 제어는 클라이언트 사이드에서 처리
-    
+
   } catch (error) {
     console.error('Supabase auth error in middleware:', error);
     // 오류 발생 시 로그인 페이지로 리다이렉트
-    const url = request.nextUrl.clone();
-    url.pathname = '/auth/login';
-    return NextResponse.redirect(url);
+    const redirectUrl = getRedirectUrl(request, '/auth/login');
+    return NextResponse.redirect(redirectUrl);
   }
 
   return supabaseResponse;

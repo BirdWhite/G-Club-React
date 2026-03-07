@@ -10,11 +10,13 @@ export async function GET(request: Request) {
   const errorDescription = searchParams.get('error_description')
 
   const forwardedHost = request.headers.get('x-forwarded-host')
-  const isLocalEnv = process.env.NODE_ENV === 'development'
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
 
   let baseUrl = origin
-  if (!isLocalEnv && forwardedHost) {
-    baseUrl = `https://${forwardedHost}`
+  if (forwardedHost) {
+    baseUrl = `${forwardedProto}://${forwardedHost}`
+  } else if (process.env.NEXT_PUBLIC_SITE_URL) {
+    baseUrl = process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
   }
 
   // OAuth 에러가 있는 경우
