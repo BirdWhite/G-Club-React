@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
@@ -22,18 +22,18 @@ export default function NewGamePostNotificationSettings() {
   const router = useRouter();
   const { settings, updateNewGamePost, updateCustomGameIds, isLoading } = useNotificationSettings();
   const { favoriteGames } = useFavoriteGames();
-  
+
   const [gameFilter, setGameFilter] = useState<GameFilter>({
     mode: 'favorites',
     selectedGames: []
   });
-  
+
   const [showGameSearch, setShowGameSearch] = useState(false);
 
   // 게임 정보를 가져오는 함수
   const loadGameInfo = async (gameIds: string[]) => {
     if (gameIds.length === 0) return [];
-    
+
     try {
       const response = await fetch(`/api/games?ids=${gameIds.join(',')}`);
       if (response.ok) {
@@ -47,7 +47,7 @@ export default function NewGamePostNotificationSettings() {
     } catch (error) {
       console.error('게임 정보 로드 실패:', error);
     }
-    
+
     // 실패 시 ID만으로 반환
     return gameIds.map(id => ({
       id,
@@ -59,7 +59,7 @@ export default function NewGamePostNotificationSettings() {
   // 초기 설정 로드
   useEffect(() => {
     const mode = settings.newGamePost.mode || 'all';
-    
+
     if (mode === 'custom' && settings.newGamePost.customGameIds && settings.newGamePost.customGameIds.length > 0) {
       // 커스텀 모드인 경우 customGameIds에서 게임 정보 로드
       loadGameInfo(settings.newGamePost.customGameIds).then(customGames => {
@@ -83,7 +83,7 @@ export default function NewGamePostNotificationSettings() {
       const customGameIds = gameFilter.selectedGames.map(game => game.id);
       await updateCustomGameIds(customGameIds);
     }
-    
+
     await updateNewGamePost(settings.newGamePost.enabled, gameFilter.mode, gameFilter.mode === 'custom' ? gameFilter.selectedGames.map(g => g.id) : undefined);
     router.back();
   };
@@ -116,44 +116,45 @@ export default function NewGamePostNotificationSettings() {
     }));
   };
 
+  const excludeGameIds = useMemo(() => gameFilter.selectedGames.map(g => g.id), [gameFilter.selectedGames]);
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
   return (
     <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
-        <div className="w-full max-w-4xl">
-      {/* 헤더 */}
-      <div className="mb-8 sm:mb-12">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">신규 게임메이트 글 알림</h1>
+      <div className="w-full max-w-4xl">
+        {/* 헤더 */}
+        <div className="mb-8 sm:mb-12">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">신규 게임메이트 글 알림</h1>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 설정 내용 */}
-      <div className="space-y-6">
-          
+        {/* 설정 내용 */}
+        <div className="space-y-6">
+
           {/* 필터 모드 선택 */}
           <div>
             <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">알림 받을 게임 선택</h3>
-            
+
             <div className="space-y-2 sm:space-y-3">
               {/* 모든 게임 */}
-              <label className={`flex items-center p-3 sm:p-4 border border-border rounded-lg cursor-pointer transition-colors ${
-                gameFilter.mode === 'all' 
-                  ? 'bg-card-elevated hover:bg-card-elevated/80' 
-                  : 'bg-card hover:bg-card/80'
-              }`}>
+              <label className={`flex items-center p-3 sm:p-4 border border-border rounded-lg cursor-pointer transition-colors ${gameFilter.mode === 'all'
+                ? 'bg-card-elevated hover:bg-card-elevated/80'
+                : 'bg-card hover:bg-card/80'
+                }`}>
                 <input
                   type="radio"
                   name="gameFilter"
@@ -169,11 +170,10 @@ export default function NewGamePostNotificationSettings() {
               </label>
 
               {/* 관심 게임만 */}
-              <label className={`flex items-center p-3 sm:p-4 border border-border rounded-lg cursor-pointer transition-colors ${
-                gameFilter.mode === 'favorites' 
-                  ? 'bg-card-elevated hover:bg-card-elevated/80' 
-                  : 'bg-card hover:bg-card/80'
-              }`}>
+              <label className={`flex items-center p-3 sm:p-4 border border-border rounded-lg cursor-pointer transition-colors ${gameFilter.mode === 'favorites'
+                ? 'bg-card-elevated hover:bg-card-elevated/80'
+                : 'bg-card hover:bg-card/80'
+                }`}>
                 <input
                   type="radio"
                   name="gameFilter"
@@ -194,11 +194,10 @@ export default function NewGamePostNotificationSettings() {
               </label>
 
               {/* 선택한 게임만 */}
-              <label className={`flex items-center p-3 sm:p-4 border border-border rounded-lg cursor-pointer transition-colors ${
-                gameFilter.mode === 'custom' 
-                  ? 'bg-card-elevated hover:bg-card-elevated/80' 
-                  : 'bg-card hover:bg-card/80'
-              }`}>
+              <label className={`flex items-center p-3 sm:p-4 border border-border rounded-lg cursor-pointer transition-colors ${gameFilter.mode === 'custom'
+                ? 'bg-card-elevated hover:bg-card-elevated/80'
+                : 'bg-card hover:bg-card/80'
+                }`}>
                 <input
                   type="radio"
                   name="gameFilter"
@@ -366,14 +365,14 @@ export default function NewGamePostNotificationSettings() {
           </button>
         </div>
 
-      {/* 게임 검색 모달 */}
-      <GameSearchModal
-        isOpen={showGameSearch}
-        onClose={() => setShowGameSearch(false)}
-        onGameSelect={addGame}
-        excludeGameIds={gameFilter.selectedGames.map(g => g.id)}
-      />
-        </div>
+        {/* 게임 검색 모달 */}
+        <GameSearchModal
+          isOpen={showGameSearch}
+          onClose={() => setShowGameSearch(false)}
+          onGameSelect={addGame}
+          excludeGameIds={excludeGameIds}
+        />
       </div>
+    </div>
   );
 }

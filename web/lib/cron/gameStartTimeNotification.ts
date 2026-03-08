@@ -10,16 +10,16 @@ export function startGameStartTimeNotification() {
   // 매시각 정각과 30분에 실행 (게임 시작 시간 알림)
   cron.schedule('0,30 * * * *', async () => {
     console.log(`[${new Date().toISOString()}] 게임 시작 시간 알림 작업 시작...`);
-    
+
     try {
       const currentTime = new Date();
-      
+
       // 현재 시간부터 5분 후까지 시작하는 게임들 조회
       const fiveMinutesLater = new Date(currentTime.getTime() + 5 * 60 * 1000);
-      
+
       console.log(`현재 시간: ${currentTime.toISOString()}`);
       console.log(`5분 후: ${fiveMinutesLater.toISOString()}`);
-      
+
       // 게임 시작 시간 알림 설정이 활성화된 사용자들 조회
       const startTimeUsers = await prisma.notificationSetting.findMany({
         where: {
@@ -38,7 +38,7 @@ export function startGameStartTimeNotification() {
           user: true
         }
       });
-      
+
       const startingGames = await prisma.gamePost.findMany({
         where: {
           status: 'OPEN',
@@ -74,14 +74,14 @@ export function startGameStartTimeNotification() {
           }
         }
       });
-      
+
       console.log(`시작하는 게임: ${startingGames.length}개`);
-      
+
       // 게임 시작 알림 발송
       for (const game of startingGames) {
         await sendGameStartNotifications(game, startTimeUsers);
       }
-      
+
       console.log(`[${new Date().toISOString()}] 게임 시작 시간 알림 작업 완료`);
     } catch (error) {
       console.error('게임 시작 시간 알림 작업 중 오류 발생:', error);
@@ -98,7 +98,7 @@ async function sendGameStartNotifications(
   game: {
     id: string;
     title: string;
-    startTime: Date;
+    startTime: Date | null;
     isFull: boolean;
     authorId: string;
     gameId: string | null;
@@ -117,51 +117,52 @@ async function sendGameStartNotifications(
     myGamePostMeetingStartOnlyFull: boolean;
   }>
 ) {
+  if (!game.startTime) return;
   const gameStartTime = new Date(game.startTime);
   const isFull = game.isFull; // 데이터베이스의 isFull 컬럼 사용
-  
+
   for (const userSetting of users) {
     const user = userSetting.user;
-    
+
     // 사용자가 이 게임에 참여하고 있는지 확인
     const isParticipant = game.participants.some((p) => p.userId === user.userId);
     const isAuthor = game.authorId === user.userId;
-    
+
     if (!isParticipant && !isAuthor) continue;
-    
+
     // 알림 설정 확인
     let shouldNotify = false;
-    
+
     if (isParticipant) {
       // 참여자 알림 설정 확인
-      if (userSetting.participatingGameEnabled && 
-          userSetting.participatingGameMeetingStartEnabled) {
-        
+      if (userSetting.participatingGameEnabled &&
+        userSetting.participatingGameMeetingStartEnabled) {
+
         // 모임이 다 모였을 때만 알림 설정이 활성화되어 있다면 확인
         if (userSetting.participatingGameMeetingStartOnlyFull && !isFull) {
           continue;
         }
-        
+
         shouldNotify = true;
       }
     }
-    
+
     if (isAuthor) {
       // 작성자 알림 설정 확인
-      if (userSetting.myGamePostEnabled && 
-          userSetting.myGamePostMeetingStartEnabled) {
-        
+      if (userSetting.myGamePostEnabled &&
+        userSetting.myGamePostMeetingStartEnabled) {
+
         // 모임이 다 모였을 때만 알림 설정이 활성화되어 있다면 확인
         if (userSetting.myGamePostMeetingStartOnlyFull && !isFull) {
           continue;
         }
-        
+
         shouldNotify = true;
       }
     }
-    
+
     if (!shouldNotify) continue;
-    
+
     try {
       const category = isAuthor
         ? NotificationCategory.MY_GAME_POST
@@ -197,7 +198,7 @@ async function sendGameStartNotifications(
           }
         }
       });
-      
+
       console.log(`게임 시작 알림 발송 완료: ${user.name} - ${game.title}`);
     } catch (error) {
       console.error(`게임 시작 알림 발송 실패: ${user.name} - ${game.title}`, error);

@@ -11,7 +11,7 @@ function mapDatabaseTypeToCategory(dbType: string): string {
   if (dbType === NotificationDatabaseType.GAME_POST_NEW) {
     return NotificationCategory.NEW_GAME_POST;
   }
-  
+
   // GAME_POST_MEMBER_JOIN, MEMBER_LEAVE, FULL, TIME_CHANGE, CANCELLED, BEFORE_START, START → PARTICIPATING_GAME
   if ([
     NotificationDatabaseType.GAME_POST_MEMBER_JOIN,
@@ -24,7 +24,7 @@ function mapDatabaseTypeToCategory(dbType: string): string {
   ].includes(dbType as NotificationDatabaseType)) {
     return NotificationCategory.PARTICIPATING_GAME;
   }
-  
+
   // WAITING_LIST_* → WAITING_LIST
   if ([
     NotificationDatabaseType.WAITING_LIST_PROMOTED,
@@ -32,7 +32,7 @@ function mapDatabaseTypeToCategory(dbType: string): string {
   ].includes(dbType as NotificationDatabaseType)) {
     return NotificationCategory.WAITING_LIST;
   }
-  
+
   // NOTICE_* → NOTICE
   if ([
     NotificationDatabaseType.NOTICE_NEW,
@@ -40,7 +40,7 @@ function mapDatabaseTypeToCategory(dbType: string): string {
   ].includes(dbType as NotificationDatabaseType)) {
     return NotificationCategory.NOTICE;
   }
-  
+
   // 기본값: 그대로 반환
   return dbType;
 }
@@ -111,7 +111,7 @@ export async function createAndSendNotification(notificationData: CreateNotifica
     // 개별 발송
     if (!isGroupSend && recipientId) {
       targetUserIds = [recipientId];
-      
+
       await prisma.notificationReceipt.create({
         data: {
           notificationId: notification.id,
@@ -119,21 +119,23 @@ export async function createAndSendNotification(notificationData: CreateNotifica
         }
       });
     }
-    
+
     // 그룹 발송
     if (isGroupSend) {
       targetUserIds = await getTargetUserIds(groupType, groupFilter, gamePostId);
-      
+
       // 데이터베이스 타입을 알림 카테고리로 매핑
       const category = mapDatabaseTypeToCategory(type);
-      
+
       // 알림 설정에 따라 필터링 적용
       const filteredUserIds = await NotificationFilter.filterUsersForNotification(
         targetUserIds,
         category,
         context
       );
-      
+
+      targetUserIds = filteredUserIds;
+
       if (filteredUserIds.length > 0) {
         await prisma.notificationReceipt.createMany({
           data: filteredUserIds.map(userId => ({
@@ -150,8 +152,8 @@ export async function createAndSendNotification(notificationData: CreateNotifica
       // 개별 발송인 경우
       if (!isGroupSend && recipientId) {
         await sendPushNotificationToUsers(
-          notification.id, 
-          [recipientId], 
+          notification.id,
+          [recipientId],
           {
             title,
             body,
@@ -167,8 +169,8 @@ export async function createAndSendNotification(notificationData: CreateNotifica
       // 그룹 발송인 경우 - 이미 필터링된 사용자들에게만 발송
       else if (isGroupSend && targetUserIds.length > 0) {
         await sendPushNotificationToUsers(
-          notification.id, 
-          targetUserIds, 
+          notification.id,
+          targetUserIds,
           {
             title,
             body,
@@ -202,8 +204,8 @@ export async function createAndSendNotification(notificationData: CreateNotifica
 
 // 대상 사용자 ID 목록 조회
 async function getTargetUserIds(
-  groupType?: string, 
-  groupFilter?: Record<string, unknown>, 
+  groupType?: string,
+  groupFilter?: Record<string, unknown>,
   gamePostId?: string
 ): Promise<string[]> {
   let targetUsers: string[] = [];
@@ -215,7 +217,7 @@ async function getTargetUserIds(
       });
       targetUsers = allUsers.map(u => u.userId);
       break;
-    
+
     case 'ALL_USERS_EXCEPT_AUTHOR':
       if (groupFilter?.authorId) {
         const allUsersExceptAuthor = await prisma.userProfile.findMany({
@@ -225,7 +227,7 @@ async function getTargetUserIds(
         targetUsers = allUsersExceptAuthor.map(u => u.userId);
       }
       break;
-    
+
     case 'ROLE_BASED':
       if (groupFilter?.roleId) {
         const roleUsers = await prisma.userProfile.findMany({
@@ -235,7 +237,7 @@ async function getTargetUserIds(
         targetUsers = roleUsers.map(u => u.userId);
       }
       break;
-    
+
     case 'GAME_PARTICIPANTS':
       if (gamePostId) {
         const participants = await prisma.gameParticipant.findMany({
@@ -245,11 +247,11 @@ async function getTargetUserIds(
         targetUsers = participants.map(p => p.userId!).filter(Boolean);
       }
       break;
-    
+
     case 'WAITING_PARTICIPANTS':
       if (gamePostId) {
         const waitingParticipants = await prisma.waitingParticipant.findMany({
-          where: { 
+          where: {
             gamePostId,
             status: 'WAITING'
           },
@@ -258,7 +260,7 @@ async function getTargetUserIds(
         targetUsers = waitingParticipants.map(w => w.userId);
       }
       break;
-    
+
     case 'SPECIFIC_USERS':
       if (groupFilter?.userIds && Array.isArray(groupFilter.userIds)) {
         targetUsers = groupFilter.userIds as string[];
@@ -270,7 +272,7 @@ async function getTargetUserIds(
 }
 
 // 다수 사용자에게 푸시 알림 발송
-async function sendPushNotificationToUsers(
+export async function sendPushNotificationToUsers(
   notificationId: string,
   userIds: string[],
   pushData: {
@@ -285,7 +287,7 @@ async function sendPushNotificationToUsers(
     if (userIds.length === 0) {
       return;
     }
-    
+
     // 사용자들의 푸시 구독 정보 조회
     const subscriptions = await prisma.pushSubscription.findMany({
       where: {
@@ -293,7 +295,7 @@ async function sendPushNotificationToUsers(
         isEnabled: true
       }
     });
-    
+
     if (subscriptions.length === 0) {
       console.log('푸시 구독이 활성화된 사용자가 없습니다.');
       return;
@@ -330,7 +332,7 @@ async function sendPushNotificationToUsers(
         });
       } catch (error) {
         console.error(`푸시 발송 실패 (userId: ${sub.userId}):`, error);
-        
+
         // 푸시 발송 실패 기록
         await prisma.notificationReceipt.updateMany({
           where: {
@@ -771,8 +773,8 @@ export const GamePostNotifications = {
       gameName: string;
       authorName: string;
       title: string;
-      oldStartTime: Date;
-      newStartTime: Date;
+      oldStartTime: Date | null;
+      newStartTime: Date | null;
     }
   ) {
     const { gamePostId, oldStartTime, newStartTime } = data;
@@ -786,7 +788,8 @@ export const GamePostNotifications = {
 
     if (!gamePost) return;
 
-    const formatTime = (date: Date) => {
+    const formatTime = (date: Date | null) => {
+      if (!date) return '모이면 바로 출발';
       return date.toLocaleString('ko-KR', {
         year: 'numeric',
         month: 'long',

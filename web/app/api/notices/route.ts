@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
+import { sendPushNotificationToUsers } from '@/lib/notifications/notificationService';
 
 // 공지사항 목록 조회
 export async function GET(request: NextRequest) {
@@ -103,7 +104,7 @@ export async function GET(request: NextRequest) {
 // 공지사항 작성
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
-  
+
   if (!user) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
@@ -130,18 +131,18 @@ export async function POST(request: NextRequest) {
 
     // 리치텍스트 에디터 내용 확인 (텍스트, 이미지, 유튜브 등)
     const contentNodes = content?.content;
-    const hasContent = content && 
-      typeof content === 'object' && 
-      'content' in content && 
-      Array.isArray(contentNodes) && 
-      contentNodes.some((node: { type: string; content?: Array<{ text?: string }> }) => 
+    const hasContent = content &&
+      typeof content === 'object' &&
+      'content' in content &&
+      Array.isArray(contentNodes) &&
+      contentNodes.some((node: { type: string; content?: Array<{ text?: string }> }) =>
         node.type === 'image' ||
         node.type === 'youtube' ||
-        (node.type === 'paragraph' && 
-          node.content && 
+        (node.type === 'paragraph' &&
+          node.content &&
           node.content.some((textNode: { text?: string }) => textNode.text && textNode.text.trim()))
       );
-    
+
     if (!hasContent) {
       return NextResponse.json(
         { error: '내용을 입력해주세요.' },
@@ -167,7 +168,7 @@ export async function POST(request: NextRequest) {
 
     // localStorage에서 생성된 ID 사용 (있다면)
     const tempNoticeId = request.headers.get('x-temp-notice-id');
-    
+
     // ID 검증 (tempNoticeId가 있는 경우)
     if (tempNoticeId) {
       // UUID 형식 검증
@@ -192,7 +193,7 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    
+
     // 공지사항 생성
     const notice = await prisma.notice.create({
       data: {
@@ -277,6 +278,25 @@ export async function POST(request: NextRequest) {
             sentAt: new Date()
           }
         });
+
+        // 푸시 알림 발송
+        if (usersWithNoticeEnabled.length > 0) {
+          await sendPushNotificationToUsers(
+            notification.id,
+            usersWithNoticeEnabled.map(u => u.userId),
+            {
+              title: notification.title,
+              body: notification.body,
+              icon: notification.icon || undefined,
+              data: {
+                notificationId: notification.id,
+                actionUrl: notification.actionUrl,
+                noticeId: notice.id,
+                noticeTitle: title.trim()
+              }
+            }
+          );
+        }
 
         console.log(`공지사항 알림 발송 완료: ${usersWithNoticeEnabled.length}명에게 발송`);
       } catch (notificationError) {

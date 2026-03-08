@@ -186,7 +186,7 @@ export async function DELETE(
             type: 'CALENDAR_EVENT_CANCELLED',
             title: '일정이 취소되었습니다',
             body: existing.title,
-            icon: '/icons/calendar.svg',
+            icon: '/icons/maskable_icon_x512.png',
             actionUrl: `/calendar/${id}`,
             calendarEventId: id,
             isGroupSend: true,

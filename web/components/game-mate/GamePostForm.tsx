@@ -21,20 +21,33 @@ import { TimePicker } from '@/components/ui/time-picker';
 import { ParticipantManager } from '@/components/game-mate/ParticipantManager';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const formSchema = z.object({
   title: z.string().min(2, '제목은 2자 이상 입력해주세요.').max(50, '제목은 50자를 초과할 수 없습니다.'),
   gameId: z.string().min(1, '게임을 선택해주세요.'),
   maxParticipants: z.number().min(2, '최소 2명 이상이어야 합니다.').max(100, '최대 100명까지 가능합니다.'),
-  startDate: z.date({ message: '시작 날짜를 선택해주세요.' }),
-  startTime: z.string().min(1, '시작 시간을 선택해주세요.'),
+  isImmediate: z.boolean(),
+  startDate: z.date({ message: '시작 날짜를 선택해주세요.' }).optional(),
+  startTime: z.string().min(1, '시작 시간을 선택해주세요.').optional(),
   content: z.string().max(2000, '내용은 2000자를 초과할 수 없습니다.'),
   participants: z.array(z.object({
     name: z.string().min(1, '이름은 필수입니다.'),
     userId: z.string().optional(),
     note: z.string().optional(),
   })),
-});
+}).refine(
+  (data) => {
+    if (!data.isImmediate && (!data.startDate || !data.startTime)) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "시작 시간 정보가 필요합니다.",
+    path: ["startDate"],
+  }
+);
 
 type GamePostFormData = z.infer<typeof formSchema>;
 
@@ -53,11 +66,11 @@ export function GamePostForm({ initialData }: GamePostFormProps) {
     if (typeof window === 'undefined') {
       return '12:00';
     }
-    
+
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
-    
+
     // 현재 분을 30분 단위로 올림
     let nextMinute = currentMinute;
     if (currentMinute > 30) {
@@ -66,12 +79,12 @@ export function GamePostForm({ initialData }: GamePostFormProps) {
     } else if (currentMinute > 0) {
       nextMinute = 30;
     }
-    
+
     return `${now.getHours().toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`;
   };
 
   // 기본 참여자 목록 생성 (작성자 본인 포함)
-const getDefaultParticipants = () => {
+  const getDefaultParticipants = () => {
     if (isEditMode && initialData?.participants) {
       // 편집 모드: 기존 참여자 목록 사용 (중도 퇴장자 제외하여 UI에만 표시)
       return initialData.participants
@@ -104,6 +117,7 @@ const getDefaultParticipants = () => {
       title: initialData?.title || '',
       gameId: initialData?.gameId || '',
       maxParticipants: initialData?.maxParticipants || 10,
+      isImmediate: initialData ? !initialData.startTime : false,
       startDate: initialData?.startTime ? new Date(initialData.startTime) : new Date(),
       startTime: initialData?.startTime ? new Date(initialData.startTime).toTimeString().slice(0, 5) : getNextTimeSlot(),
       content: initialData?.content || '',
@@ -118,7 +132,7 @@ const getDefaultParticipants = () => {
     if (!isEditMode && profile?.name) {
       const currentParticipants = form.getValues('participants');
       const hasAuthor = currentParticipants.some(p => p.userId === profile.userId);
-      
+
       if (!hasAuthor) {
         setValue('participants', [
           {
@@ -137,19 +151,22 @@ const getDefaultParticipants = () => {
       const url = isEditMode ? `/api/game-posts/${initialData.id}` : '/api/game-posts';
       const method = isEditMode ? 'PATCH' : 'POST';
 
-      // 날짜와 시간을 결합하여 UTC 시간으로 변환
-      const [hours, minutes] = data.startTime.split(':').map(Number);
-      const combinedDateTime = new Date(data.startDate);
-      
-      // 24시 선택 시 다음날 00시로 처리
-      if (hours === 24) {
-        combinedDateTime.setDate(combinedDateTime.getDate() + 1);
-        combinedDateTime.setHours(0, minutes, 0, 0);
-      } else {
-        combinedDateTime.setHours(hours, minutes, 0, 0);
+      let utcStartTime: string | null = null;
+      if (!data.isImmediate && data.startDate && data.startTime) {
+        // 날짜와 시간을 결합하여 UTC 시간으로 변환
+        const [hours, minutes] = data.startTime.split(':').map(Number);
+        const combinedDateTime = new Date(data.startDate);
+
+        // 24시 선택 시 다음날 00시로 처리
+        if (hours === 24) {
+          combinedDateTime.setDate(combinedDateTime.getDate() + 1);
+          combinedDateTime.setHours(0, minutes, 0, 0);
+        } else {
+          combinedDateTime.setHours(hours, minutes, 0, 0);
+        }
+
+        utcStartTime = combinedDateTime.toISOString();
       }
-      
-      const utcStartTime = combinedDateTime.toISOString();
 
       const payload = {
         ...data,
@@ -180,7 +197,7 @@ const getDefaultParticipants = () => {
 
 
 
-    return (
+  return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         <FormField
@@ -190,11 +207,11 @@ const getDefaultParticipants = () => {
             <FormItem>
               <FormLabel>제목</FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="파티원을 구하는 목적을 명확하게 보여주세요. (최대 50자)" 
+                <Input
+                  placeholder="파티원을 구하는 목적을 명확하게 보여주세요. (최대 50자)"
                   className="bg-input border-border focus:bg-input"
                   maxLength={50}
-                  {...field} 
+                  {...field}
                 />
               </FormControl>
               <FormMessage />
@@ -229,8 +246,8 @@ const getDefaultParticipants = () => {
                 <FormLabel>최대 인원</FormLabel>
                 <FormControl>
                   <div className="space-y-4">
-                    <Input 
-                      type="number" 
+                    <Input
+                      type="number"
                       value={field.value || ''}
                       onChange={e => {
                         const value = e.target.value;
@@ -247,7 +264,7 @@ const getDefaultParticipants = () => {
                       max="100"
                       className="bg-input border-border focus:bg-input"
                     />
-                    
+
                     {/* 슬라이더 */}
                     <div className="space-y-2">
                       <Slider
@@ -277,66 +294,91 @@ const getDefaultParticipants = () => {
             )}
           />
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <FormField
-            control={form.control}
-            name="startDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>시작 날짜</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        className="w-full pl-3 text-left font-normal bg-input border-border hover:bg-accent"
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP", { locale: ko })
-                        ) : (
-                          <span>날짜를 선택하세요</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date < new Date(new Date().setHours(0, 0, 0, 0))
-                      }
-                      initialFocus
-                      locale={ko}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
-          <FormField
-            control={form.control}
-            name="startTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>시작 시간</FormLabel>
-                <FormControl>
-                  <TimePicker
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="시간을 선택하세요"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="isImmediate"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border rounded-md">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>
+                  모이면 바로 출발
+                </FormLabel>
+                <div className="text-sm text-muted-foreground">
+                  시작 시간을 지정하지 않고 인원이 모두 모이면 바로 출발합니다.
+                </div>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        {!form.watch('isImmediate') && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <FormField
+              control={form.control}
+              name="startDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>시작 날짜</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className="w-full pl-3 text-left font-normal bg-input border-border hover:bg-accent"
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP", { locale: ko })
+                          ) : (
+                            <span>날짜를 선택하세요</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date < new Date(new Date().setHours(0, 0, 0, 0))
+                        }
+                        initialFocus
+                        locale={ko}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="startTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>시작 시간</FormLabel>
+                  <FormControl>
+                    <TimePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="시간을 선택하세요"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
 
         <FormField
           control={form.control}

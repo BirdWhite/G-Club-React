@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
     }
@@ -86,16 +86,16 @@ export async function GET(request: NextRequest) {
     const posts = gamePosts.map(post => {
       const activeParticipantsCount = post.participants.filter(p => p.status === 'ACTIVE').length;
       const isFull = activeParticipantsCount >= post.maxParticipants;
-      
+
       // 현재 사용자의 참여 상태 찾기
       const userParticipant = post.participants.find(p => p.userId === user.id);
       const participantStatus = userParticipant?.status as 'ACTIVE' | 'LEFT_EARLY' | undefined;
-      
+
       return {
         id: post.id,
         title: post.title,
         content: post.content,
-        startTime: post.startTime.toISOString(),
+        startTime: post.startTime ? post.startTime.toISOString() : null,
         maxParticipants: post.maxParticipants,
         status: post.status,
         isFull: isFull,

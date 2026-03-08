@@ -9,18 +9,18 @@ interface TimeWaitingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (selectedTime: string | null, isImmediateAvailable: boolean) => void;
-  gameStartTime: string | Date;
+  gameStartTime: string | Date | null;
   isFull: boolean;
   loading?: boolean;
 }
 
-export function TimeWaitingModal({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  gameStartTime, 
+export function TimeWaitingModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  gameStartTime,
   isFull,
-  loading = false 
+  loading = false
 }: TimeWaitingModalProps) {
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [isImmediateAvailable, setIsImmediateAvailable] = useState<boolean>(false);
@@ -29,12 +29,15 @@ export function TimeWaitingModal({
 
   // 게임 시작 시간을 기준으로 30분 후부터 30분 간격으로 시간 옵션 생성
   const generateTimeOptions = () => {
-    const startTime = typeof gameStartTime === 'string' ? new Date(gameStartTime) : gameStartTime;
+    const startTime = gameStartTime
+      ? (typeof gameStartTime === 'string' ? new Date(gameStartTime) : gameStartTime)
+      : new Date(); // 시작 시간이 없으면 현재 시간 기준
+
     const options = [];
-    
+
     // 30분 후부터 시작
     let currentTime = addMinutes(startTime, 30);
-    
+
     // 최대 6시간 후까지 (12개 옵션)
     for (let i = 0; i < 12; i++) {
       options.push({
@@ -44,7 +47,7 @@ export function TimeWaitingModal({
       });
       currentTime = addMinutes(currentTime, 30);
     }
-    
+
     return options;
   };
 
@@ -87,7 +90,9 @@ export function TimeWaitingModal({
           <div className="mb-4">
             <p className="text-sm text-muted-foreground mb-2">
               게임 시작 시간: <span className="font-medium text-foreground">
-                {format(typeof gameStartTime === 'string' ? new Date(gameStartTime) : gameStartTime, 'M월 d일 HH:mm', { locale: ko })}
+                {gameStartTime
+                  ? format(typeof gameStartTime === 'string' ? new Date(gameStartTime) : gameStartTime, 'M월 d일 HH:mm', { locale: ko })
+                  : '모이면 바로 출발'}
               </span>
             </p>
             <p className="text-sm text-muted-foreground">
@@ -127,13 +132,12 @@ export function TimeWaitingModal({
                   key={option.value}
                   onClick={() => setSelectedTime(option.value)}
                   disabled={loading || isImmediateAvailable}
-                  className={`p-3 text-sm rounded-md border transition-colors ${
-                    selectedTime === option.value
+                  className={`p-3 text-sm rounded-md border transition-colors ${selectedTime === option.value
                       ? 'bg-primary text-primary-foreground border-primary'
                       : isImmediateAvailable
-                      ? 'bg-muted text-muted-foreground border-border cursor-not-allowed'
-                      : 'bg-background text-foreground border-border hover:bg-muted'
-                  }`}
+                        ? 'bg-muted text-muted-foreground border-border cursor-not-allowed'
+                        : 'bg-background text-foreground border-border hover:bg-muted'
+                    }`}
                 >
                   <div className="font-medium">{option.label}</div>
                   <div className="text-xs opacity-70">{option.fullLabel}</div>

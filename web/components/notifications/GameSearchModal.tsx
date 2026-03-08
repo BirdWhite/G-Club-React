@@ -13,11 +13,11 @@ interface GameSearchModalProps {
   excludeGameIds?: string[];
 }
 
-export function GameSearchModal({ 
-  isOpen, 
-  onClose, 
-  onGameSelect, 
-  excludeGameIds = [] 
+export function GameSearchModal({
+  isOpen,
+  onClose,
+  onGameSelect,
+  excludeGameIds = []
 }: GameSearchModalProps) {
   const [query, setQuery] = useState('');
   const [games, setGames] = useState<Game[]>([]);
@@ -32,9 +32,9 @@ export function GameSearchModal({
       if (res.ok) {
         const data = await res.json();
         const allGames = Array.isArray(data) ? data : data.games || [];
-        
+
         let filteredGames;
-        
+
         if (!searchQuery.trim()) {
           // 검색어가 없으면 기본적으로 10개 게임 표시
           filteredGames = allGames
@@ -43,16 +43,16 @@ export function GameSearchModal({
         } else {
           // 검색어가 있으면 검색 결과 표시
           filteredGames = allGames
-            .filter((game: Game) => 
+            .filter((game: Game) =>
               game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              game.aliases?.some((alias: string) => 
+              game.aliases?.some((alias: string) =>
                 alias.toLowerCase().includes(searchQuery.toLowerCase())
               )
             )
             .filter((game: Game) => !excludeGameIds.includes(game.id))
             .slice(0, 10); // 최대 10개만
         }
-        
+
         setGames(filteredGames);
       }
     } catch (error) {
@@ -77,18 +77,18 @@ export function GameSearchModal({
     if (isOpen) {
       searchGames(''); // 빈 검색어로 기본 게임들 로드
     }
-  }, [isOpen, excludeGameIds]);
+  }, [isOpen, excludeGameIds, searchGames]);
 
   // 검색어 변경 시 검색 실행
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const timeoutId = setTimeout(() => {
       searchGames(query);
     }, 300); // 300ms 디바운싱
 
     return () => clearTimeout(timeoutId);
-  }, [query, excludeGameIds, isOpen]);
+  }, [query, excludeGameIds, isOpen, searchGames]);
 
   // 게임 선택 핸들러
   const handleGameSelect = (game: Game) => {
@@ -120,7 +120,7 @@ export function GameSearchModal({
             </button>
           </div>
         </div>
-        
+
         {/* 검색 입력 */}
         <div className="p-4 border-b border-border">
           <div className="relative">
@@ -137,7 +137,7 @@ export function GameSearchModal({
             />
           </div>
         </div>
-        
+
         {/* 검색 결과 */}
         <div className="max-h-80 overflow-y-auto">
           {showLoading ? (

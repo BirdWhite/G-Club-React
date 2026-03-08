@@ -50,8 +50,8 @@ export async function sendPushNotificationInternal({
     const payload = JSON.stringify({
       title,
       body,
-      icon: '/icons/maskable_icon_x192.png',
-      badge: '/icons/maskable_icon_x192.png',
+      icon: '/icons/maskable_icon_x512.png',
+      badge: '/icons/maskable_icon_x512.png',
       tag,
       data: {
         url,
@@ -83,7 +83,7 @@ export async function sendPushNotificationInternal({
 
   } catch (error: unknown) {
     console.error(`푸시 알림 발송 실패 (${userId}):`, error);
-    
+
     // 구독이 만료된 경우 DB에서 제거
     if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 410) {
       try {
@@ -97,7 +97,7 @@ export async function sendPushNotificationInternal({
         console.error('만료된 구독 정보 삭제 실패:', deleteError);
       }
     }
-    
+
     return false;
   }
 }

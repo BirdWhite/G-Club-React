@@ -255,7 +255,7 @@ model GamePost {
   game          Game?    @relation(fields: [gameId], references: [id])
   customGameName String? // DB에 없는 게임일 경우
 
-  startTime     DateTime // 게임 시작 시간
+  startTime     DateTime? // 게임 시작 시간 (null이면 모이면 바로 출발)
   maxParticipants Int      // 최대 인원
   
   status        GamePostStatus @default(OPEN)

@@ -17,8 +17,11 @@ web/out/
 
 # PWA - 자동 생성 파일
 web/public/sw.js
+web/public/sw.js.map
 web/public/workbox-*.js
 web/public/worker-*.js
+sw.js
+sw.js.map
 
 # Dependencies
 web/node_modules/

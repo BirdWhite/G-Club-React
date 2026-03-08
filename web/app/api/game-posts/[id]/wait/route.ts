@@ -19,7 +19,7 @@ export async function POST(
 
   try {
     const { id: gamePostId } = await params;
-    
+
     // 요청 본문이 있는지 확인하고 JSON 파싱
     let availableTime: string | null = null;
     try {
@@ -33,18 +33,18 @@ export async function POST(
     const post = await prisma.gamePost.findUnique({
       where: { id: gamePostId },
       include: {
-        participants: { 
-          select: { 
+        participants: {
+          select: {
             userId: true,
             status: true
-          } 
+          }
         },
-        waitingList: { 
-          select: { 
+        waitingList: {
+          select: {
             id: true,
             userId: true,
             status: true
-          } 
+          }
         },
       },
     });
@@ -72,11 +72,14 @@ export async function POST(
     // 시간 예비 참가인 경우 시간 검증
     if (availableTime) {
       const availableDateTime = new Date(availableTime);
-      const gameStartTime = new Date(post.startTime);
-      
-      // 참여 가능 시간이 게임 시작 시간보다 이전이면 오류
-      if (availableDateTime <= gameStartTime) {
-        return NextResponse.json({ error: '참여 가능 시간은 게임 시작 시간 이후여야 합니다.' }, { status: 400 });
+
+      if (post.startTime) {
+        const gameStartTime = new Date(post.startTime);
+
+        // 참여 가능 시간이 게임 시작 시간보다 이전이면 오류
+        if (availableDateTime <= gameStartTime) {
+          return NextResponse.json({ error: '참여 가능 시간은 게임 시작 시간 이후여야 합니다.' }, { status: 400 });
+        }
       }
     }
 
@@ -92,15 +95,15 @@ export async function POST(
         userId
       }
     });
-    
+
     // INVITED 상태인 경우는 업데이트 불가 (승인 대기 중)
     if (existingWaiting && existingWaiting.status === 'INVITED') {
       return NextResponse.json({ error: '승인 대기 중인 예비 신청이 있습니다. 기존 신청을 취소한 후 다시 신청해주세요.' }, { status: 400 });
     }
-    
+
     // 상태 결정: availableTime이 있으면 TIME_WAITING, 없으면 WAITING
     const waitingStatus = availableTime ? 'TIME_WAITING' : 'WAITING';
-    
+
     if (existingWaiting) {
       // 기존 예비 참여자 레코드 업데이트
       await prisma.waitingParticipant.update({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
 import { v4 as uuidv4 } from 'uuid';
+import { sendPushNotificationToUsers } from '@/lib/notifications/notificationService';
 
 export async function GET(request: NextRequest) {
   try {
@@ -169,7 +170,7 @@ export async function POST(request: NextRequest) {
             type: 'CALENDAR_EVENT_NEW',
             title: '새로운 일정이 등록되었습니다',
             body: title.trim(),
-            icon: '/icons/calendar.svg',
+            icon: '/icons/maskable_icon_x512.png',
             actionUrl: `/calendar/${event.id}`,
             calendarEventId: event.id,
             isGroupSend: true,
@@ -191,6 +192,23 @@ export async function POST(request: NextRequest) {
           where: { id: notification.id },
           data: { status: 'SENT', sentAt: new Date() },
         });
+
+        // 푸시 알림 발송
+        await sendPushNotificationToUsers(
+          notification.id,
+          usersWithCalendarEnabled.map((u) => u.userId),
+          {
+            title: notification.title,
+            body: notification.body,
+            icon: notification.icon || undefined,
+            data: {
+              notificationId: notification.id,
+              actionUrl: notification.actionUrl,
+              eventId: event.id,
+              eventTitle: title.trim()
+            }
+          }
+        );
       }
     } catch (notificationError) {
       console.error('일정 알림 발송 실패:', notificationError);

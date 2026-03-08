@@ -30,12 +30,12 @@ export async function GET(
 
     const { id } = await params;
     const userId = user.id;
-    
+
     const { searchParams } = new URL(request.url);
     const isList = searchParams.get('list') === 'true';
 
     const post = await prisma.gamePost.findUnique({
-      where: { 
+      where: {
         id,
         status: { not: 'DELETED' } // 삭제된 게시글 제외
       },
@@ -97,7 +97,7 @@ export async function GET(
     }
 
     // 조회수 증가는 별도 API로 처리 (POST /api/game-posts/[id]/view)
-    
+
 
     // 참여자 정보를 별도로 조회 (게스트 참여자 포함)
     const participants = await prisma.gameParticipant.findMany({
@@ -129,7 +129,7 @@ export async function GET(
           participants: participants.filter(p => p.status === 'ACTIVE').length,
           waitingList: Array.isArray(post.waitingList) ? post.waitingList.length : 0,
         },
-        startTime: post.startTime.toISOString(),
+        startTime: post.startTime ? post.startTime.toISOString() : null,
         createdAt: post.createdAt.toISOString(),
         updatedAt: post.updatedAt.toISOString(),
         // 사용자 상태 정보 추가
@@ -144,10 +144,10 @@ export async function GET(
     // 상세 조회 시에도 _count 정보 포함
     const activeParticipantsCount = participants.filter(p => p.status === 'ACTIVE').length;
     const isFull = activeParticipantsCount >= post.maxParticipants;
-    
-    
+
+
     const isWaiting = userId ? Array.isArray(post.waitingList) && post.waitingList.some((w) => w.userId === userId && w.status !== 'CANCELED') : false;
-    
+
     // content 필드는 이미 string이므로 그대로 사용
     const contentString = String(post.content || '');
 
@@ -161,7 +161,7 @@ export async function GET(
         participants: activeParticipantsCount,
         waitingList: Array.isArray(post.waitingList) ? post.waitingList.length : 0,
       },
-      startTime: post.startTime.toISOString(),
+      startTime: post.startTime ? post.startTime.toISOString() : null,
       createdAt: post.createdAt.toISOString(),
       updatedAt: post.updatedAt.toISOString(),
       // 사용자 상태 정보 추가
@@ -170,14 +170,14 @@ export async function GET(
       isWaiting: isWaiting,
       canDelete: userId === post.author.userId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
     };
-    
-    
+
+
     return NextResponse.json(responseData);
   } catch (error) {
     console.error('모집글 상세 조회 오류:', error);
     console.error('에러 스택:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { 
+      {
         error: '모집글을 불러오는 중 오류가 발생했습니다.',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -193,19 +193,19 @@ export async function PATCH(
 ) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
   try {
     const { id } = await params;
-    
-    const requestBody = await request.json();
-    
-    const { title, content, maxParticipants, startDate, startTime, participants = [] } = requestBody;
 
-    if (!title || maxParticipants === undefined || !startDate || !startTime) {
+    const requestBody = await request.json();
+
+    const { title, content, maxParticipants, startTime, participants = [] } = requestBody;
+
+    if (!title || maxParticipants === undefined) {
       return NextResponse.json({ error: '모든 필수 항목을 입력해주세요.' }, { status: 400 });
     }
 
@@ -228,27 +228,15 @@ export async function PATCH(
       );
     }
 
-    // 날짜와 시간을 합쳐서 DateTime 객체 생성
-    const dateOnly = new Date(startDate);
-    const timeOnly = new Date(startTime);
-    
-    const combinedDateTime = new Date(
-      dateOnly.getFullYear(),
-      dateOnly.getMonth(),
-      dateOnly.getDate(),
-      timeOnly.getHours(),
-      timeOnly.getMinutes(),
-      timeOnly.getSeconds()
-    );
-    
+    const parsedStartTime = startTime ? new Date(startTime) : null;
 
     if (maxParticipants < 2 || maxParticipants > 100) {
       return NextResponse.json({ error: '인원수는 2명 이상 100명 이하로 설정해주세요.' }, { status: 400 });
     }
-    
 
-    const existingPost = await prisma.gamePost.findUnique({ 
-      where: { 
+
+    const existingPost = await prisma.gamePost.findUnique({
+      where: {
         id,
         status: { not: 'DELETED' } // 삭제된 게시글 제외
       },
@@ -274,15 +262,15 @@ export async function PATCH(
     if (!existingPost) {
       return NextResponse.json({ error: '모집글을 찾을 수 없습니다.' }, { status: 404 });
     }
-    
-    
+
+
     if (existingPost.authorId !== user.id) {
       return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 });
     }
-    
+
     // 시간 변경 감지
-    const isTimeChanged = existingPost.startTime.getTime() !== combinedDateTime.getTime();
-    
+    const isTimeChanged = existingPost.startTime?.getTime() !== parsedStartTime?.getTime();
+
 
     // 추가하려는 참여자 수가 최대인원을 초과하는지 확인
     const validParticipants = participants.filter((p: { userId?: string; name?: string }) => {
@@ -294,12 +282,12 @@ export async function PATCH(
     // participants 배열에는 이미 작성자가 포함되어 있으므로, 
     // validParticipants.length가 최대인원을 초과하는지 확인
     const totalParticipantsAfterUpdate = validParticipants.length;
-    
-    
+
+
     if (totalParticipantsAfterUpdate > maxParticipants) {
       return NextResponse.json({ error: `최대 인원(${maxParticipants}명)을 초과하여 참여자를 추가할 수 없습니다. 현재 추가 가능한 인원: ${maxParticipants}명` }, { status: 400 });
     }
-    
+
 
     const updatedPost = await prisma.$transaction(async (prisma) => {
       // 게시글 업데이트
@@ -309,7 +297,7 @@ export async function PATCH(
           title: sanitizedTitle,
           content: finalContent,
           maxParticipants,
-          startTime: combinedDateTime,
+          startTime: parsedStartTime,
         },
       });
 
@@ -326,7 +314,7 @@ export async function PATCH(
       });
 
       // 새로운 참여자들 추가 (이미 위에서 필터링됨)
-      
+
       for (const participant of validParticipants) {
         if (participant.userId && participant.userId.trim()) {
           // 기존 사용자 확인
@@ -398,7 +386,7 @@ export async function PATCH(
 
       // 참여자 수에 따라 isFull 상태 업데이트
       const newIsFull = finalParticipantsCount >= maxParticipants;
-      
+
       // isFull 상태가 변경된 경우 업데이트
       if (newIsFull !== post.isFull) {
         await prisma.gamePost.update({
@@ -426,7 +414,7 @@ export async function PATCH(
               authorName: '작성자', // author 정보는 별도로 조회하지 않음
               title: existingPost.title,
               oldStartTime: existingPost.startTime,
-              newStartTime: combinedDateTime,
+              newStartTime: parsedStartTime,
             }
           );
         }
@@ -454,20 +442,20 @@ export async function DELETE(
 ) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
-  
+
   try {
     const { id } = await params;
 
     const post = await prisma.gamePost.findUnique({
-      where: { 
+      where: {
         id,
         status: { not: 'DELETED' } // 삭제된 게시글 제외
       },
-      include: { 
+      include: {
         author: { include: { role: true } },
         game: true
       },

@@ -14,7 +14,7 @@ interface GamePostCardProps {
 
 const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
   const [isMounted, setIsMounted] = useState(false);
-  
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -28,22 +28,24 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
     COMPLETED: { text: '종료', className: 'bg-card-foreground/20 text-card-foreground group-hover:bg-card-foreground/30' },
     EXPIRED: { text: '만료', className: 'bg-card-foreground/20 text-card-foreground group-hover:bg-card-foreground/30' },
   };
-  
+
   const fullStatus = { text: '가득 참', className: 'bg-chart-4/20 text-chart-4 group-hover:bg-chart-4/30' };
-  
+
   // 게임글 상태 표시
   const getDisplayStatus = () => {
     // OPEN 상태일 때만 가득 찬 경우 표시
     if (post.isFull && post.status === 'OPEN') {
       return fullStatus;
     }
-    
+
     return statusInfo[post.status] || statusInfo.COMPLETED;
   };
-  
+
   const currentStatus = getDisplayStatus();
 
-  const startTimeDisplay = isMounted ? formatRelativeTime(post.startTime) : '...';
+  const startTimeDisplay = isMounted
+    ? (post.startTime ? formatRelativeTime(post.startTime) : '모이면 바로 출발')
+    : '...';
 
   return (
     <div className="group bg-card overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-border">
@@ -74,15 +76,15 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
             </h3>
             <div className={`flex items-center text-xs mt-1 ${post.status === 'COMPLETED' || post.status === 'EXPIRED' ? 'text-muted-foreground' : 'text-primary'}`}>
               <Clock className={`h-4 w-4 mr-1 flex-shrink-0 ${post.status === 'COMPLETED' || post.status === 'EXPIRED' ? 'text-muted-foreground' : 'text-primary'}`} />
-              <time dateTime={typeof post.startTime === 'string' ? post.startTime : post.startTime.toISOString()}>
+              <time dateTime={post.startTime ? (typeof post.startTime === 'string' ? post.startTime : post.startTime.toISOString()) : undefined}>
                 {startTimeDisplay}
               </time>
             </div>
           </div>
           {post.game?.iconUrl && (
             <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
-              <Image 
-                src={post.game.iconUrl} 
+              <Image
+                src={post.game.iconUrl}
                 alt={post.game?.name || '게임'}
                 width={32}
                 height={32}
@@ -93,23 +95,22 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
         </div>
 
         {/* 하단: 참여 인원 진행바 */}
-          <div className="mt-auto pt-2 border-t border-border">
+        <div className="mt-auto pt-2 border-t border-border">
           {/* 진행바 (내부에 아이콘과 텍스트) */}
           <div className="relative w-full bg-card-foreground/10 rounded-full h-6 overflow-hidden">
             {/* 진행바 배경 */}
-            <div 
-              className={`h-full transition-all duration-300 ease-out ${
-                post.status === 'COMPLETED' || post.status === 'EXPIRED'
-                  ? 'bg-card-foreground/30' 
+            <div
+              className={`h-full transition-all duration-300 ease-out ${post.status === 'COMPLETED' || post.status === 'EXPIRED'
+                  ? 'bg-card-foreground/30'
                   : (post._count?.participants || 0) >= post.maxParticipants
                     ? 'bg-chart-3/70'
                     : 'bg-gradient-to-r from-primary/70 to-chart-3/70'
-              }`}
-              style={{ 
-                width: `${Math.min(((post._count?.participants || 0) / post.maxParticipants) * 100, 100)}%` 
+                }`}
+              style={{
+                width: `${Math.min(((post._count?.participants || 0) / post.maxParticipants) * 100, 100)}%`
               }}
             />
-            
+
             {/* 좌측 고정 텍스트 */}
             <div className="absolute inset-0 flex items-center justify-start pl-2">
               <div className="flex items-center text-xs font-semibold text-white/80">

@@ -11,8 +11,9 @@ import { MobileGameSearch } from '@/components/common/MobileGameSearch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { CalendarIcon, Clock, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { MobileDatePickerModal } from './MobileDatePickerModal';
@@ -25,15 +26,27 @@ const formSchema = z.object({
   title: z.string().min(2, '제목은 2자 이상 입력해주세요.').max(50, '제목은 50자를 초과할 수 없습니다.'),
   gameId: z.string().min(1, '게임을 선택해주세요.'),
   maxParticipants: z.number().min(2, '최소 2명 이상이어야 합니다.').max(100, '최대 100명까지 가능합니다.'),
-  startDate: z.date({ message: '시작 날짜를 선택해주세요.' }),
-  startTime: z.string().min(1, '시작 시간을 선택해주세요.'),
+  isImmediate: z.boolean(),
+  startDate: z.date({ message: '시작 날짜를 선택해주세요.' }).optional(),
+  startTime: z.string().min(1, '시작 시간을 선택해주세요.').optional(),
   content: z.string().max(2000, '내용은 2000자를 초과할 수 없습니다.'),
   participants: z.array(z.object({
     name: z.string().min(1, '이름은 필수입니다.'),
     userId: z.string().optional(),
     note: z.string().optional(),
   })),
-});
+}).refine(
+  (data) => {
+    if (!data.isImmediate && (!data.startDate || !data.startTime)) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "시작 시간 정보가 필요합니다.",
+    path: ["startDate"],
+  }
+);
 
 type GamePostFormData = z.infer<typeof formSchema>;
 
@@ -56,11 +69,11 @@ export function MobileGamePostForm({ initialData }: MobileGamePostFormProps) {
     if (typeof window === 'undefined') {
       return '12:00';
     }
-    
+
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
-    
+
     // 현재 분을 30분 단위로 올림
     let nextMinute = currentMinute;
     if (currentMinute > 30) {
@@ -69,12 +82,12 @@ export function MobileGamePostForm({ initialData }: MobileGamePostFormProps) {
     } else if (currentMinute > 0) {
       nextMinute = 30;
     }
-    
+
     return `${now.getHours().toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`;
   };
 
   // 기본 참여자 목록 생성 (작성자 본인 포함)
-const getDefaultParticipants = () => {
+  const getDefaultParticipants = () => {
     if (isEditMode && initialData?.participants) {
       // 편집 모드: 기존 참여자 목록 사용 (중도 퇴장자 제외하여 UI에만 표시)
       return initialData.participants
@@ -109,6 +122,7 @@ const getDefaultParticipants = () => {
       title: initialData?.title || '',
       gameId: initialData?.gameId || '',
       maxParticipants: initialData?.maxParticipants || 10,
+      isImmediate: initialData ? !initialData.startTime : false,
       startDate: initialData?.startTime ? new Date(initialData.startTime) : new Date(),
       startTime: initialData?.startTime ? new Date(initialData.startTime).toTimeString().slice(0, 5) : getNextTimeSlot(),
       content: initialData?.content || '',
@@ -123,7 +137,7 @@ const getDefaultParticipants = () => {
     if (!isEditMode && profile?.name) {
       const currentParticipants = form.getValues('participants');
       const hasAuthor = currentParticipants.some(p => p.userId === profile.userId);
-      
+
       if (!hasAuthor) {
         setValue('participants', [
           {
@@ -141,7 +155,7 @@ const getDefaultParticipants = () => {
   useEffect(() => {
     // 모바일 네비게이션 숨김
     document.body.classList.add('mobile-game-form-active');
-    
+
     const handleResize = () => {
       if (containerRef.current) {
         // 뷰포트 높이 변경 시 스크롤 위치 조정
@@ -159,7 +173,7 @@ const getDefaultParticipants = () => {
     };
 
     window.addEventListener('resize', handleResize);
-    
+
     return () => {
       // 컴포넌트 언마운트 시 클래스 제거
       document.body.classList.remove('mobile-game-form-active');
@@ -172,11 +186,13 @@ const getDefaultParticipants = () => {
       const url = isEditMode ? `/api/game-posts/${initialData.id}` : '/api/game-posts';
       const method = isEditMode ? 'PATCH' : 'POST';
 
-      // 날짜와 시간을 결합하여 UTC 시간으로 변환
-      const [hours, minutes] = data.startTime.split(':').map(Number);
-      const combinedDateTime = new Date(data.startDate);
-      combinedDateTime.setHours(hours, minutes, 0, 0);
-      const utcStartTime = combinedDateTime.toISOString();
+      let utcStartTime: string | null = null;
+      if (!data.isImmediate && data.startDate && data.startTime) {
+        const [hours, minutes] = data.startTime.split(':').map(Number);
+        const combinedDateTime = new Date(data.startDate);
+        combinedDateTime.setHours(hours, minutes, 0, 0);
+        utcStartTime = combinedDateTime.toISOString();
+      }
 
       const payload = {
         ...data,
@@ -206,7 +222,7 @@ const getDefaultParticipants = () => {
   // 폼 내용이 변경되었는지 확인하는 함수
   const hasFormChanges = () => {
     const currentValues = form.getValues();
-    
+
     // 새 글 작성 모드
     if (!isEditMode) {
       return (
@@ -216,7 +232,7 @@ const getDefaultParticipants = () => {
         currentValues.participants.length > 1 // 작성자 외 다른 참여자
       );
     }
-    
+
     // 편집 모드 - 초기값과 비교
     if (initialData) {
       return (
@@ -226,7 +242,7 @@ const getDefaultParticipants = () => {
         currentValues.content !== initialData.content
       );
     }
-    
+
     return false;
   };
 
@@ -257,11 +273,11 @@ const getDefaultParticipants = () => {
         >
           <X className="h-5 w-5 text-foreground" />
         </button>
-        
+
         <h1 className="text-lg font-semibold text-foreground">
           {isEditMode ? '게시글 수정' : '게시글 작성'}
         </h1>
-        
+
         <Button
           type="submit"
           form="game-post-form"
@@ -301,94 +317,119 @@ const getDefaultParticipants = () => {
                 <div className="border-t border-border"></div>
               </div>
 
-              {/* 시간 선택 - 날짜와 시간 통합 */}
-              <div className="flex gap-4">
-                {/* 왼쪽: 날짜 선택 */}
-                <FormField
-                  control={form.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormControl>
-                        <button
-                          type="button"
-                          onClick={() => setShowDatePicker(true)}
-                          className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
-                        >
-                          <span className="truncate">
-                            {field.value ? (
-                              (() => {
-                                const today = new Date();
-                                const tomorrow = new Date(today);
-                                tomorrow.setDate(today.getDate() + 1);
-                                const dayAfterTomorrow = new Date(today);
-                                dayAfterTomorrow.setDate(today.getDate() + 2);
-                                
-                                const selectedDate = new Date(field.value);
-                                selectedDate.setHours(0, 0, 0, 0);
-                                today.setHours(0, 0, 0, 0);
-                                tomorrow.setHours(0, 0, 0, 0);
-                                dayAfterTomorrow.setHours(0, 0, 0, 0);
-                                
-                                if (selectedDate.getTime() === today.getTime()) {
-                                  return '오늘';
-                                } else if (selectedDate.getTime() === tomorrow.getTime()) {
-                                  return '내일';
-                                } else if (selectedDate.getTime() === dayAfterTomorrow.getTime()) {
-                                  return '모레';
-                                } else {
-                                  return format(field.value, "M월 d일 (E)", { locale: ko });
-                                }
-                              })()
-                            ) : (
-                              "날짜 선택"
-                            )}
-                          </span>
-                          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      </FormControl>
-                      <FormMessage />
-                      
-                      <MobileDatePickerModal
-                        isOpen={showDatePicker}
-                        value={field.value}
-                        onClose={() => setShowDatePicker(false)}
-                        onSelect={field.onChange}
+              {/* 모이면 바로 출발 체크박스 */}
+              <FormField
+                control={form.control}
+                name="isImmediate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border rounded-md bg-card">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                       />
-                    </FormItem>
-                  )}
-                />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="font-semibold text-foreground">
+                        모이면 바로 출발
+                      </FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        시작 시간을 지정하지 않고 인원이 모두 모이면 바로 출발합니다.
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
 
-                {/* 오른쪽: 시간 선택 */}
-                <FormField
-                  control={form.control}
-                  name="startTime"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormControl>
-                        <button
-                          type="button"
-                          onClick={() => setShowTimePicker(true)}
-                          className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
-                        >
-                          <span className="truncate">
-                            {field.value || "시간 선택"}
-                          </span>
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      </FormControl>
-                      <FormMessage />
-                      
-                      <MobileTimePickerModal
-                        isOpen={showTimePicker}
-                        value={field.value}
-                        onClose={() => setShowTimePicker(false)}
-                        onSelect={field.onChange}
-                      />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {!form.watch('isImmediate') && (
+                <div className="flex gap-4">
+                  {/* 왼쪽: 날짜 선택 */}
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <button
+                            type="button"
+                            onClick={() => setShowDatePicker(true)}
+                            className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
+                          >
+                            <span className="truncate">
+                              {field.value ? (
+                                (() => {
+                                  const today = new Date();
+                                  const tomorrow = new Date(today);
+                                  tomorrow.setDate(today.getDate() + 1);
+                                  const dayAfterTomorrow = new Date(today);
+                                  dayAfterTomorrow.setDate(today.getDate() + 2);
+
+                                  const selectedDate = new Date(field.value);
+                                  selectedDate.setHours(0, 0, 0, 0);
+                                  today.setHours(0, 0, 0, 0);
+                                  tomorrow.setHours(0, 0, 0, 0);
+                                  dayAfterTomorrow.setHours(0, 0, 0, 0);
+
+                                  if (selectedDate.getTime() === today.getTime()) {
+                                    return '오늘';
+                                  } else if (selectedDate.getTime() === tomorrow.getTime()) {
+                                    return '내일';
+                                  } else if (selectedDate.getTime() === dayAfterTomorrow.getTime()) {
+                                    return '모레';
+                                  } else {
+                                    return format(field.value, "M월 d일 (E)", { locale: ko });
+                                  }
+                                })()
+                              ) : (
+                                "날짜 선택"
+                              )}
+                            </span>
+                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </FormControl>
+                        <FormMessage />
+
+                        <MobileDatePickerModal
+                          isOpen={showDatePicker}
+                          value={field.value}
+                          onClose={() => setShowDatePicker(false)}
+                          onSelect={field.onChange}
+                        />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* 오른쪽: 시간 선택 */}
+                  <FormField
+                    control={form.control}
+                    name="startTime"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <button
+                            type="button"
+                            onClick={() => setShowTimePicker(true)}
+                            className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
+                          >
+                            <span className="truncate">
+                              {field.value || "시간 선택"}
+                            </span>
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </FormControl>
+                        <FormMessage />
+
+                        <MobileTimePickerModal
+                          isOpen={showTimePicker}
+                          value={field.value}
+                          onClose={() => setShowTimePicker(false)}
+                          onSelect={field.onChange}
+                        />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
               <FormField
                 control={form.control}
@@ -416,8 +457,8 @@ const getDefaultParticipants = () => {
                       <div className="space-y-4">
                         <div className="flex items-center gap-3">
                           <span className="text-base font-medium text-foreground">모집 인원</span>
-                          <Input 
-                            type="number" 
+                          <Input
+                            type="number"
                             value={field.value || ''}
                             onChange={e => {
                               const value = e.target.value;
@@ -436,7 +477,7 @@ const getDefaultParticipants = () => {
                           />
                           <span className="text-base font-medium text-foreground">명</span>
                         </div>
-                        
+
                         {/* 모바일 친화적 슬라이더 */}
                         <div className="space-y-3">
                           <Slider
@@ -469,28 +510,28 @@ const getDefaultParticipants = () => {
               {/* 내용 위 구분선 */}
               <div className="border-t border-border"></div>
 
-                <FormField
-                  control={form.control}
-                  name="content"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <div className="pb-2">
-                          <textarea
-                            {...field}
-                            placeholder="비워두면 제목과 동일한 내용으로 작성됩니다. (예: 함께 즐길 파티원을 모집합니다!)"
-                            className="w-full min-h-[100px] px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-vertical text-sm"
-                            maxLength={2000}
-                          />
-                          <div className="text-xs text-muted-foreground text-right mt-1">
-                            {field.value?.length ?? 0}/2000
-                          </div>
+              <FormField
+                control={form.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div className="pb-2">
+                        <textarea
+                          {...field}
+                          placeholder="비워두면 제목과 동일한 내용으로 작성됩니다. (예: 함께 즐길 파티원을 모집합니다!)"
+                          className="w-full min-h-[100px] px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-vertical text-sm"
+                          maxLength={2000}
+                        />
+                        <div className="text-xs text-muted-foreground text-right mt-1">
+                          {field.value?.length ?? 0}/2000
                         </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* 내용 아래 구분선 */}
               <div className="border-t border-border"></div>

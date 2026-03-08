@@ -14,38 +14,39 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    
+
     // 게시글 존재 여부 확인
     const post = await prisma.gamePost.findUnique({
-      where: { 
+      where: {
         id,
         status: { not: 'DELETED' }
       },
-      select: { id: true }
+      select: { id: true, updatedAt: true }
     });
-    
+
     if (!post) {
       return NextResponse.json(
         { error: '게시글을 찾을 수 없습니다.' },
         { status: 404 }
       );
     }
-    
+
     // 조회수 증가 (중복 방지 로직은 추후 개선 가능)
     await prisma.gamePost.update({
       where: { id },
       data: {
         viewCount: {
           increment: 1
-        }
+        },
+        updatedAt: post.updatedAt // 조회수 증가 시 업데이트 시간 변경 방지
       }
     });
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: '조회수가 증가되었습니다.' 
+
+    return NextResponse.json({
+      success: true,
+      message: '조회수가 증가되었습니다.'
     });
-    
+
   } catch (error) {
     console.error('조회수 증가 오류:', error);
     return NextResponse.json(

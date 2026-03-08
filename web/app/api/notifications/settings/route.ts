@@ -6,13 +6,13 @@ import prisma from '@/lib/database/prisma';
 export async function GET() {
   try {
     const supabase = await createServerClient();
-    
+
     // 사용자 인증 확인
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+
     if (userError || !user) {
       return NextResponse.json(
-        { error: '인증되지 않은 사용자입니다.' }, 
+        { error: '인증되지 않은 사용자입니다.' },
         { status: 401 }
       );
     }
@@ -55,7 +55,11 @@ export async function GET() {
           myGamePostMeetingStartEnabled: true,
           myGamePostMeetingStartOnlyFull: true,
           waitingListEnabled: true,
-          noticeEnabled: true
+          noticeEnabled: true,
+          calendarEventEnabled: true,
+          calendarEventNewEnabled: true,
+          calendarEventReminderEnabled: true,
+          calendarEventReminderMinutes: 60
         }
       });
     }
@@ -113,6 +117,12 @@ export async function GET() {
         notice: {
           enabled: settings.noticeEnabled
         },
+        calendarEvent: {
+          enabled: settings.calendarEventEnabled,
+          newEnabled: settings.calendarEventNewEnabled,
+          reminderEnabled: settings.calendarEventReminderEnabled,
+          reminderMinutes: settings.calendarEventReminderMinutes
+        },
         updatedAt: settings.updatedAt
       }
     });
@@ -129,13 +139,13 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createServerClient();
-    
+
     // 사용자 인증 확인
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+
     if (userError || !user) {
       return NextResponse.json(
-        { error: '인증되지 않은 사용자입니다.' }, 
+        { error: '인증되지 않은 사용자입니다.' },
         { status: 401 }
       );
     }
@@ -146,7 +156,8 @@ export async function PUT(request: NextRequest) {
       participatingGame,
       myGamePost,
       waitingList,
-      notice
+      notice,
+      calendarEvent
     } = await request.json();
 
     // 업데이트할 데이터 구성
@@ -172,13 +183,13 @@ export async function PUT(request: NextRequest) {
       if (participatingGame.memberLeave !== undefined) updateData.participatingGameMemberLeave = participatingGame.memberLeave;
       if (participatingGame.timeChange !== undefined) updateData.participatingGameTimeChange = participatingGame.timeChange;
       if (participatingGame.gameCancelled !== undefined) updateData.participatingGameCancelled = participatingGame.gameCancelled;
-      
+
       if (participatingGame.beforeMeeting) {
         if (participatingGame.beforeMeeting.enabled !== undefined) updateData.participatingGameBeforeMeetingEnabled = participatingGame.beforeMeeting.enabled;
         if (participatingGame.beforeMeeting.minutes !== undefined) updateData.participatingGameBeforeMeetingMinutes = participatingGame.beforeMeeting.minutes;
         if (participatingGame.beforeMeeting.onlyFullMeeting !== undefined) updateData.participatingGameBeforeMeetingOnlyFull = participatingGame.beforeMeeting.onlyFullMeeting;
       }
-      
+
       if (participatingGame.meetingStart) {
         if (participatingGame.meetingStart.enabled !== undefined) updateData.participatingGameMeetingStartEnabled = participatingGame.meetingStart.enabled;
         if (participatingGame.meetingStart.onlyFullMeeting !== undefined) updateData.participatingGameMeetingStartOnlyFull = participatingGame.meetingStart.onlyFullMeeting;
@@ -190,13 +201,13 @@ export async function PUT(request: NextRequest) {
       if (myGamePost.fullMeeting !== undefined) updateData.myGamePostFullMeeting = myGamePost.fullMeeting;
       if (myGamePost.memberJoin !== undefined) updateData.myGamePostMemberJoin = myGamePost.memberJoin;
       if (myGamePost.memberLeave !== undefined) updateData.myGamePostMemberLeave = myGamePost.memberLeave;
-      
+
       if (myGamePost.beforeMeeting) {
         if (myGamePost.beforeMeeting.enabled !== undefined) updateData.myGamePostBeforeMeetingEnabled = myGamePost.beforeMeeting.enabled;
         if (myGamePost.beforeMeeting.minutes !== undefined) updateData.myGamePostBeforeMeetingMinutes = myGamePost.beforeMeeting.minutes;
         if (myGamePost.beforeMeeting.onlyFullMeeting !== undefined) updateData.myGamePostBeforeMeetingOnlyFull = myGamePost.beforeMeeting.onlyFullMeeting;
       }
-      
+
       if (myGamePost.meetingStart) {
         if (myGamePost.meetingStart.enabled !== undefined) updateData.myGamePostMeetingStartEnabled = myGamePost.meetingStart.enabled;
         if (myGamePost.meetingStart.onlyFullMeeting !== undefined) updateData.myGamePostMeetingStartOnlyFull = myGamePost.meetingStart.onlyFullMeeting;
@@ -209,6 +220,13 @@ export async function PUT(request: NextRequest) {
 
     if (notice !== undefined) {
       updateData.noticeEnabled = notice.enabled;
+    }
+
+    if (calendarEvent !== undefined) {
+      if (calendarEvent.enabled !== undefined) updateData.calendarEventEnabled = calendarEvent.enabled;
+      if (calendarEvent.newEnabled !== undefined) updateData.calendarEventNewEnabled = calendarEvent.newEnabled;
+      if (calendarEvent.reminderEnabled !== undefined) updateData.calendarEventReminderEnabled = calendarEvent.reminderEnabled;
+      if (calendarEvent.reminderMinutes !== undefined) updateData.calendarEventReminderMinutes = calendarEvent.reminderMinutes;
     }
 
     // 설정 업데이트 (없으면 생성)
@@ -245,7 +263,11 @@ export async function PUT(request: NextRequest) {
         myGamePostMeetingStartEnabled: myGamePost?.meetingStart?.enabled ?? true,
         myGamePostMeetingStartOnlyFull: myGamePost?.meetingStart?.onlyFullMeeting ?? true,
         waitingListEnabled: waitingList?.enabled ?? true,
-        noticeEnabled: notice?.enabled ?? true
+        noticeEnabled: notice?.enabled ?? true,
+        calendarEventEnabled: calendarEvent?.enabled ?? true,
+        calendarEventNewEnabled: calendarEvent?.newEnabled ?? true,
+        calendarEventReminderEnabled: calendarEvent?.reminderEnabled ?? true,
+        calendarEventReminderMinutes: calendarEvent?.reminderMinutes ?? 60
       }
     });
 
@@ -301,6 +323,12 @@ export async function PUT(request: NextRequest) {
         },
         notice: {
           enabled: settings.noticeEnabled
+        },
+        calendarEvent: {
+          enabled: settings.calendarEventEnabled,
+          newEnabled: settings.calendarEventNewEnabled,
+          reminderEnabled: settings.calendarEventReminderEnabled,
+          reminderMinutes: settings.calendarEventReminderMinutes
         },
         updatedAt: settings.updatedAt
       }

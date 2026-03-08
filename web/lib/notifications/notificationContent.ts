@@ -143,19 +143,19 @@ export class NotificationContentGenerator {
         [NotificationEventType.EVENT_CREATED]: {
           title: '새로운 일정',
           body: '새로운 일정이 등록되었습니다',
-          icon: '/icons/calendar.svg',
+          icon: '/icons/maskable_icon_x512.png',
           actionUrl: '/calendar'
         },
         [NotificationEventType.EVENT_REMINDER]: {
           title: '일정 리마인더',
           body: '곧 일정이 시작됩니다',
-          icon: '/icons/calendar.svg',
+          icon: '/icons/maskable_icon_x512.png',
           actionUrl: '/calendar'
         },
         [NotificationEventType.EVENT_CANCELLED]: {
           title: '일정 취소',
           body: '일정이 취소되었습니다',
-          icon: '/icons/calendar.svg',
+          icon: '/icons/maskable_icon_x512.png',
           actionUrl: '/calendar'
         }
       }

@@ -7,7 +7,7 @@ import { sanitizeUserInput, INPUT_LIMITS } from '@/lib/utils/common';
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
-    
+
     // 로그인하지 않았거나 roleId가 null/NONE(검증 대기)인 사용자는 목록 조회 불가
     if (!user || !user.role || user.role === 'NONE') {
       return NextResponse.json({
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
         }
       });
     }
-    
+
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get('gameId');
     const status = searchParams.get('status');
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
 
     // 총 게시글 수 조회
     const total = await prisma.gamePost.count({ where });
-    
+
     // 게시글 조회 (최신순으로 정렬, 페이지네이션 적용)
     const posts = await prisma.gamePost.findMany({
       where,
@@ -112,10 +112,10 @@ export async function GET(request: Request) {
     const responseData = posts.map((post) => {
       const activeParticipantsCount = post.participants.filter(p => p.status === 'ACTIVE').length;
       const isFull = activeParticipantsCount >= post.maxParticipants;
-      
+
       // content 필드는 이미 string이므로 그대로 사용
       const contentString = String(post.content || '');
-      
+
       return {
         ...post,
         content: contentString, // string으로 변환된 content
@@ -125,7 +125,7 @@ export async function GET(request: Request) {
           participants: activeParticipantsCount,
           waitingList: post.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED').length,
         },
-        startTime: post.startTime.toISOString(),
+        startTime: post.startTime ? post.startTime.toISOString() : null,
         createdAt: post.createdAt.toISOString(),
         updatedAt: post.updatedAt.toISOString(),
       };
@@ -152,7 +152,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
-  
+
   if (!user) {
     return NextResponse.json(
       { error: '로그인이 필요합니다.' },
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
   try {
     const { title, content, gameId, maxParticipants, startTime, participants = [] } = await request.json();
 
-    if (!title || !gameId || !startTime || !maxParticipants) {
+    if (!title || !gameId || maxParticipants === undefined) {
       return NextResponse.json(
         { error: '모든 필수 항목을 입력해주세요.' },
         { status: 400 }
@@ -214,21 +214,21 @@ export async function POST(request: Request) {
           content: finalContent,
           gameId,
           maxParticipants,
-          startTime: new Date(startTime),
+          startTime: startTime ? new Date(startTime) : null,
           authorId: user.id,
         },
       });
 
       // 참여자들 추가 (작성자 본인 포함)
       const addedUserIds = new Set<string>();
-      
+
       for (const participant of participants) {
         if (participant.userId && participant.userId.trim()) {
           // 중복 체크
           if (addedUserIds.has(participant.userId)) {
             continue;
           }
-          
+
           // 기존 사용자 확인
           const existingUser = await prisma.userProfile.findUnique({
             where: { userId: participant.userId }

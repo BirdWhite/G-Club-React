@@ -15,7 +15,7 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
   const [isInitialized, setIsInitialized] = useState(false);
   const [deviceType, setDeviceType] = useState<'mobile' | 'desktop' | 'unknown'>('unknown');
   const [hasCheckedSubscription, setHasCheckedSubscription] = useState(false);
-  
+
   // onPermissionChange를 ref로 관리하여 의존성 문제 해결
   const onPermissionChangeRef = useRef(onPermissionChange);
   onPermissionChangeRef.current = onPermissionChange;
@@ -24,11 +24,11 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
   const generateDeviceFingerprint = (): string => {
     const userAgent = navigator.userAgent;
     const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-    
+
     // 기기 타입과 이름
     let deviceType = 'unknown';
     let deviceName = 'Unknown';
-    
+
     if (isMobile) {
       deviceType = 'mobile';
       if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
@@ -50,14 +50,14 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
         deviceName = 'Desktop';
       }
     }
-    
+
     // 브라우저 정보
     let browser = 'Unknown';
     if (userAgent.includes('Chrome')) browser = 'Chrome';
     else if (userAgent.includes('Safari')) browser = 'Safari';
     else if (userAgent.includes('Firefox')) browser = 'Firefox';
     else if (userAgent.includes('Edge')) browser = 'Edge';
-    
+
     return [
       deviceName,                              // 기기 이름
       deviceType,                              // 기기 타입
@@ -72,7 +72,7 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
   const detectDeviceType = (): 'mobile' | 'desktop' | 'unknown' => {
     const userAgent = navigator.userAgent.toLowerCase();
     const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-    
+
     if (isMobile) {
       return 'mobile';
     } else {
@@ -170,16 +170,16 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
     if (hasCheckedSubscription) {
       return;
     }
-    
+
     try {
       const registration = await navigator.serviceWorker.ready;
       const existingSubscription = await registration.pushManager.getSubscription();
-      
+
       if (userId) {
         // 서버에 해당 사용자의 구독이 있는지 확인 (한 번만)
         const serverHasSubscription = await checkServerSubscription();
         setHasCheckedSubscription(true);
-        
+
         if (existingSubscription && serverHasSubscription) {
           // 브라우저와 서버 모두 구독 정보가 있음 - 유효성 검증
           const isValid = await validateSubscription(existingSubscription);
@@ -250,36 +250,36 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
 
   useEffect(() => {
     if (isInitialized || !userId) return;
-    
+
     // userId가 변경되면 체크 플래그 리셋
     setHasCheckedSubscription(false);
-    
+
     // 디바이스 타입 감지
     const currentDeviceType = detectDeviceType();
     setDeviceType(currentDeviceType);
-    
+
     // PWA 설치 여부 확인
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                  (window.navigator as { standalone?: boolean }).standalone === true;
-    
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as { standalone?: boolean }).standalone === true;
+
     // PWA가 설치되지 않은 경우 알림 기능 비활성화
     if (!isPWA) {
       setIsSupported(false);
       setIsInitialized(true);
       return;
     }
-    
+
     // 브라우저 지원 확인
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       setIsSupported(true);
-      
+
       // PWA 환경에서 권한 상태 정확히 확인
       const checkPermission = async () => {
         try {
           // 현재 기기의 권한 상태만 확인 (다른 기기 구독과 무관)
           const currentPermission = Notification.permission;
           setPermission(currentPermission);
-          
+
           // next-pwa가 자동 등록한 서비스 워커 사용
           checkExistingSubscription();
         } catch (error) {
@@ -288,10 +288,10 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
           checkExistingSubscription();
         }
       };
-      
+
       checkPermission();
     }
-    
+
     setIsInitialized(true);
   }, [userId, isInitialized, checkExistingSubscription]);
 
@@ -313,17 +313,17 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
 
 
   const subscribeUser = useCallback(async () => {
-    
+
     try {
       const registration = await navigator.serviceWorker.ready;
-      
+
       // VAPID 공개 키 (자체 생성)
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      
+
       if (!vapidPublicKey) {
         throw new Error('VAPID 공개 키가 설정되지 않았습니다');
       }
-      
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
@@ -353,7 +353,7 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
       setSubscription(null);
       onPermissionChangeRef.current?.(permission, null);
     }
-  }, [userId, permission]);
+  }, [userId, permission, savePushSubscription]);
 
   const unsubscribe = useCallback(async () => {
     try {
@@ -361,7 +361,7 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
         await subscription.unsubscribe();
         setSubscription(null);
         onPermissionChangeRef.current?.(permission, null);
-        
+
         // 서버에서도 구독 정보 제거
         if (userId) {
           await fetch('/api/push/unsubscribe', {
@@ -381,7 +381,7 @@ export function PushNotificationManager({ userId, onPermissionChange, masterEnab
   // Update the useEffect to include the functions after they're declared
   useEffect(() => {
     if (!isInitialized || masterEnabled === undefined) return;
-    
+
     if (masterEnabled) {
       if (permission === 'granted' && !subscription) {
         subscribeUser();

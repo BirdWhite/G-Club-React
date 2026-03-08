@@ -13,7 +13,7 @@ interface ActionButtonsProps {
   isWaiting: boolean;
   isOwner?: boolean;
   gamePostId?: string;
-  gameStartTime?: string | Date;
+  gameStartTime?: string | Date | null;
   waitingList?: WaitingParticipant[];
   onParticipate: () => void;
   onCancelParticipation: () => void;
@@ -44,7 +44,7 @@ export function ActionButtons({
   loading,
 }: ActionButtonsProps) {
   const [isTimeWaitingModalOpen, setIsTimeWaitingModalOpen] = useState(false);
-  
+
   const commonButtonStyles = "w-full inline-flex items-center justify-center px-6 py-3 bg-transparent border rounded-md text-base font-medium text-foreground border-foreground focus:outline-none focus:ring-0 disabled:opacity-50 hover:underline";
   const primaryButtonStyles = "w-full inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground border border-primary rounded-md text-base font-medium focus:outline-none focus:ring-0 disabled:opacity-50 hover:bg-primary/90";
   const disabledButtonStyles = "text-muted-foreground border-muted-foreground cursor-not-allowed no-underline";
@@ -173,7 +173,7 @@ export function ActionButtons({
         </div>
       );
     }
-    
+
     return (
       <button
         onClick={onToggleStatus}
@@ -233,7 +233,7 @@ export function ActionButtons({
   let waitingCancelButton = null;
   if (isWaiting) {
     const waitingParticipant = waitingList.find(w => w.id && w.status !== 'CANCELED');
-    
+
     // waitingList가 비어있어도 isWaiting이 true면 예비 신청 중으로 간주
     if (waitingParticipant || waitingList.length === 0) {
       waitingCancelButton = (
@@ -252,7 +252,7 @@ export function ActionButtons({
                   method: 'POST',
                 });
               }
-              
+
               const data = await response.json();
               if (response.ok) {
                 toast.success(data.message || '예비 참여가 취소되었습니다.');
@@ -286,7 +286,7 @@ export function ActionButtons({
           <Hourglass className="mr-2 h-5 w-5" />
           {loading ? '등록 중...' : '예비 신청'}
         </button>
-        
+
         <TimeWaitingModal
           isOpen={isTimeWaitingModalOpen}
           onClose={() => setIsTimeWaitingModalOpen(false)}
@@ -327,7 +327,7 @@ export function ActionButtons({
             </button>
           )}
         </div>
-        
+
         <TimeWaitingModal
           isOpen={isTimeWaitingModalOpen}
           onClose={() => setIsTimeWaitingModalOpen(false)}

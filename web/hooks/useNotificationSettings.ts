@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { 
-  DoNotDisturbSettings, 
+import type {
+  DoNotDisturbSettings,
   NotificationSetting,
   NewGamePostSettings,
   ParticipatingGameSettings,
@@ -16,6 +16,12 @@ interface NotificationSettings {
   myGamePost: MyGamePostSettings;
   waitingList: WaitingListSettings;
   notice: { enabled: boolean };
+  calendarEvent: {
+    enabled: boolean;
+    newEnabled: boolean;
+    reminderEnabled: boolean;
+    reminderMinutes: number;
+  };
   updatedAt?: string;
 }
 
@@ -27,12 +33,12 @@ export function useNotificationSettings() {
       endTime: "08:00",
       days: ["0", "1", "2", "3", "4", "5", "6"]
     },
-    newGamePost: { 
+    newGamePost: {
       enabled: true,
       mode: 'all',
       customGameIds: []
     },
-    participatingGame: { 
+    participatingGame: {
       enabled: true,
       fullMeeting: true,
       memberJoin: false,
@@ -49,7 +55,7 @@ export function useNotificationSettings() {
         onlyFullMeeting: true
       }
     },
-    myGamePost: { 
+    myGamePost: {
       enabled: true,
       fullMeeting: true,
       memberJoin: false,
@@ -65,9 +71,15 @@ export function useNotificationSettings() {
       }
     },
     waitingList: { enabled: true },
-    notice: { enabled: true }
+    notice: { enabled: true },
+    calendarEvent: {
+      enabled: true,
+      newEnabled: true,
+      reminderEnabled: true,
+      reminderMinutes: 60
+    }
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,11 +87,11 @@ export function useNotificationSettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/notifications/settings');
       const data = await response.json();
-      
+
       if (data.success) {
         setSettings(data.settings);
       } else {
@@ -96,7 +108,7 @@ export function useNotificationSettings() {
   const updateSettings = async (newSettings: Partial<NotificationSettings>) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/notifications/settings', {
         method: 'PUT',
@@ -105,9 +117,9 @@ export function useNotificationSettings() {
         },
         body: JSON.stringify(newSettings),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setSettings(data.settings);
         return { success: true };
@@ -131,8 +143,8 @@ export function useNotificationSettings() {
 
   // 신규 게임메이트 글 알림 설정 업데이트
   const updateNewGamePost = async (enabled: boolean, mode?: 'all' | 'favorites' | 'custom', customGameIds?: string[]) => {
-    return updateSettings({ 
-      newGamePost: { 
+    return updateSettings({
+      newGamePost: {
         enabled,
         mode: mode || settings.newGamePost.mode,
         customGameIds: customGameIds || settings.newGamePost.customGameIds
@@ -142,43 +154,54 @@ export function useNotificationSettings() {
 
   // 참여중인 모임 알림 설정 업데이트
   const updateParticipatingGame = async (enabled: boolean, detailSettings?: Partial<ParticipatingGameSettings>) => {
-    return updateSettings({ 
-      participatingGame: { 
+    return updateSettings({
+      participatingGame: {
         ...settings.participatingGame,
         enabled,
         ...detailSettings
-      } 
+      }
     });
   };
 
   // 내가 작성한 모임 알림 설정 업데이트
   const updateMyGamePost = async (enabled: boolean, detailSettings?: Partial<MyGamePostSettings>) => {
-    return updateSettings({ 
-      myGamePost: { 
+    return updateSettings({
+      myGamePost: {
         ...settings.myGamePost,
         enabled,
         ...detailSettings
-      } 
+      }
     });
   };
 
   // 예비 참여 알림 설정 업데이트
   const updateWaitingList = async (enabled: boolean) => {
-    return updateSettings({ 
-      waitingList: { enabled } 
+    return updateSettings({
+      waitingList: { enabled }
     });
   };
 
   // 공지사항 알림 설정 업데이트
   const updateNotice = async (enabled: boolean) => {
-    return updateSettings({ 
-      notice: { enabled } 
+    return updateSettings({
+      notice: { enabled }
+    });
+  };
+
+  // 일정 알림 설정 업데이트
+  const updateCalendarEvent = async (enabled: boolean, detailSettings?: Partial<{ newEnabled: boolean; reminderEnabled: boolean; reminderMinutes: number }>) => {
+    return updateSettings({
+      calendarEvent: {
+        ...settings.calendarEvent,
+        enabled,
+        ...detailSettings
+      }
     });
   };
 
   // 커스텀 게임 배열 업데이트
   const updateCustomGameIds = async (customGameIds: string[]) => {
-    return updateSettings({ 
+    return updateSettings({
       newGamePost: {
         ...settings.newGamePost,
         customGameIds
@@ -187,9 +210,9 @@ export function useNotificationSettings() {
   };
 
   // 특정 카테고리 토글
-  const toggleCategory = async (category: 'newGamePost' | 'participatingGame' | 'myGamePost' | 'waitingList' | 'notice') => {
+  const toggleCategory = async (category: 'newGamePost' | 'participatingGame' | 'myGamePost' | 'waitingList' | 'notice' | 'calendarEvent') => {
     const currentEnabled = settings[category].enabled;
-    
+
     switch (category) {
       case 'newGamePost':
         return updateNewGamePost(!currentEnabled);
@@ -201,6 +224,8 @@ export function useNotificationSettings() {
         return updateWaitingList(!currentEnabled);
       case 'notice':
         return updateNotice(!currentEnabled);
+      case 'calendarEvent':
+        return updateCalendarEvent(!currentEnabled);
     }
   };
 
@@ -217,17 +242,17 @@ export function useNotificationSettings() {
   // 현재 시간이 방해 금지 시간인지 확인
   const isDoNotDisturbTime = () => {
     if (!settings.doNotDisturb.enabled) return false;
-    
+
     const now = new Date();
     const currentDay = now.getDay().toString(); // 0=일요일
     const currentTime = now.toTimeString().slice(0, 5); // "HH:MM" 형식
-    
+
     // 설정된 요일인지 확인
     if (!settings.doNotDisturb.days.includes(currentDay)) return false;
-    
+
     const startTime = settings.doNotDisturb.startTime;
     const endTime = settings.doNotDisturb.endTime;
-    
+
     // 시간 비교 (자정을 넘나드는 경우 고려)
     if (startTime <= endTime) {
       // 같은 날 내에서의 시간 범위
@@ -254,6 +279,7 @@ export function useNotificationSettings() {
     updateMyGamePost,
     updateWaitingList,
     updateCustomGameIds,
+    updateCalendarEvent,
     toggleCategory,
     toggleDoNotDisturb,
     isDoNotDisturbTime,
