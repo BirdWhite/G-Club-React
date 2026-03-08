@@ -51,7 +51,7 @@ export async function sendPushNotificationInternal({
       title,
       body,
       icon: '/icons/maskable_icon_x512.png',
-      badge: '/icons/maskable_icon_x512.png',
+      badge: '/icons/icon_white.svg',
       tag,
       data: {
         url,

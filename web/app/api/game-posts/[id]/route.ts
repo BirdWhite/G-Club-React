@@ -297,7 +297,7 @@ export async function PATCH(
           title: sanitizedTitle,
           content: finalContent,
           maxParticipants,
-          startTime: parsedStartTime,
+          startTime: parsedStartTime || undefined,
         },
       });
 

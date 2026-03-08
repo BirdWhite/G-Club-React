@@ -15,7 +15,7 @@ self.addEventListener('push', function (event: any) {
     title: '얼티메이트',
     body: '새로운 알림이 있습니다.',
     icon: '/icons/maskable_icon_x512.png',
-    badge: '/icons/maskable_icon_x512.png',
+    badge: '/icons/icon_white.svg',
     tag: 'default',
     data: { url: '/' }
   };
@@ -70,6 +70,7 @@ self.addEventListener('message', function (event: any) {
     sw.registration.showNotification(event.data.data.title, {
       body: event.data.data.body,
       icon: event.data.data.icon,
+      badge: '/icons/icon_white.svg',
       tag: 'test'
     });
   }
@@ -155,7 +156,13 @@ self.addEventListener('notificationclick', function (event: any) {
   }
 
   // 알림 클릭 시 앱으로 이동
-  const urlToOpen = event.notification.data?.url || '/';
+  let urlToOpen = event.notification.data?.url || '/';
+
+  // 상대 경로인 경우 현재 도메인을 기준으로 절대 경로로 변환
+  if (urlToOpen.startsWith('/')) {
+    urlToOpen = new URL(urlToOpen, self.location.origin).href;
+  }
+
   const notificationId = event.notification.data?.notificationId;
 
   console.log('[custom-worker] 알림 클릭 데이터:', {
@@ -295,7 +302,7 @@ function doBackgroundSync() {
         return sw.registration.showNotification('새 알림', {
           body: '확인하지 않은 알림이 있습니다.',
           icon: '/icons/maskable_icon_x512.png',
-          badge: '/icons/maskable_icon_x512.png',
+          badge: '/icons/icon_white.svg',
           tag: 'background-sync',
           requireInteraction: true,
           vibrate: [200, 100, 200],
