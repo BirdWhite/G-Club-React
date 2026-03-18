@@ -4,17 +4,18 @@ import { useState } from 'react';
 import { UserRoleManager } from '@/components/admin/UserRoleManager';
 import { PermissionManager } from '@/components/admin/PermissionManager';
 import { GameManager } from '@/components/admin/GameManager';
+import { AuctionManager } from '@/components/admin/AuctionManager';
 
 interface MobileAdminDashboardProps {
-  initialTab: 'user' | 'permission' | 'games';
+  initialTab: 'user' | 'permission' | 'games' | 'auction';
   onTabChange: (newTab: string) => void;
 }
 
 export function MobileAdminDashboard({ initialTab, onTabChange }: MobileAdminDashboardProps) {
-  const [tab, setTab] = useState<'user' | 'permission' | 'games'>(initialTab);
+  const [tab, setTab] = useState<'user' | 'permission' | 'games' | 'auction'>(initialTab);
 
   const handleTabChange = (newTab: string) => {
-    setTab(newTab as 'user' | 'permission' | 'games');
+    setTab(newTab as 'user' | 'permission' | 'games' | 'auction');
     onTabChange(newTab);
   };
 
@@ -57,6 +58,16 @@ export function MobileAdminDashboard({ initialTab, onTabChange }: MobileAdminDas
               >
                 권한 관리 (미구현)
               </button>
+              <button
+                onClick={() => handleTabChange('auction')}
+                className={`${
+                  tab === 'auction' 
+                    ? 'border-admin-primary text-admin-foreground bg-admin-primary/20' 
+                    : 'border-transparent text-admin-foreground hover:text-admin-primary hover:bg-admin-100'
+                } text-left py-3 px-4 border-l-4 font-medium text-sm rounded-r-md transition-colors`}
+              >
+                경매 관리
+              </button>
             </nav>
           </div>
 
@@ -64,6 +75,7 @@ export function MobileAdminDashboard({ initialTab, onTabChange }: MobileAdminDas
             {tab === 'user' && <UserRoleManager />}
             {tab === 'permission' && <PermissionManager />}
             {tab === 'games' && <GameManager />}
+            {tab === 'auction' && <AuctionManager />}
           </div>
         </div>
       </div>

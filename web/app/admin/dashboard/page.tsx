@@ -21,10 +21,11 @@ export default function AdminDashboard() {
     if (tabParam === 'user') return 'user';
     if (tabParam === 'games') return 'games';
     if (tabParam === 'permission') return 'permission';
+    if (tabParam === 'auction') return 'auction';
     return 'user';
   };
   
-  const [tab, setTab] = useState<'user' | 'permission' | 'games'>(getInitialTab);
+  const [tab, setTab] = useState<'user' | 'permission' | 'games' | 'auction'>(getInitialTab);
 
   const hasAdminAccess = isAdmin(profile?.role); // isAdmin 함수 사용
 
@@ -35,7 +36,7 @@ export default function AdminDashboard() {
   }, [profile, isLoading, hasAdminAccess, router]); // router 의존성 복구
 
   const handleTabChange = (newTab: string) => {
-    setTab(newTab as 'user' | 'permission' | 'games');
+    setTab(newTab as 'user' | 'permission' | 'games' | 'auction');
     const url = new URL(window.location.href);
     url.searchParams.set('tab', newTab);
     window.history.pushState({}, '', url);

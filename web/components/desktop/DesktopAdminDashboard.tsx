@@ -4,17 +4,18 @@ import { useState } from 'react';
 import { UserRoleManager } from '@/components/admin/UserRoleManager';
 import { PermissionManager } from '@/components/admin/PermissionManager';
 import { GameManager } from '@/components/admin/GameManager';
+import { AuctionManager } from '@/components/admin/AuctionManager';
 
 interface DesktopAdminDashboardProps {
-  initialTab: 'user' | 'permission' | 'games';
+  initialTab: 'user' | 'permission' | 'games' | 'auction';
   onTabChange: (newTab: string) => void;
 }
 
 export function DesktopAdminDashboard({ initialTab, onTabChange }: DesktopAdminDashboardProps) {
-  const [tab, setTab] = useState<'user' | 'permission' | 'games'>(initialTab);
+  const [tab, setTab] = useState<'user' | 'permission' | 'games' | 'auction'>(initialTab);
 
   const handleTabChange = (newTab: string) => {
-    setTab(newTab as 'user' | 'permission' | 'games');
+    setTab(newTab as 'user' | 'permission' | 'games' | 'auction');
     onTabChange(newTab);
   };
 
@@ -57,6 +58,16 @@ export function DesktopAdminDashboard({ initialTab, onTabChange }: DesktopAdminD
               >
                 권한 관리 (미구현)
               </button>
+              <button
+                onClick={() => handleTabChange('auction')}
+                className={`${
+                  tab === 'auction' 
+                    ? 'border-admin-primary text-admin-foreground' 
+                    : 'border-transparent text-admin-foreground hover:text-admin-primary hover:border-admin-border'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              >
+                경매 관리
+              </button>
             </nav>
           </div>
 
@@ -64,6 +75,7 @@ export function DesktopAdminDashboard({ initialTab, onTabChange }: DesktopAdminD
             {tab === 'user' && <UserRoleManager />}
             {tab === 'permission' && <PermissionManager />}
             {tab === 'games' && <GameManager />}
+            {tab === 'auction' && <AuctionManager />}
           </div>
         </div>
       </div>
