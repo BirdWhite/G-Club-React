@@ -11,7 +11,7 @@ export async function POST(
   if (!user) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
-  if (!user.role || user.role === 'NONE') {
+  if (!user.role || user.role.name === 'NONE') {
     return NextResponse.json({ error: '회원 승인이 완료된 후 이용 가능합니다.' }, { status: 403 });
   }
 

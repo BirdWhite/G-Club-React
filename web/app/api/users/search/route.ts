@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // roleId가 null이거나 NONE(검증 대기) 사용자는 사용자 검색 불가
-    if (!user.role || user.role === 'NONE') {
+    if (!user.role || user.role.name === 'NONE') {
       return NextResponse.json(
         { error: '회원 승인이 완료된 후 이용 가능합니다.' },
         { status: 403 }

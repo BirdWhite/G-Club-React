@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/database/prisma';
 import { getCurrentUser } from '@/lib/database/supabase';
+import { isAdmin_Server } from '@/lib/database/auth/serverAuth';
 
 export async function POST(request: NextRequest) {
   try {
     // 관리자 권한 확인
     const user = await getCurrentUser();
     
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+    if (!isAdmin_Server(user?.role)) {
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
     }
 

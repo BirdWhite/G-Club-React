@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database/supabase';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
-import { isAdmin_Server } from '@/lib/database/auth';
+import { isAdmin_Server } from '@/lib/database/auth/serverAuth';
 import { sanitizeUserInput, INPUT_LIMITS } from '@/lib/utils/common';
 import { notificationService } from '@/lib/notifications/notificationService';
 import { autoPromoteFirstWaitingParticipant } from '@/lib/database/gameParticipantUtils';
@@ -24,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
     }
     // roleId가 null이거나 NONE(검증 대기) 사용자는 상세 조회 불가
-    if (!user.role || user.role === 'NONE') {
+    if (!user.role || user.role.name === 'NONE') {
       return NextResponse.json({ error: '회원 승인이 완료된 후 이용 가능합니다.' }, { status: 403 });
     }
 
@@ -136,7 +136,7 @@ export async function GET(
         isOwner: userId === post.author.userId,
         isParticipating: userId ? participants.some((p) => p.userId === userId && p.status === 'ACTIVE') : false,
         isWaiting: userId ? Array.isArray(post.waitingList) && post.waitingList.some((w) => w.userId === userId && w.status !== 'CANCELED') : false,
-        canDelete: userId === post.author.userId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+        canDelete: userId === post.author.userId || isAdmin_Server(user.role),
       };
       return NextResponse.json(responseData);
     }
@@ -168,7 +168,7 @@ export async function GET(
       isOwner: userId === post.author.userId,
       isParticipating: userId ? participants.some((p) => p.userId === userId && p.status === 'ACTIVE') : false,
       isWaiting: isWaiting,
-      canDelete: userId === post.author.userId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+      canDelete: userId === post.author.userId || isAdmin_Server(user.role),
     };
 
 

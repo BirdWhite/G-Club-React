@@ -9,7 +9,11 @@ import {
   getAuctionResults,
   deleteParticipant,
   addTeam,
-  deleteTeam
+  deleteTeam,
+  bulkAddTeams,
+  bulkAddParticipants,
+  deleteAllParticipants,
+  deleteAllTeams
 } from '@/app/auction/actions';
 import { AuctionConfigData, AuctionTeamData, AuctionParticipantData } from '@/lib/auction/types';
 
@@ -134,6 +138,141 @@ export function AuctionManager() {
     document.body.removeChild(link);
   };
 
+  // --- CSV Import/Export Helpers ---
+
+  const downloadCsv = (filename: string, headers: string[], rows: (string | number | boolean | null | undefined)[][]) => {
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const parseCsv = (text: string): string[][] => {
+    // Simple CSV parser that handles quotes
+    const rows: string[][] = [];
+    const lines = text.split(/\r?\n/);
+    
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const cells: string[] = [];
+      let currentCell = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i+1] === '"') {
+            currentCell += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          cells.push(currentCell.trim());
+          currentCell = '';
+        } else {
+          currentCell += char;
+        }
+      }
+      cells.push(currentCell.trim());
+      rows.push(cells);
+    }
+    return rows;
+  };
+
+  const handleImportTeams = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!initialConfig?.id || !e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const rows = parseCsv(text);
+      if (rows.length < 2) return toast.error('데이터가 너무 적거나 형식이 잘못되었습니다.');
+
+      // Header: 이름, 포인트
+      const teamsToImport = rows.slice(1).map(row => ({
+        leaderName: row[0],
+        initialPoints: Number(row[1]) || 1000
+      })).filter(t => t.leaderName);
+
+      if (teamsToImport.length === 0) return toast.error('등록할 데이터가 없습니다.');
+
+      setIsLoading(true);
+      const res = await bulkAddTeams(initialConfig.id, teamsToImport);
+      if (res.success) {
+        toast.success(`${teamsToImport.length}개 팀이 등록되었습니다.`);
+        fetchData();
+      } else {
+        toast.error(('error' in res && res.error) || '임포트 실패');
+      }
+      setIsLoading(false);
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
+  };
+
+  const handleImportParticipants = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!initialConfig?.id || !e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const rows = parseCsv(text);
+      if (rows.length < 2) return toast.error('데이터가 너무 적거나 형식이 잘못되었습니다.');
+
+      // Header: 이름, 티어, 실제 게임 티어, 선호 캐릭터, 각오
+      const participantsToImport = rows.slice(1).map(row => {
+        const parsedTier = Number(row[1]);
+        return {
+          name: row[0],
+          tier: (row[1] && !isNaN(parsedTier)) ? parsedTier : 4, // 비어있거나 숫자가 아니면 기본값 4
+          gameRank: row[2] || '',
+          prefCharacters: row[3] || '',
+          bio: row[4] || ''
+        };
+      }).filter(p => p.name);
+
+      if (participantsToImport.length === 0) return toast.error('등록할 데이터가 없습니다.');
+
+      setIsLoading(true);
+      const res = await bulkAddParticipants(initialConfig.id, participantsToImport);
+      if (res.success) {
+        toast.success(`${participantsToImport.length}명 매물이 등록되었습니다.`);
+        fetchData();
+      } else {
+        toast.error(('error' in res && res.error) || '임포트 실패');
+      }
+      setIsLoading(false);
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
+  };
+
+  const handleExportTeams = () => {
+    if (teams.length === 0) return toast.error('수동으로 추가되어 있거나 등록된 팀이 없습니다.');
+    const headers = ['이름', '포인트'];
+    const rows = teams.map(t => [t.leaderName, t.initialPoints]);
+    downloadCsv(`팀장리스트_${initialConfig?.name || '경매'}.csv`, headers, rows);
+  };
+
+  const handleExportParticipants = () => {
+    if (participants.length === 0) return toast.error('등록된 매물이 없습니다.');
+    const headers = ['이름', '티어', '실제 게임 티어', '선호 캐릭터', '각오'];
+    const rows = participants.map(p => [p.name, p.tier, p.gameRank, p.prefCharacters, p.bio]);
+    downloadCsv(`매물리스트_${initialConfig?.name || '경매'}.csv`, headers, rows);
+  };
+
   if (isLoadingData) {
     return <div className="p-4 text-admin-foreground">데이터 로딩 중...</div>;
   }
@@ -159,12 +298,43 @@ export function AuctionManager() {
       </div>
 
       {/* 메인 뷰어 */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        {activeTab === 'config' && (
-          <div className="space-y-8 max-w-xl">
-            {/* 설정 섹션 */}
-            <div>
-              <h2 className="text-2xl font-black border-b border-admin-border pb-2 mb-4 text-admin-foreground">기본 설정</h2>
+        <div className="flex-1 p-6 overflow-y-auto w-full">
+          {/* 페이지 접근 권한 (ON/OFF) - 설정 탭에 상관없이 항상 상단에 표시 */}
+          {initialConfig?.id && (
+            <div className="border border-admin-border rounded-xl p-5 bg-admin-50 mb-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-xl font-black text-admin-foreground flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${initialConfig?.isActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                    경매 마스터 접근 제어
+                  </h2>
+                  <p className="text-sm text-admin-foreground mt-1 opacity-80">
+                    ※ 사이트 접근을 허용하면 유저들이 경매 페이지를 볼 수 있습니다. 실제 경매 진행은 <strong>&apos;경매 현장 컨트롤&apos;</strong>에서 하세요.
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className={`px-4 py-2 font-black rounded-lg border flex-shrink-0 text-center flex-1 sm:flex-none ${initialConfig?.isActive ? 'bg-green-500/10 text-green-600 border-green-200' : 'bg-admin-100 text-admin-foreground border-admin-border'}`}>
+                    {initialConfig?.isActive ? '현재: ON' : '현재: OFF'}
+                  </div>
+
+                  <button
+                    onClick={handleToggleState}
+                    disabled={isLoading}
+                    className={`px-6 py-2 text-white font-bold rounded-lg shadow-sm flex-1 sm:flex-none whitespace-nowrap ${initialConfig?.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-admin-primary hover:bg-admin-500/90'}`}
+                  >
+                    {initialConfig?.isActive ? '접근 차단 (OFF)' : '접근 허용 (ON)'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'config' && (
+            <div className="space-y-8 max-w-xl w-full">
+              {/* 설정 섹션 */}
+              <div>
+                <h2 className="text-2xl font-black border-b border-admin-border pb-2 mb-4 text-admin-foreground">기본 설정</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-admin-foreground mb-1">경매 제목</label>
@@ -205,34 +375,16 @@ export function AuctionManager() {
               </div>
             </div>
 
-            {/* 페이지 접근 권한 (ON/OFF) - 설정 저장 이후에만 표시 */}
-            {initialConfig?.id && (
-              <div className="border border-admin-border rounded-xl p-6 bg-admin-50">
-                <h2 className="text-xl font-black border-b border-admin-border pb-2 mb-4 text-admin-foreground">사이트 접근 제어 (ON/OFF)</h2>
-                <div className="flex flex-wrap gap-4 items-center mb-4">
-                  <div className={`px-4 py-2 font-black rounded-lg border ${initialConfig?.isActive ? 'bg-green-500/10 text-green-600 border-green-200' : 'bg-admin-100 text-admin-foreground border-admin-border'}`}>
-                    {initialConfig?.isActive ? 'ON (유저 접근 가능)' : 'OFF (유저 접근 불가)'}
-                  </div>
-
-                  <button
-                    onClick={handleToggleState}
-                    disabled={isLoading}
-                    className={`px-6 py-2 text-white font-bold rounded-lg shadow-sm ${initialConfig?.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-admin-primary hover:bg-admin-500/90'}`}
-                  >
-                    {initialConfig?.isActive ? '접근 차단하기 (OFF)' : '접근 허용하기 (ON)'}
+              {/* (결과 다운로드 버튼 부분만 설정 탭 하단에 유지되도록 변경) */}
+              {initialConfig?.id && (
+                <div className="mt-6 pt-6 border-t border-admin-border">
+                  <h3 className="font-bold mb-2 text-admin-foreground text-lg">경매 기록 내보내기</h3>
+                  <p className="text-sm text-admin-foreground opacity-80 mb-3">모든 입찰 및 낙찰 데이터를 CSV 파일로 다운로드합니다.</p>
+                  <button onClick={handleExport} className="px-5 py-2.5 bg-zinc-800 text-white font-bold rounded-lg hover:bg-zinc-700 shadow-sm transition-colors">
+                    결과 CSV 다운로드
                   </button>
                 </div>
-                <p className="text-sm text-admin-foreground opacity-80">
-                  ※ 접근을 허용하면 유저들이 경매 페이지에 접근할 수 있으며 메인 대문에 배너가 노출됩니다. 실제 경매 진행/일시정지는 <strong>진행 페이지</strong>에서 제어하세요.
-                </p>
-                
-                <div className="mt-6 pt-6 border-t border-admin-border">
-                  <h3 className="font-bold mb-2">결과 다운로드</h3>
-                  <button onClick={handleExport} className="px-4 py-2 bg-zinc-800 text-white font-bold rounded hover:bg-zinc-700">결과 CSV 다운로드</button>
-                </div>
-              </div>
-            )}
-            
+              )}
           </div>
         )}
 
@@ -241,6 +393,50 @@ export function AuctionManager() {
             <h2 className="text-2xl font-black border-b border-admin-border pb-2 text-admin-foreground">팀장 매칭 관리</h2>
             <p className="text-admin-foreground opacity-80">이름이 빨간색이면 인증된 유저 프로필과 연동되지 않아 로그인할 수 없습니다.</p>
 
+            {/* ── CSV 임포트 / 익스포트 섹션 ── */}
+            {initialConfig?.id && (
+              <div className="border border-admin-border rounded-xl p-4 bg-admin-50">
+                <h3 className="font-black text-admin-foreground mb-1">📋 팀장 명단 CSV 임포트 / 익스포트</h3>
+                <p className="text-xs text-admin-foreground opacity-70 mb-3">CSV 형식: <code className="bg-admin-100 px-1 rounded">이름, 포인트</code> (첫 줄은 헤더)</p>
+                <div className="flex flex-wrap gap-2">
+                  <label className="flex items-center gap-2 px-4 py-2 bg-admin-primary text-white rounded-lg font-bold text-sm cursor-pointer hover:bg-admin-500/90 transition-colors">
+                    ⬆ CSV 벌크 임포트
+                    <input type="file" accept=".csv" className="hidden" onChange={handleImportTeams} />
+                  </label>
+                  <button
+                    onClick={handleExportTeams}
+                    className="px-4 py-2 bg-admin-card border border-admin-border text-admin-foreground rounded-lg font-bold text-sm hover:bg-admin-100 transition-colors"
+                  >
+                    ⬇ 현재 명단 CSV 내보내기
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!initialConfig?.id) return toast.error('경매 설정을 먼저 저장하세요.');
+                      const name = prompt('팀장 이름 입력');
+                      if (!name) return;
+                      await addTeam({ auctionId: initialConfig.id, leaderName: name, initialPoints: 1000, currentPoints: 1000 });
+                      fetchData();
+                    }}
+                    className="px-4 py-2 bg-admin-card border border-admin-border text-admin-foreground rounded-lg font-bold text-sm hover:bg-admin-100 transition-colors"
+                  >
+                    + 단일 수동 추가
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (confirm('모든 팀을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                        await deleteAllTeams(initialConfig!.id);
+                        fetchData();
+                      }
+                    }}
+                    className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-bold text-sm hover:bg-red-100 transition-colors"
+                  >
+                    🗑 전체 초기화
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── 팀 카드 목록 ── */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {teams.map((t: AuctionTeamData) => (
                 <div key={t.id} className="border border-admin-border bg-admin-background rounded-xl p-4">
@@ -282,28 +478,47 @@ export function AuctionManager() {
                   </div>
                 </div>
               ))}
-
-              <div className="border-2 border-dashed border-admin-border bg-admin-50 rounded-xl p-4 flex flex-col justify-center gap-2">
-                <button onClick={async () => {
-                  if (!initialConfig?.id) return toast.error('경매 설정을 먼저 저장하세요.');
-                  const name = prompt('팀장 이름 입력');
-                  if (!name) return;
-                  await addTeam({ auctionId: initialConfig.id, leaderName: name, initialPoints: 1000, currentPoints: 1000 });
-                  fetchData();
-                }} className="bg-admin-card border border-admin-border text-admin-foreground p-2 rounded font-bold text-sm hover:bg-admin-100">+ 새 팀 단일 수동 추가</button>
-                <button onClick={() => toast('이 기능은 추후 구현 예정입니다. 현재는 수동으로 한 명씩 추가해주세요.')} disabled className="bg-admin-card opacity-50 border border-admin-border text-admin-foreground p-2 rounded font-bold text-sm">+ CSV 벌크 추가</button>
-              </div>
             </div>
           </div>
         )}
-
         {activeTab === 'participants' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-black border-b border-admin-border pb-2 text-admin-foreground">매물 관리 ({participants.length}명)</h2>
-            <button onClick={() => toast('이 기능은 추후 구현 예정입니다. 스크립트나 터미널에서 seed로 넣어주세요.')} disabled className="bg-admin-card opacity-50 border border-admin-border text-admin-foreground p-2 rounded font-bold text-sm">CSV 벌크 리스트 등록/초기화</button>
 
-            <div className="text-sm font-bold text-admin-foreground opacity-80 bg-admin-50 border border-admin-border p-2 rounded">수동 매물 등록도 개발 중 (prisma db seed 권장)</div>
+            {/* ── CSV 임포트 / 익스포트 섹션 ── */}
+            {initialConfig?.id && (
+              <div className="border border-admin-border rounded-xl p-4 bg-admin-50">
+                <h3 className="font-black text-admin-foreground mb-1">📋 매물 명단 CSV 임포트 / 익스포트</h3>
+                <p className="text-xs text-admin-foreground opacity-70 mb-3">
+                  CSV 형식: <code className="bg-admin-100 px-1 rounded">이름, 티어, 실제 게임 티어, 선호 캐릭터, 각오</code> (첫 줄은 헤더, 티어는 숫자)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <label className="flex items-center gap-2 px-4 py-2 bg-admin-primary text-white rounded-lg font-bold text-sm cursor-pointer hover:bg-admin-500/90 transition-colors">
+                    ⬆ CSV 벌크 임포트
+                    <input type="file" accept=".csv" className="hidden" onChange={handleImportParticipants} />
+                  </label>
+                  <button
+                    onClick={handleExportParticipants}
+                    className="px-4 py-2 bg-admin-card border border-admin-border text-admin-foreground rounded-lg font-bold text-sm hover:bg-admin-100 transition-colors"
+                  >
+                    ⬇ 현재 명단 CSV 내보내기
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (confirm('모든 매물을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                        await deleteAllParticipants(initialConfig!.id);
+                        fetchData();
+                      }
+                    }}
+                    className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-bold text-sm hover:bg-red-100 transition-colors"
+                  >
+                    🗑 전체 초기화
+                  </button>
+                </div>
+              </div>
+            )}
 
+            {/* ── 매물 목록 ── */}
             <div className="space-y-2">
               {participants.map((p: AuctionParticipantData) => (
                 <div key={p.id} className="flex flex-col md:flex-row justify-between p-3 border border-admin-border rounded-lg md:items-center bg-admin-card">

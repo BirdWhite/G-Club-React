@@ -4,14 +4,21 @@ import { useEffect, useState } from 'react';
 
 interface AuctionTimerProps {
   endTimeMs: number | null; // null이면 중지 상태
+  remainingTimerMs?: number | null;
+  isPaused?: boolean;
   onExpire?: () => void;
   isExtension?: boolean; // 연장 타이머인지 여부 (UI 스타일링용)
 }
 
-export function AuctionTimer({ endTimeMs, onExpire, isExtension = false }: AuctionTimerProps) {
+export function AuctionTimer({ endTimeMs, remainingTimerMs, isPaused = false, onExpire, isExtension = false }: AuctionTimerProps) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
+    if (isPaused && remainingTimerMs !== undefined && remainingTimerMs !== null) {
+      setTimeLeft(Math.ceil(remainingTimerMs / 1000));
+      return;
+    }
+
     if (endTimeMs === null) {
       setTimeLeft(null);
       return;
@@ -26,10 +33,23 @@ export function AuctionTimer({ endTimeMs, onExpire, isExtension = false }: Aucti
         clearInterval(interval);
         if (onExpire) onExpire();
       }
-    }, 100); // 0.1초마다 체크하여 정확도 높임
+    }, 100); 
 
     return () => clearInterval(interval);
-  }, [endTimeMs, onExpire]);
+  }, [endTimeMs, remainingTimerMs, isPaused, onExpire]);
+
+  if (isPaused) {
+    return (
+      <div className="w-full h-20 bg-yellow-500/20 rounded-lg flex flex-col items-center justify-center border-2 border-yellow-500 text-yellow-600 animate-pulse transition-colors">
+        <div className="text-4xl font-black font-mono tracking-wider tabular-nums">
+          {timeLeft !== null ? `${timeLeft}.0` : 'PAUSED'}
+        </div>
+        <div className="text-xs font-bold uppercase tracking-widest mt-1 opacity-80">
+          경매 일시정지
+        </div>
+      </div>
+    );
+  }
 
   if (timeLeft === null) {
     return (

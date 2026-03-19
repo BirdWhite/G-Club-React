@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
+import { isAdmin_Server } from '@/lib/database/auth/serverAuth';
 
 export async function GET(
   request: NextRequest,
@@ -37,8 +38,7 @@ export async function GET(
     }
 
     const myRsvp = event.rsvps.find((r) => r.userId === user.id) ?? null;
-    const isAdmin =
-      user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+    const isAdmin = isAdmin_Server(user.role);
 
     return NextResponse.json({
       success: true,

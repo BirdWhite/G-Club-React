@@ -20,7 +20,7 @@ export function BidLog({ logs }: { logs: BidLogItem[] }) {
   }, [logs]);
 
   return (
-    <div className="w-full flex flex-col rounded-lg border border-border bg-card overflow-hidden h-[300px]">
+    <div className="w-full flex flex-col rounded-lg border border-border bg-card overflow-hidden flex-1 min-h-[150px]">
       <div className="bg-muted p-3 border-b border-border">
         <h3 className="font-bold text-sm text-muted-foreground flex items-center gap-2">
           <span className="relative flex h-2 w-2">

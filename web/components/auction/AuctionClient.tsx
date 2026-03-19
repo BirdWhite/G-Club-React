@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuctionRealtime } from '@/hooks/useAuctionRealtime';
-import { LeaderView } from './LeaderView';
-import { ViewerView } from './ViewerView';
+import { AuctionBoard } from './AuctionBoard';
+
 import { useRouter } from 'next/navigation';
 import { AuctionConfigData, AuctionTeamData, AuctionParticipantData, AuctionBidData } from '@/lib/auction/types';
 
@@ -11,8 +11,10 @@ export interface AuctionClientProps {
   initialConfig: AuctionConfigData;
   initialTeams: AuctionTeamData[];
   initialParticipant: AuctionParticipantData | null;
+  initialParticipants: AuctionParticipantData[];
   initialBids: AuctionBidData[];
-  role: 'ADMIN' | 'LEADER' | 'VIEWER';
+  isAdmin: boolean;
+  isLeader: boolean;
   userTeamId?: string; // LEADER인 경우
 }
 
@@ -20,30 +22,41 @@ export function AuctionClient({
   initialConfig, 
   initialTeams, 
   initialParticipant, 
+  initialParticipants,
   initialBids, 
-  role, 
+  isAdmin, 
+  isLeader, 
   userTeamId 
 }: AuctionClientProps) {
   const router = useRouter();
   
-  // 상태 관리
-  const [config] = useState(initialConfig);
-  const [teams] = useState(initialTeams);
-  const [, setCurrentParticipant] = useState(initialParticipant);
+  // 상태 관리 (props 기반 동기화)
+  const [config, setConfig] = useState(initialConfig);
+  const [teams, setTeams] = useState(initialTeams);
   const [bids, setBids] = useState(initialBids);
-  
-  // 타이머 상태 (로컬시계 기반)
+
+  // 타이머 상태 (서버 제공 timerEndsAt 기반)
   const [endTimeMs, setEndTimeMs] = useState<number | null>(() => {
     if (!initialConfig?.isActive || !initialParticipant) return null;
-    const now = Date.now();
-    // 초기 로드 시 타이머 복원 (완벽하진 않지만 대략적 추정)
-    if (initialBids.length > 0) {
-      return now + (initialConfig.extensionTimer * 1000);
-    }
-    return now + (initialConfig.baseTimer * 1000);
+    return initialConfig.timerEndsAt ? new Date(initialConfig.timerEndsAt).getTime() : null;
   });
-  
+
   const [isExtension, setIsExtension] = useState(initialBids.length > 0);
+
+  // 서버(Next.js)에서 router.refresh()로 새 props를 받았을 때 상태를 정확히 동기화
+  useEffect(() => {
+    setConfig(initialConfig);
+    setTeams(initialTeams);
+    setBids(initialBids);
+
+    if (initialConfig?.isActive && initialParticipant) {
+      setEndTimeMs(initialConfig.timerEndsAt ? new Date(initialConfig.timerEndsAt).getTime() : null);
+    } else {
+      setEndTimeMs(null);
+    }
+    
+    setIsExtension(initialBids.length > 0);
+  }, [initialConfig, initialTeams, initialParticipant, initialBids]);
 
   // 이벤트 핸들러
   const handleRealtimeEvent = useCallback((event: string, payload: Record<string, unknown>) => {
@@ -52,38 +65,27 @@ export function AuctionClient({
 
     switch (event) {
       case 'BID_PLACED':
-        // 새 입찰 추가 및 타이머 연장
+        // 낙관적 업데이트
         setBids(prev => [payload as unknown as AuctionBidData, ...prev]);
         setEndTimeMs(now + (config.extensionTimer * 1000));
         setIsExtension(true);
-        setCurrentParticipant(null); // force refresh state
+        // DB 최신화 및 서버 타이머를 가져오기 위해 갱신
+        router.refresh();
         break;
 
       case 'SALE_CONFIRMED':
       case 'PARTICIPANT_PASSED':
-      case 'SALE_UNDONE':
-        // 낙찰, 유찰, 취소 시 화면 갱신을 위해 데이터 전체 재조회 (안전한 동기화)
-        router.refresh();
-        setEndTimeMs(null);
-        setIsExtension(false);
-        break;
-
+      case 'ACTION_UNDONE':
       case 'PARTICIPANT_ADVANCED':
-        // 새 매물 등장
-        router.refresh();
-        setEndTimeMs(now + (config.baseTimer * 1000));
-        setIsExtension(false);
-        setBids([]);
-        break;
-
       case 'AUCTION_RESET':
       case 'AUCTION_TOGGLED':
+      case 'AUCTION_TOGGLED_PAUSE':
       case 'PARTICIPANTS_SHUFFLED':
+      case 'TIMER_RESET':
         router.refresh();
-        setEndTimeMs(null);
         break;
     }
-  }, [config.baseTimer, config.extensionTimer, router]);
+  }, [config.extensionTimer, router]);
 
   useAuctionRealtime(config?.id, handleRealtimeEvent);
 
@@ -93,7 +95,7 @@ export function AuctionClient({
         <h1 className="text-4xl font-black text-muted-foreground opacity-50">경매가 준비 중입니다.</h1>
         <p className="text-lg text-muted-foreground">관리자가 경매를 시작하면 자동으로 화면이 갱신됩니다.</p>
         
-        {role === 'ADMIN' && (
+        {isAdmin && (
           <button onClick={() => router.push('/auction/admin')} className="mt-8 px-6 py-2 bg-primary text-primary-foreground rounded-full font-bold">
             관리자 대시보드로 이동
           </button>
@@ -102,40 +104,25 @@ export function AuctionClient({
     );
   }
 
-  const leaderTeam = role === 'LEADER' ? teams.find(t => t.id === userTeamId) : null;
+  const leaderTeam = isLeader ? teams.find(t => t.id === userTeamId) : null;
 
   return (
-    <>
-      <div className="mb-4 flex items-center justify-between border-b pb-4">
-        <h1 className="text-3xl font-black tracking-tight">{config.name}</h1>
-        {role === 'ADMIN' && (
-          <button onClick={() => router.push('/auction/admin')} className="px-4 py-1.5 bg-zinc-800 text-white rounded font-bold text-sm">
-            관리자 콘솔
-          </button>
-        )}
-      </div>
-
-      {role === 'LEADER' && leaderTeam ? (
-        <LeaderView 
+    <div className="flex flex-col flex-1 min-h-0 w-full">
+      <div className="flex-1 min-h-0">
+        <AuctionBoard 
           auctionId={config.id}
           team={leaderTeam}
           config={config}
           currentParticipant={initialParticipant}
+          participants={initialParticipants}
           bids={bids}
           teams={teams}
           endTimeMs={endTimeMs}
           isExtension={isExtension}
+          isLeader={isLeader}
+          isAdmin={isAdmin}
         />
-      ) : (
-        <ViewerView 
-          config={config}
-          currentParticipant={initialParticipant}
-          bids={bids}
-          teams={teams}
-          endTimeMs={endTimeMs}
-          isExtension={isExtension}
-        />
-      )}
-    </>
+      </div>
+    </div>
   );
 }

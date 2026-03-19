@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/database/prisma';
 import { getCurrentUser } from '@/lib/database/supabase';
+import { isAdmin_Server, isSuperAdmin_Server } from '@/lib/database/auth/serverAuth';
 
 export async function GET(request: Request) {
   try {
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   
   // 관리자 또는 슈퍼 어드민만 게임 추가 가능
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+  if (!isAdmin_Server(user?.role)) {
     return NextResponse.json(
       { error: '관리자 권한이 필요합니다.' },
       { status: 403 }
@@ -166,7 +167,7 @@ export async function PUT(
   const user = await getCurrentUser();
   
   // 관리자 또는 슈퍼 어드민만 게임 수정 가능
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+  if (!isAdmin_Server(user?.role)) {
     return NextResponse.json(
       { error: '관리자 권한이 필요합니다.' },
       { status: 403 }
@@ -252,7 +253,7 @@ export async function DELETE(
   const user = await getCurrentUser();
   
   // 슈퍼 어드민만 게임 삭제 가능
-  if (!user || user.role !== 'SUPER_ADMIN') {
+  if (!isSuperAdmin_Server(user?.role)) {
     return NextResponse.json(
       { error: '슈퍼 관리자만 게임을 삭제할 수 있습니다.' },
       { status: 403 }

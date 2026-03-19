@@ -71,6 +71,10 @@ export async function placeBid(auctionId: string, teamId: string, participantId:
         throw new Error('활성화된 경매가 아닙니다.');
       }
 
+      if (config.isPaused) {
+        throw new Error('경매가 현재 일시정지 상태입니다.');
+      }
+
       // (3) 내 팀 정보 및 현재 멤버 (빈 슬롯 및 티어 체크용)
       const team = await tx.auctionTeam.findUnique({
         where: { id: teamId },
@@ -90,14 +94,20 @@ export async function placeBid(auctionId: string, teamId: string, participantId:
 
       const currentHighestAmount = highestBid ? highestBid.amount : 0;
 
+      // 추가: 이미 최고 입찰자인 경우 입찰 차단 (자기 경합 금지)
+      if (highestBid && highestBid.teamId === teamId) {
+        throw new Error('이미 이 매물의 최고 입찰자입니다.');
+      }
+
       // --- 검증 프로세스 ---
       // A. 입찰 금액은 기존 최고 금액 + 최소 단위 이상이어야 함
       if (amount < currentHighestAmount + config.minBidIncrement) {
         throw new Error(`최소 ${currentHighestAmount + config.minBidIncrement} 이상 입찰해야 합니다.`);
       }
 
-      // B. 최대 인원 수 초과 체크
-      if (team.members.length >= config.maxTeamSize) {
+      // B. 최대 인원 수 초과 체크 (팀장 1명 제외)
+      const maxDraftableMembers = config.maxTeamSize - 1;
+      if (team.members.length >= maxDraftableMembers) {
         throw new Error('팀 인원이 가득 찼습니다.');
       }
 
@@ -110,13 +120,13 @@ export async function placeBid(auctionId: string, teamId: string, participantId:
       }
 
       // D. 파산 방지 로직 (Critical)
-      const remainingEmptySlots = config.maxTeamSize - (team.members.length + 1);
+      const remainingEmptySlotsAfterThis = Math.max(0, maxDraftableMembers - (team.members.length + 1));
       const pointsAfterBid = team.currentPoints - amount;
       
-      const minimumPointsNeededForRest = remainingEmptySlots * config.minBidIncrement;
+      const minimumPointsNeededForRest = remainingEmptySlotsAfterThis * config.minBidIncrement;
       
       if (pointsAfterBid < minimumPointsNeededForRest) {
-        throw new Error(`파산 방지! 남은 ${remainingEmptySlots}자리를 채우기 위해 최소 ${minimumPointsNeededForRest} 포인트가 남아야 합니다. (최대 입찰가능액: ${team.currentPoints - minimumPointsNeededForRest})`);
+        throw new Error(`파산 방지! 남은 ${remainingEmptySlotsAfterThis}자리를 채우기 위해 최소 ${minimumPointsNeededForRest} 포인트가 남아야 합니다. (최대 입찰가능액: ${team.currentPoints - minimumPointsNeededForRest})`);
       }
 
       // (5) 검증 통과 -> 입찰 기록 저장
@@ -132,13 +142,19 @@ export async function placeBid(auctionId: string, teamId: string, participantId:
         }
       });
 
-      // participant 갱신하여 현재 최고가 및 낙찰예정팀 반영 (화면표시용)
+      // participant 갱신 및 타이머 연장
       await tx.auctionParticipant.update({
         where: { id: participantId },
         data: {
           winningBid: amount,
           teamId: teamId,
         }
+      });
+      
+      const newTimerEndsAt = new Date(Date.now() + config.extensionTimer * 1000);
+      await tx.auctionConfig.update({
+        where: { id: auctionId },
+        data: { timerEndsAt: newTimerEndsAt }
       });
 
       return newBid;
@@ -192,11 +208,29 @@ export async function confirmSale(auctionId: string) {
         data: { status: 'SOLD' }
       });
 
-      // 현재 진행 매물 리셋
-      await tx.auctionConfig.update({
-        where: { id: auctionId },
-        data: { currentParticipantId: null }
+      // 다음 매물 자동 등단 로직
+      const nextParticipant = await tx.auctionParticipant.findFirst({
+        where: { auctionId, status: 'WAITING' },
+        orderBy: { orderIndex: 'asc' },
       });
+
+      if (nextParticipant) {
+        await tx.auctionParticipant.update({
+          where: { id: nextParticipant.id },
+          data: { status: 'BIDDING' }
+        });
+        const newTimerEndsAt = new Date(Date.now() + config.baseTimer * 1000);
+        await tx.auctionConfig.update({
+          where: { id: auctionId },
+          data: { currentParticipantId: nextParticipant.id, timerEndsAt: newTimerEndsAt, remainingTimerMs: null, isPaused: false }
+        });
+      } else {
+        // 남은 매물이 없는 경우 리셋
+        await tx.auctionConfig.update({
+          where: { id: auctionId },
+          data: { currentParticipantId: null, timerEndsAt: null, remainingTimerMs: null, isPaused: false }
+        });
+      }
     });
 
     await broadcastAuctionUpdate(auctionId, 'SALE_CONFIRMED', { message: '낙찰되었습니다.' });
@@ -207,37 +241,53 @@ export async function confirmSale(auctionId: string) {
   }
 }
 
-// 예전 낙찰 되돌리기 (Undo)
-export async function undoLastSale(auctionId: string) {
+// 예전 낙찰/유찰 되돌리기 (Undo)
+export async function undoLastAction(auctionId: string) {
   try {
     await checkAdmin();
     
     await prisma.$transaction(async (tx) => {
-      // 가장 최근에 SOLD 된 참가자 찾기
-      const lastSold = await tx.auctionParticipant.findFirst({
-        where: { auctionId, status: 'SOLD' },
+      // 가장 최근에 SOLD 또는 PASSED 된 참가자 찾기
+      const lastActionParticipant = await tx.auctionParticipant.findFirst({
+        where: { auctionId, status: { in: ['SOLD', 'PASSED'] } },
         orderBy: { updatedAt: 'desc' },
       });
 
-      if (!lastSold || !lastSold.teamId || !lastSold.winningBid) {
-        throw new Error('최근에 낙찰된 대상이 없습니다.');
+      if (!lastActionParticipant) {
+        throw new Error('최근에 처리된 매물이 없습니다.');
       }
 
-      // 포인트 환불
-      await tx.auctionTeam.update({
-        where: { id: lastSold.teamId },
-        data: {
-          currentPoints: {
-            increment: lastSold.winningBid
+      // 만약 SOLD 상태였다면 포인트 환불
+      if (lastActionParticipant.status === 'SOLD' && lastActionParticipant.teamId && lastActionParticipant.winningBid) {
+        await tx.auctionTeam.update({
+          where: { id: lastActionParticipant.teamId },
+          data: {
+            currentPoints: {
+              increment: lastActionParticipant.winningBid
+            }
           }
-        }
-      });
+        });
+      }
 
-      // 참가자 상태 롤백
+      // 현재 진행 중이던 사람(BIDDING)을 WAITING으로 돌리기
+      const currentBidding = await tx.auctionParticipant.findMany({
+        where: { auctionId, status: 'BIDDING' }
+      });
+      for (const p of currentBidding) {
+        await tx.auctionParticipant.update({
+          where: { id: p.id },
+          data: { status: 'WAITING', teamId: null, winningBid: null }
+        });
+        await tx.auctionBid.deleteMany({
+          where: { participantId: p.id }
+        });
+      }
+
+      // 참가자 상태 롤백 (다시 BIDDING 상태로)
       await tx.auctionParticipant.update({
-        where: { id: lastSold.id },
+        where: { id: lastActionParticipant.id },
         data: {
-          status: 'WAITING',
+          status: 'BIDDING',
           teamId: null,
           winningBid: null,
         }
@@ -245,11 +295,29 @@ export async function undoLastSale(auctionId: string) {
       
       // 입찰 기록들 모두 삭제 (해당 매물에 대한 기록)
       await tx.auctionBid.deleteMany({
-        where: { participantId: lastSold.id }
+        where: { participantId: lastActionParticipant.id }
       });
+
+      // Config의 현재 진행자를 이 사람으로 복구하고 타이머 리셋
+      const config = await tx.auctionConfig.findUnique({
+        where: { id: auctionId }
+      });
+
+      if (config) {
+        const newTimerEndsAt = new Date(Date.now() + config.baseTimer * 1000);
+        await tx.auctionConfig.update({
+          where: { id: auctionId },
+          data: { 
+            currentParticipantId: lastActionParticipant.id, 
+            timerEndsAt: newTimerEndsAt, 
+            remainingTimerMs: null, 
+            isPaused: false 
+          }
+        });
+      }
     });
 
-    await broadcastAuctionUpdate(auctionId, 'SALE_UNDONE', { message: '낙찰이 취소되었습니다.' });
+    await broadcastAuctionUpdate(auctionId, 'ACTION_UNDONE', { message: '가장 최근 작업이 취소되었습니다.' });
     return { success: true };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : '되돌리기 실패';
@@ -278,10 +346,17 @@ export async function advanceParticipant(auctionId: string, participantId: strin
         data: { status: 'BIDDING' }
       });
 
-      // 현재 매물 ID 변경 및 활성화
+      // 현재 매물 ID 변경 및 타이머 시작
+      const newTimerEndsAt = new Date(Date.now() + config.baseTimer * 1000);
       await tx.auctionConfig.update({
         where: { id: auctionId },
-        data: { currentParticipantId: participantId, isActive: true }
+        data: { 
+          currentParticipantId: participantId, 
+          isActive: true,
+          isPaused: false,
+          timerEndsAt: newTimerEndsAt,
+          remainingTimerMs: null
+        }
       });
       
       // 새 매물 시작 시 기존 입찰 기록 초기화 (안전용)
@@ -315,11 +390,29 @@ export async function passParticipant(auctionId: string) {
         data: { status: 'PASSED' }
       });
 
-      // 현재 진행 매물 리셋
-      await tx.auctionConfig.update({
-        where: { id: auctionId },
-        data: { currentParticipantId: null }
+      // 다음 매물 자동 등단 로직
+      const nextParticipant = await tx.auctionParticipant.findFirst({
+        where: { auctionId, status: 'WAITING' },
+        orderBy: { orderIndex: 'asc' },
       });
+
+      if (nextParticipant) {
+        await tx.auctionParticipant.update({
+          where: { id: nextParticipant.id },
+          data: { status: 'BIDDING' }
+        });
+        const newTimerEndsAt = new Date(Date.now() + config.baseTimer * 1000);
+        await tx.auctionConfig.update({
+          where: { id: auctionId },
+          data: { currentParticipantId: nextParticipant.id, timerEndsAt: newTimerEndsAt, remainingTimerMs: null, isPaused: false }
+        });
+      } else {
+        // 남은 매물이 없는 경우 리셋
+        await tx.auctionConfig.update({
+          where: { id: auctionId },
+          data: { currentParticipantId: null, timerEndsAt: null, remainingTimerMs: null, isPaused: false }
+        });
+      }
     });
 
     await broadcastAuctionUpdate(auctionId, 'PARTICIPANT_PASSED', { message: '유찰되었습니다.' });
@@ -379,6 +472,68 @@ export async function toggleAuctionState(auctionId: string, isActive: boolean) {
   }
 }
 
+// 토글 경매 일시정지 상태
+export async function toggleAuctionPause(auctionId: string, isPaused: boolean) {
+  try {
+    await checkAdmin();
+    
+    await prisma.$transaction(async (tx) => {
+      const config = await tx.auctionConfig.findUnique({ where: { id: auctionId }});
+      if (!config) throw new Error('설정 없음');
+      
+      if (isPaused) {
+        // Pausing
+        const remaining = config.timerEndsAt ? Math.max(0, config.timerEndsAt.getTime() - Date.now()) : 0;
+        await tx.auctionConfig.update({
+          where: { id: auctionId },
+          data: { isPaused: true, remainingTimerMs: remaining, timerEndsAt: null }
+        });
+      } else {
+        // Resuming
+        const newEndsAt = new Date(Date.now() + (config.remainingTimerMs || 0));
+        await tx.auctionConfig.update({
+          where: { id: auctionId },
+          data: { isPaused: false, timerEndsAt: newEndsAt, remainingTimerMs: null }
+        });
+      }
+    });
+
+    await broadcastAuctionUpdate(auctionId, 'AUCTION_TOGGLED_PAUSE', { isPaused });
+    return { success: true };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : '일시정지 상태 변경 실패';
+    return { success: false, error: message };
+  }
+}
+
+// 타이머 초기화 (지정된 기본 타이머로 리셋)
+export async function resetAuctionTimer(auctionId: string) {
+  try {
+    await checkAdmin();
+    
+    await prisma.$transaction(async (tx) => {
+      const config = await tx.auctionConfig.findUnique({ where: { id: auctionId }});
+      if (!config) throw new Error('설정 없음');
+      
+      const newEndsAt = new Date(Date.now() + config.baseTimer * 1000);
+      await tx.auctionConfig.update({
+        where: { id: auctionId },
+        data: { 
+          timerEndsAt: newEndsAt,
+          remainingTimerMs: null,
+          isPaused: false
+        }
+      });
+    });
+
+    await broadcastAuctionUpdate(auctionId, 'TIMER_RESET', { message: '타이머가 초기화되었습니다.' });
+    return { success: true };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : '타이머 초기화 실패';
+    return { success: false, error: message };
+  }
+}
+
 // 팀장 매칭 (Admin)
 export async function matchLeader(teamId: string, matchedUserId: string | null) {
   try {
@@ -416,6 +571,7 @@ export async function createOrUpdateAuctionConfig(data: AuctionConfigInput) {
         extensionTimer: data.extensionTimer,
         isTierMode: data.isTierMode,
         maxTeamSize: data.maxTeamSize,
+        isAutoEndEnabled: true, // 기본값
       }
     });
     return { success: true, config };
@@ -438,7 +594,7 @@ export async function resetAuction(auctionId: string) {
       await tx.auctionBid.deleteMany({ where: { auctionId } });
       await tx.auctionConfig.update({
         where: { id: auctionId },
-        data: { currentParticipantId: null, isActive: false }
+        data: { currentParticipantId: null, isActive: false, timerEndsAt: null, remainingTimerMs: null, isPaused: false }
       });
       
       // 2. 매물 상태 리셋
@@ -533,6 +689,60 @@ export async function addTeam(data: TeamInput) {
     return { success: true };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : '추가 실패';
+    return { success: false, error: message };
+  }
+}
+
+// 팀 벌크 추가용 (CSV 임포트)
+export async function bulkAddTeams(auctionId: string, teams: { leaderName: string, initialPoints: number }[]) {
+  try {
+    await checkAdmin();
+    await prisma.$transaction(
+      teams.map(t => prisma.auctionTeam.create({
+        data: {
+          auctionId,
+          leaderName: t.leaderName,
+          initialPoints: t.initialPoints,
+          currentPoints: t.initialPoints
+        }
+      }))
+    );
+    return { success: true };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : '팀 벌크 추가 실패';
+    return { success: false, error: message };
+  }
+}
+
+// 매물 벌크 추가용 (CSV 임포트)
+export async function bulkAddParticipants(auctionId: string, participants: Omit<ParticipantInput, 'auctionId' | 'orderIndex'>[]) {
+  try {
+    await checkAdmin();
+    
+    // 현재 최대 orderIndex 확인
+    const lastParticipant = await prisma.auctionParticipant.findFirst({
+      where: { auctionId },
+      orderBy: { orderIndex: 'desc' }
+    });
+    
+    let nextIndex = lastParticipant ? lastParticipant.orderIndex + 1 : 0;
+
+    await prisma.$transaction(
+      participants.map(p => {
+        const index = nextIndex++;
+        return prisma.auctionParticipant.create({
+          data: {
+            ...p,
+            auctionId,
+            orderIndex: index,
+            status: 'WAITING'
+          }
+        });
+      })
+    );
+    return { success: true };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : '매물 벌크 추가 실패';
     return { success: false, error: message };
   }
 }

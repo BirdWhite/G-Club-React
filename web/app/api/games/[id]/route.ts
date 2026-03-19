@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/database/prisma';
 import { getCurrentUser } from '@/lib/database/supabase';
 import { createServerClient } from '@/lib/database/supabase';
+import { isAdmin_Server } from '@/lib/database/auth/serverAuth';
 
 // 올바른 타입 정의
 type RouteContext = {
@@ -29,7 +30,7 @@ export async function GET(request: Request, { params }: RouteContext) {
 
 export async function PUT(request: Request, { params }: RouteContext) {
   const user = await getCurrentUser();
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+  if (!isAdmin_Server(user?.role)) {
     return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
   }
 
@@ -62,7 +63,7 @@ export async function PUT(request: Request, { params }: RouteContext) {
 
 export async function DELETE(request: Request, { params }: RouteContext) {
   const user = await getCurrentUser();
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+  if (!isAdmin_Server(user?.role)) {
     return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
   }
 

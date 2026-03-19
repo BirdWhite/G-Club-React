@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
+import { isAdmin_Server } from '@/lib/database/auth/serverAuth';
 
 // 공지사항 상세 조회
 export async function GET(
@@ -13,7 +14,7 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
     }
-    if (!user.role || user.role === 'NONE') {
+    if (!user.role || user.role.name === 'NONE') {
       return NextResponse.json({ error: '회원 승인이 완료된 후 이용 가능합니다.' }, { status: 403 });
     }
 
@@ -65,7 +66,7 @@ export async function GET(
         include: { role: true }
       });
 
-      if (!profile?.role || !['ADMIN', 'SUPER_ADMIN'].includes(profile.role.name)) {
+      if (!isAdmin_Server(profile?.role)) {
         return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
       }
     }
@@ -125,7 +126,7 @@ export async function PUT(
     }
 
     // 관리자만 수정 가능
-    const isAdmin = currentProfile.role && ['ADMIN', 'SUPER_ADMIN'].includes(currentProfile.role.name);
+    const isAdmin = isAdmin_Server(currentProfile.role);
 
     if (!isAdmin) {
       return NextResponse.json(
@@ -391,7 +392,7 @@ export async function DELETE(
     }
 
     // 관리자만 삭제 가능
-    const isAdmin = currentProfile.role && ['ADMIN', 'SUPER_ADMIN'].includes(currentProfile.role.name);
+    const isAdmin = isAdmin_Server(currentProfile.role);
 
     if (!isAdmin) {
       return NextResponse.json(

@@ -9,6 +9,10 @@ export interface AuctionConfigData {
   isTierMode: boolean;
   maxTeamSize: number;
   isActive: boolean;
+  isPaused: boolean;
+  isAutoEndEnabled: boolean;
+  timerEndsAt: Date | null;
+  remainingTimerMs: number | null;
   currentParticipantId: string | null;
   createdAt: Date;
   updatedAt: Date;

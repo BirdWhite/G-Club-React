@@ -62,13 +62,13 @@ export function isSuperAdmin_Server(role?: { name: string } | null): boolean {
 
 /**
  * [Server-side] 사용자가 채널을 관리할 권한이 있는지 확인합니다.
- * @param roleName 사용자의 역할 이름 (string)
+ * @param role 사용자의 역할 객체
  * @returns 채널 관리 권한이 있으면 true, 아니면 false
  */
-export function canManageChannels_Server(roleName: string | null | undefined): boolean {
-  if (!roleName) {
+export function canManageChannels_Server(role?: { name: string } | null): boolean {
+  if (!role) {
     return false;
   }
   // 슈퍼 어드민 또는 어드민은 채널 관리 권한을 가집니다.
-  return roleName === 'SUPER_ADMIN' || roleName === 'ADMIN';
+  return role.name === 'SUPER_ADMIN' || role.name === 'ADMIN';
 }

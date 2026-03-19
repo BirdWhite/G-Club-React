@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getCurrentUser } from '@/lib/database/supabase';
+import { ExtendedUser } from '@/lib/database/supabase/auth';
 import { GamePost, GameParticipant } from '@/types/models';
 import { GamePostDetailClient } from '@/components/game-mate/GamePostDetailClient';
 import { MobileGamePostDetailClient } from '@/components/game-mate/mobile/MobileGamePostDetailClient';
@@ -10,21 +11,8 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DeletedGamePostMessage } from '@/components/game-mate/DeletedGamePostMessage';
 import toast from 'react-hot-toast';
-import type { User } from '@supabase/supabase-js';
 
-type ExtendedUser = Omit<User, 'role'> & {
-  role: string | null;
-  profile?: {
-    id: string;
-    userId: string;
-    name: string;
-    birthDate: Date | null;
-    image: string | null;
-    role: {
-      name: string;
-    } | null;
-  };
-};
+// 로컬 ExtendedUser 정의 삭제됨
 
 export default function GamePostDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/database/supabase';
 import prisma from '@/lib/database/prisma';
+import { isAdmin_Server } from '@/lib/database/auth/serverAuth';
 import { v4 as uuidv4 } from 'uuid';
 import { sendPushNotificationToUsers } from '@/lib/notifications/notificationService';
 
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       include: { role: true },
     });
 
-    if (!profile?.role || !['ADMIN', 'SUPER_ADMIN'].includes(profile.role.name)) {
+    if (!profile || !isAdmin_Server(profile.role)) {
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
     }
 

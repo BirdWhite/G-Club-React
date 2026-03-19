@@ -699,8 +699,12 @@ model AuctionConfig {
   extensionTimer       Int     @default(10)   // 입찰 후 연장 시간 (초)
   isTierMode           Boolean @default(false) // 티어 제한 모드
   maxTeamSize          Int     @default(5)    // 팀당 최대 인원
-  isActive             Boolean @default(false) // 경매 활성화 여부
-  currentParticipantId String?                // 현재 진행 중인 매물 ID
+  isActive             Boolean @default(false) // 경매 페이지 접근 활성화 여부
+  isPaused             Boolean @default(false) // 경매 진행 일시정지 여부
+  isAutoEndEnabled     Boolean @default(true)  // 타이머 종료 시 자동 유찰/낙찰 여부
+  timerEndsAt          DateTime?               // 서버 기반 정확한 타이머 종료 시각
+  remainingTimerMs     Int?                    // 일시정지 시 남은 시간 (밀리초)
+  currentParticipantId String?                 // 현재 진행 중인 매물 ID
 
   teams                AuctionTeam[]
   participants         AuctionParticipant[]

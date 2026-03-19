@@ -20,13 +20,7 @@ export default async function AuctionPage() {
     return (
       <div className="flex flex-col justify-center items-center h-[50vh] space-y-4">
         <h1 className="text-2xl font-black text-muted-foreground">생성된 실시간 경매가 없습니다.</h1>
-        {isAdmin_Server(user.role as { name: string } | null) ? (
-           <a href="/auction/admin" className="px-6 py-2 bg-primary text-primary-foreground rounded-full font-bold shadow hover:bg-primary/90 transition">
-             관리자 대시보드에서 생성하기
-           </a>
-        ) : (
-          <p className="text-muted-foreground">관리자 문의 바람.</p>
-        )}
+        <p className="text-muted-foreground">관리자가 경매를 준비 중입니다.</p>
       </div>
     );
   }
@@ -52,30 +46,29 @@ export default async function AuctionPage() {
     where: { id: config.currentParticipantId }
   }) : null;
 
+  const participants = await prisma.auctionParticipant.findMany({
+    where: { auctionId: config.id },
+    orderBy: { orderIndex: 'asc' }
+  });
+
   // 역할 판별 로직
-  let role: 'ADMIN' | 'LEADER' | 'VIEWER' = 'VIEWER';
-  let userTeamId: string | undefined;
-
   const userRole = user.role as { name: string } | null;
-
-  if (isAdmin_Server(userRole)) {
-    role = 'ADMIN';
-  } else {
-    const myTeam = teams.find((t: { leaderId: string | null }) => t.leaderId === user.id);
-    if (myTeam) {
-      role = 'LEADER';
-      userTeamId = myTeam.id;
-    }
-  }
+  const isAdmin = isAdmin_Server(userRole);
+  
+  const myTeam = teams.find((t: { leaderId: string | null }) => t.leaderId === user.id);
+  const isLeader = !!myTeam;
+  const userTeamId = myTeam?.id;
 
   return (
-    <div className="w-full h-full px-4 lg:px-8 xl:px-12 py-6 animate-in fade-in duration-500">
+    <div className="w-full h-full overflow-hidden px-4 md:px-12 xl:px-24 2xl:px-44 py-4 md:py-6 xl:py-8 flex flex-col animate-in fade-in duration-500">
       <AuctionClient 
         initialConfig={config}
         initialTeams={teams}
         initialBids={bids}
         initialParticipant={currentParticipant}
-        role={role}
+        initialParticipants={participants}
+        isAdmin={isAdmin}
+        isLeader={isLeader}
         userTeamId={userTeamId}
       />
     </div>
