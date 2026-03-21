@@ -873,7 +873,7 @@ model ValorantMatchParticipation {
   @@index([matchId])
 }
 
-// 발로란트 킬 이벤트 (동아리원 간의 킬 로그만 저장)
+// 발로란트 킬 이벤트 (내전(Official) 매치의 모든 킬 로그 저장)
 model ValorantKillEvent {
   id      String        @id @default(cuid())
   matchId String
