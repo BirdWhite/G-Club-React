@@ -17,30 +17,30 @@ enum PermissionType {
   POST_UPDATE
   POST_DELETE
   POST_MANAGE_ALL
-  
+
   // 사용자 관련
   USER_VIEW
   USER_MANAGE
   USER_ROLE_MANAGE
-  
+
   // 채팅 관련
   CHAT_CREATE
   CHAT_DELETE
   CHAT_MANAGE
-  
+
   // 게임 관련
   GAME_CREATE
   GAME_UPDATE
   GAME_DELETE
   GAME_MANAGE
-  
+
   // 관리자
   ADMIN_PANEL_ACCESS
   SYSTEM_SETTINGS
 }
 
 enum ChatRoomType {
-  GAME       // 게임 채팅방
+  GAME // 게임 채팅방
 }
 
 enum GamePostStatus {
@@ -57,9 +57,9 @@ enum ParticipantType {
 }
 
 enum ParticipantStatus {
-  ACTIVE      // 활성 참여자 (현재 게임 중)
-  LEFT_EARLY  // 중도 퇴장
-  COMPLETED   // 게임 완료까지 참여
+  ACTIVE // 활성 참여자 (현재 게임 중)
+  LEFT_EARLY // 중도 퇴장
+  COMPLETED // 게임 완료까지 참여
 }
 
 enum WaitingStatus {
@@ -71,211 +71,213 @@ enum WaitingStatus {
 
 // 일정 카테고리
 enum CalendarEventCategory {
-  REGULAR      // 정기모임
-  TOURNAMENT   // 대회
-  EVENT        // 이벤트
-  SOCIAL       // 친목/회식
-  GENERAL      // 기타/일반
+  REGULAR // 정기모임
+  TOURNAMENT // 대회
+  EVENT // 이벤트
+  SOCIAL // 친목/회식
+  GENERAL // 기타/일반
 }
 
 // 일정 상태 (iCal STATUS 매핑)
 enum CalendarEventStatus {
-  TENTATIVE    // 미확정
-  CONFIRMED    // 확정
-  CANCELLED    // 취소
+  TENTATIVE // 미확정
+  CONFIRMED // 확정
+  CANCELLED // 취소
 }
 
 // RSVP 상태 (iCal PARTSTAT 매핑)
 enum RsvpStatus {
-  ACCEPTED     // 참석
-  DECLINED     // 불참
-  TENTATIVE    // 미정
+  ACCEPTED // 참석
+  DECLINED // 불참
+  TENTATIVE // 미정
 }
 
 // ========== Models ==========
 
 // 권한 모델
 model Permission {
-  id          String    @id @default(cuid())
-  name        String    @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
   description String?
   roles       Role[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // 역할 모델
 model Role {
-  id            String         @id @default(cuid())
-  name          String         @unique
-  description   String?
-  isDefault     Boolean        @default(false)
-  permissions   Permission[]
-  userProfiles  UserProfile[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id           String        @id @default(cuid())
+  name         String        @unique
+  description  String?
+  isDefault    Boolean       @default(false)
+  permissions  Permission[]
+  userProfiles UserProfile[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 // 사용자 프로필 모델 (Supabase Auth와 연동)
 model UserProfile {
-  id                 String               @id @default(cuid())
-  userId             String               @unique
-  name               String
-  email              String?              // OAuth 이메일 정보
-  birthDate          DateTime
-  image              String?
-  roleId             String?
-  role               Role?                @relation(fields: [roleId], references: [id])
-  
-  // 이용약관 동의 관련
-  termsAgreed        Boolean              @default(false)  // 이용약관 동의 여부
-  termsAgreedAt      DateTime?            // 이용약관 동의 시간
-  privacyAgreed      Boolean              @default(false)  // 개인정보처리방침 동의 여부
-  privacyAgreedAt    DateTime?            // 개인정보처리방침 동의 시간
-  
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  name      String
+  email     String? // OAuth 이메일 정보
+  birthDate DateTime
+  image     String?
+  roleId    String?
+  role      Role?    @relation(fields: [roleId], references: [id])
 
-  
+  // 이용약관 동의 관련
+  termsAgreed     Boolean   @default(false) // 이용약관 동의 여부
+  termsAgreedAt   DateTime? // 이용약관 동의 시간
+  privacyAgreed   Boolean   @default(false) // 개인정보처리방침 동의 여부
+  privacyAgreedAt DateTime? // 개인정보처리방침 동의 시간
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // 게임 관련
-  gameParticipations GameParticipant[]     @relation("UserProfileGameParticipations")
-  gamePosts          GamePost[]            @relation("UserProfileGamePosts")
-  waitingList        WaitingParticipant[]  @relation("UserWaitingList")
-  
+  gameParticipations GameParticipant[]    @relation("UserProfileGameParticipations")
+  gamePosts          GamePost[]           @relation("UserProfileGamePosts")
+  waitingList        WaitingParticipant[] @relation("UserWaitingList")
+
   // 채팅 관련
-  chatMessages       ChatMessage[]         @relation("UserProfileChatMessages")
-  chatRooms          ChatParticipant[]     @relation("UserProfileChatRooms")
-  
+  chatMessages ChatMessage[]     @relation("UserProfileChatMessages")
+  chatRooms    ChatParticipant[] @relation("UserProfileChatRooms")
+
   // 댓글 관련
-  comments           Comment[]             @relation("UserProfileComments")
-  
+  comments Comment[] @relation("UserProfileComments")
+
   // 공지사항 관련
-  notices            Notice[]              @relation("UserProfileNotices")
-  modifiedNotices    Notice[]              @relation("UserProfileNoticeModifications")
-  
+  notices         Notice[] @relation("UserProfileNotices")
+  modifiedNotices Notice[] @relation("UserProfileNoticeModifications")
+
   // 푸시 알림 관련
-  pushSubscriptions  PushSubscription[]    @relation("UserProfilePushSubscriptions")
-  
+  pushSubscriptions PushSubscription[] @relation("UserProfilePushSubscriptions")
+
   // 좋아하는 게임 관련
-  favoriteGames      UserFavoriteGame[]    @relation("UserFavoriteGames")
-  
+  favoriteGames UserFavoriteGame[] @relation("UserFavoriteGames")
+
   // 알림 관련
   sentNotifications     Notification[]        @relation("SentNotifications")
   receivedNotifications Notification[]        @relation("ReceivedNotifications")
   notificationReceipts  NotificationReceipt[] @relation("NotificationReceipts")
-  notificationSettings NotificationSetting?  @relation("UserNotificationSettings")
-  
+  notificationSettings  NotificationSetting?  @relation("UserNotificationSettings")
+
   // 일정 관련
-  calendarEvents     CalendarEvent[]   @relation("UserProfileCalendarEvents")
-  eventRsvps         EventRsvp[]       @relation("UserProfileEventRsvps")
-  
+  calendarEvents CalendarEvent[] @relation("UserProfileCalendarEvents")
+  eventRsvps     EventRsvp[]     @relation("UserProfileEventRsvps")
+
   // 경매 관련
-  auctionTeams       AuctionTeam[]     @relation("AuctionTeamLeader")
+  auctionTeams AuctionTeam[] @relation("AuctionTeamLeader")
+
+  // 발로란트 관련
+  valorantAccounts    ValorantAccount[] @relation("UserValorantAccounts")
+  valorantInternalMmr Int               @default(1000) // 동아리 자체 밸런싱을 위한 점수
+  overriddenMatches   ValorantMatch[]   @relation("MatchOverrideUser")
 }
-
-
 
 // 채팅 관련 모델
 model ChatRoom {
-  id           String        @id @default(cuid())
-  type         ChatRoomType  @default(GAME)
-  name         String
-  description  String?
-  isActive     Boolean       @default(true)
-  maxMembers   Int?          // 최대 참여자 수 (null이면 제한 없음)
-  
+  id          String       @id @default(cuid())
+  type        ChatRoomType @default(GAME)
+  name        String
+  description String?
+  isActive    Boolean      @default(true)
+  maxMembers  Int? // 최대 참여자 수 (null이면 제한 없음)
+
   // 채팅방 소유자 (게임 포스트)
-  gamePostId   String?       @unique  // 게임 포스트에 속한 경우
-  gamePost     GamePost?     @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
-  
+  gamePostId String?   @unique // 게임 포스트에 속한 경우
+  gamePost   GamePost? @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
+
   // 메시지 및 참여자
   messages     ChatMessage[]
   participants ChatParticipant[]
-  
+
   // 메타데이터
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([type])
 }
 
 model ChatParticipant {
-  id          String   @id @default(cuid())
-  chatRoom    ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
-  chatRoomId  String
-  user        UserProfile     @relation("UserProfileChatRooms", fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  joinedAt    DateTime @default(now())
-  lastReadAt  DateTime @default(now())  // 마지막으로 읽은 시간
-  isMuted     Boolean  @default(false)  // 음소거 여부
-  
+  id         String      @id @default(cuid())
+  chatRoom   ChatRoom    @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  chatRoomId String
+  user       UserProfile @relation("UserProfileChatRooms", fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  joinedAt   DateTime    @default(now())
+  lastReadAt DateTime    @default(now()) // 마지막으로 읽은 시간
+  isMuted    Boolean     @default(false) // 음소거 여부
+
   @@unique([chatRoomId, userId])
   @@index([userId])
 }
 
 model ChatMessage {
-  id           String    @id @default(cuid())
-  content      String
-  chatRoom     ChatRoom  @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
-  chatRoomId   String
-  user         UserProfile      @relation("UserProfileChatMessages", fields: [userId], references: [id], onDelete: Cascade)
-  userId       String
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  
+  id         String      @id @default(cuid())
+  content    String
+  chatRoom   ChatRoom    @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  chatRoomId String
+  user       UserProfile @relation("UserProfileChatMessages", fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
   @@index([chatRoomId])
   @@index([userId])
 }
 
 // 게임 메이트 관련 모델
 model Game {
-  id          String        @id @default(cuid())
-  name        String        @unique
+  id          String     @id @default(cuid())
+  name        String     @unique
   description String?
   iconUrl     String?
-  order       Int           @default(autoincrement()) // 정렬 순서 (자동 증가)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  order       Int        @default(autoincrement()) // 정렬 순서 (자동 증가)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   aliases     String[]
   gamePosts   GamePost[]
-  
+
   // 좋아하는 게임 관련
-  favoritedBy UserFavoriteGame[]    @relation("GameFavorites")
-  
+  favoritedBy UserFavoriteGame[] @relation("GameFavorites")
+
   @@index([order])
 }
 
 model GamePost {
-  id            String   @id @default(cuid())
-  authorId      String
-  author        UserProfile @relation("UserProfileGamePosts", fields: [authorId], references: [userId])
-  
-  title         String
-  content       String   @db.Text  // Json에서 String으로 변경
-  
+  id       String      @id @default(cuid())
+  authorId String
+  author   UserProfile @relation("UserProfileGamePosts", fields: [authorId], references: [userId])
+
+  title   String
+  content String @db.Text // Json에서 String으로 변경
+
   // 게임 정보
-  gameId        String?
-  game          Game?    @relation(fields: [gameId], references: [id])
+  gameId         String?
+  game           Game?   @relation(fields: [gameId], references: [id])
   customGameName String? // DB에 없는 게임일 경우
 
-  startTime     DateTime? // 게임 시작 시간 (null이면 모이면 바로 출발)
-  maxParticipants Int      // 최대 인원
-  
-  status        GamePostStatus @default(OPEN)
-  isFull        Boolean   @default(false) // 인원 마감 여부
-  
-  viewCount     Int       @default(0)     // 조회수
-  
-  participants      GameParticipant[]
-  waitingList       WaitingParticipant[]
-  chatRoom          ChatRoom?
-  comments          Comment[] @relation("GamePostComments")
-  
-  // 알림 관련
-  notifications     Notification[]    @relation("GamePostNotifications")
+  startTime       DateTime? // 게임 시작 시간 (null이면 모이면 바로 출발)
+  maxParticipants Int // 최대 인원
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status GamePostStatus @default(OPEN)
+  isFull Boolean        @default(false) // 인원 마감 여부
+
+  viewCount Int @default(0) // 조회수
+
+  participants GameParticipant[]
+  waitingList  WaitingParticipant[]
+  chatRoom     ChatRoom?
+  comments     Comment[]            @relation("GamePostComments")
+
+  // 알림 관련
+  notifications Notification[] @relation("GamePostNotifications")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([authorId])
   @@index([status, createdAt])
@@ -283,22 +285,22 @@ model GamePost {
 }
 
 model GameParticipant {
-  id              String   @id @default(cuid())
-  gamePostId      String
-  gamePost        GamePost @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
-  
-  participantType ParticipantType @default(MEMBER)
+  id         String   @id @default(cuid())
+  gamePostId String
+  gamePost   GamePost @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
+
+  participantType ParticipantType   @default(MEMBER)
   status          ParticipantStatus @default(ACTIVE)
 
   // DB에 있는 유저
-  userId          String?
-  user            UserProfile? @relation("UserProfileGameParticipations", fields: [userId], references: [userId])
-  
-  // 커스텀 입력 유저
-  guestName       String?
+  userId String?
+  user   UserProfile? @relation("UserProfileGameParticipations", fields: [userId], references: [userId])
 
-  joinedAt        DateTime @default(now())
-  leftAt          DateTime? // 중도 퇴장 시간
+  // 커스텀 입력 유저
+  guestName String?
+
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime? // 중도 퇴장 시간
 
   @@unique([gamePostId, userId])
   @@unique([gamePostId, guestName])
@@ -307,19 +309,19 @@ model GameParticipant {
 }
 
 model WaitingParticipant {
-  id              String   @id @default(cuid())
-  gamePostId      String
-  gamePost        GamePost @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  gamePostId String
+  gamePost   GamePost @relation(fields: [gamePostId], references: [id], onDelete: Cascade)
 
-  userId          String
-  user            UserProfile @relation("UserWaitingList", fields: [userId], references: [userId])
-  
-  status          WaitingStatus @default(WAITING)
+  userId String
+  user   UserProfile @relation("UserWaitingList", fields: [userId], references: [userId])
+
+  status WaitingStatus @default(WAITING)
 
   // 참여 가능 시간
-  availableTime   String? // "자리 발생 시 즉시 참여" 또는 특정 시간 문자열
+  availableTime String? // "자리 발생 시 즉시 참여" 또는 특정 시간 문자열
 
-  requestedAt     DateTime @default(now()) // 대기 신청 시간 (순서 결정을 위해)
+  requestedAt DateTime @default(now()) // 대기 신청 시간 (순서 결정을 위해)
 
   @@unique([gamePostId, userId])
   @@index([gamePostId, requestedAt])
@@ -327,34 +329,34 @@ model WaitingParticipant {
 
 // 푸시 알림 구독 정보
 model PushSubscription {
-  id          String      @id @default(cuid())
-  userId      String
-  user        UserProfile @relation("UserProfilePushSubscriptions", fields: [userId], references: [userId], onDelete: Cascade)
-  
+  id     String      @id @default(cuid())
+  userId String
+  user   UserProfile @relation("UserProfilePushSubscriptions", fields: [userId], references: [userId], onDelete: Cascade)
+
   // 기기 정보
-  deviceName  String?     // 기기 이름 (iPhone, Android, Windows 등)
-  browser     String?     // 브라우저 정보 (Chrome, Safari, Firefox 등)
-  deviceType  String      @default("unknown") // mobile, desktop, unknown
-  userAgent   String?     // 전체 User Agent
-  
+  deviceName String? // 기기 이름 (iPhone, Android, Windows 등)
+  browser    String? // 브라우저 정보 (Chrome, Safari, Firefox 등)
+  deviceType String  @default("unknown") // mobile, desktop, unknown
+  userAgent  String? // 전체 User Agent
+
   // 핑거프린트 정보 (숫자로 표현 가능한 것들)
-  cookieEnabled   Boolean? // 쿠키 지원 여부
-  doNotTrack      String?  // DNT 설정 (0, 1, null)
-  maxTouchPoints  Int?     // 터치 지원 포인트 수
-  colorDepth      Int?     // 색상 깊이
+  cookieEnabled       Boolean? // 쿠키 지원 여부
+  doNotTrack          String? // DNT 설정 (0, 1, null)
+  maxTouchPoints      Int? // 터치 지원 포인트 수
+  colorDepth          Int? // 색상 깊이
   hardwareConcurrency Int? // CPU 코어 수
-  
+
   // Web Push 구독 정보
-  endpoint    String      @unique
-  p256dh      String      // 공개 키
-  auth        String      // 인증 키
-  
+  endpoint String @unique
+  p256dh   String // 공개 키
+  auth     String // 인증 키
+
   // 알림 설정
-  isEnabled   Boolean     @default(true)
-  
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
+  isEnabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([userId])
   @@index([endpoint])
   @@index([deviceType])
@@ -364,14 +366,14 @@ model PushSubscription {
 
 // 사용자 좋아하는 게임
 model UserFavoriteGame {
-  id        String      @id @default(cuid())
-  userId    String
-  gameId    String
-  user      UserProfile @relation("UserFavoriteGames", fields: [userId], references: [userId], onDelete: Cascade)
-  game      Game        @relation("GameFavorites", fields: [gameId], references: [id], onDelete: Cascade)
-  addedAt   DateTime    @default(now())
-  order     Int?        // 사용자가 설정한 순서 (선택사항)
-  
+  id      String      @id @default(cuid())
+  userId  String
+  gameId  String
+  user    UserProfile @relation("UserFavoriteGames", fields: [userId], references: [userId], onDelete: Cascade)
+  game    Game        @relation("GameFavorites", fields: [gameId], references: [id], onDelete: Cascade)
+  addedAt DateTime    @default(now())
+  order   Int? // 사용자가 설정한 순서 (선택사항)
+
   @@unique([userId, gameId])
   @@index([userId])
   @@index([gameId])
@@ -379,69 +381,69 @@ model UserFavoriteGame {
 
 // 알림 템플릿 (재사용 가능한 알림 타입 정의)
 model NotificationTemplate {
-  id          String        @id @default(cuid())
-  type        String        @unique // "GAME_POST_NEW", "GAME_POST_PARTICIPANT", "SYSTEM_NOTICE" 등
-  title       String        // 알림 제목 템플릿
-  body        String        // 알림 내용 템플릿
-  icon        String?       // 알림 아이콘 URL
-  actionUrl   String?       // 클릭 시 이동할 URL 템플릿
-  isEnabled   Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  
+  id        String   @id @default(cuid())
+  type      String   @unique // "GAME_POST_NEW", "GAME_POST_PARTICIPANT", "SYSTEM_NOTICE" 등
+  title     String // 알림 제목 템플릿
+  body      String // 알림 내용 템플릿
+  icon      String? // 알림 아이콘 URL
+  actionUrl String? // 클릭 시 이동할 URL 템플릿
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   notifications Notification[]
-  
+
   @@index([type])
 }
 
 // 알림 내역
 model Notification {
-  id           String               @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // 알림 기본 정보
-  templateId   String?
-  template     NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  type         String               // 알림 타입
-  title        String               // 실제 알림 제목
-  body         String               // 실제 알림 내용
-  icon         String?              // 알림 아이콘 URL
-  actionUrl    String?              // 클릭 시 이동할 URL
-  
+  templateId String?
+  template   NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  type       String // 알림 타입
+  title      String // 실제 알림 제목
+  body       String // 실제 알림 내용
+  icon       String? // 알림 아이콘 URL
+  actionUrl  String? // 클릭 시 이동할 URL
+
   // 발송 정보
-  senderId     String?              // 발송자 ID (시스템 알림인 경우 null)
-  sender       UserProfile?         @relation("SentNotifications", fields: [senderId], references: [userId], onDelete: SetNull)
-  
+  senderId String? // 발송자 ID (시스템 알림인 경우 null)
+  sender   UserProfile? @relation("SentNotifications", fields: [senderId], references: [userId], onDelete: SetNull)
+
   // 수신 정보 (개별 발송)
-  recipientId  String?              // 개별 수신자 ID
-  recipient    UserProfile?         @relation("ReceivedNotifications", fields: [recipientId], references: [userId], onDelete: Cascade)
-  
+  recipientId String? // 개별 수신자 ID
+  recipient   UserProfile? @relation("ReceivedNotifications", fields: [recipientId], references: [userId], onDelete: Cascade)
+
   // 그룹 발송 정보
-  isGroupSend  Boolean              @default(false) // 그룹 발송 여부
-  groupType    String?              // "ALL_USERS", "ROLE_BASED", "GAME_PARTICIPANTS" 등
-  groupFilter  Json?                // 그룹 필터 조건 (JSON)
-  
+  isGroupSend Boolean @default(false) // 그룹 발송 여부
+  groupType   String? // "ALL_USERS", "ROLE_BASED", "GAME_PARTICIPANTS" 등
+  groupFilter Json? // 그룹 필터 조건 (JSON)
+
   // 관련 엔티티
-  gamePostId   String?              // 게임 포스트 관련 알림
-  gamePost     GamePost?            @relation("GamePostNotifications", fields: [gamePostId], references: [id], onDelete: Cascade)
-  
-  calendarEventId String?           // 일정 관련 알림
-  calendarEvent   CalendarEvent?    @relation("CalendarEventNotifications", fields: [calendarEventId], references: [id], onDelete: Cascade)
-  
+  gamePostId String? // 게임 포스트 관련 알림
+  gamePost   GamePost? @relation("GamePostNotifications", fields: [gamePostId], references: [id], onDelete: Cascade)
+
+  calendarEventId String? // 일정 관련 알림
+  calendarEvent   CalendarEvent? @relation("CalendarEventNotifications", fields: [calendarEventId], references: [id], onDelete: Cascade)
+
   // 알림 상태
-  status       NotificationStatus   @default(PENDING)
-  scheduledAt  DateTime?            // 예약 발송 시간
-  sentAt       DateTime?            // 실제 발송 시간
-  
+  status      NotificationStatus @default(PENDING)
+  scheduledAt DateTime? // 예약 발송 시간
+  sentAt      DateTime? // 실제 발송 시간
+
   // 메타데이터
-  priority     NotificationPriority @default(NORMAL)
-  data         Json?                // 추가 데이터 (JSON)
-  
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  
+  priority NotificationPriority @default(NORMAL)
+  data     Json? // 추가 데이터 (JSON)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // 수신 내역
-  receipts     NotificationReceipt[]
-  
+  receipts NotificationReceipt[]
+
   @@index([recipientId, createdAt])
   @@index([type, createdAt])
   @@index([status, scheduledAt])
@@ -456,21 +458,21 @@ model NotificationReceipt {
   notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
   userId         String
   user           UserProfile  @relation("NotificationReceipts", fields: [userId], references: [userId], onDelete: Cascade)
-  
+
   // 수신 상태
-  isRead         Boolean      @default(false)
-  readAt         DateTime?
-  isClicked      Boolean      @default(false)
-  clickedAt      DateTime?
-  
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  isClicked Boolean   @default(false)
+  clickedAt DateTime?
+
   // 푸시 발송 상태
-  pushSent       Boolean      @default(false)
-  pushSentAt     DateTime?
-  pushError      String?      // 푸시 발송 실패 시 에러 메시지
-  
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  
+  pushSent   Boolean   @default(false)
+  pushSentAt DateTime?
+  pushError  String? // 푸시 발송 실패 시 에러 메시지
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([notificationId, userId])
   @@index([userId, isRead])
   @@index([userId, createdAt])
@@ -478,10 +480,10 @@ model NotificationReceipt {
 
 // 알림 상태 enum
 enum NotificationStatus {
-  PENDING   // 발송 대기
-  SENDING   // 발송 중
-  SENT      // 발송 완료
-  FAILED    // 발송 실패
+  PENDING // 발송 대기
+  SENDING // 발송 중
+  SENT // 발송 완료
+  FAILED // 발송 실패
   CANCELLED // 발송 취소
 }
 
@@ -495,21 +497,21 @@ enum NotificationPriority {
 
 // 사용자별 알림 설정 - 개별 컬럼 버전
 model NotificationSetting {
-  id                String      @id @default(cuid())
-  userId            String      @unique
-  user              UserProfile @relation("UserNotificationSettings", fields: [userId], references: [userId], onDelete: Cascade)
-  
+  id     String      @id @default(cuid())
+  userId String      @unique
+  user   UserProfile @relation("UserNotificationSettings", fields: [userId], references: [userId], onDelete: Cascade)
+
   // 방해 금지 시간 설정
-  doNotDisturbEnabled Boolean   @default(false)
-  doNotDisturbStart   String?   // "22:00" 형식
-  doNotDisturbEnd     String?   // "08:00" 형식
-  doNotDisturbDays    String[]  @default(["0", "1", "2", "3", "4", "5", "6"]) // 0=일요일, 6=토요일
-  
+  doNotDisturbEnabled Boolean  @default(false)
+  doNotDisturbStart   String? // "22:00" 형식
+  doNotDisturbEnd     String? // "08:00" 형식
+  doNotDisturbDays    String[] @default(["0", "1", "2", "3", "4", "5", "6"]) // 0=일요일, 6=토요일
+
   // 신규 게임메이트 글 알림 설정
-  newGamePostEnabled  Boolean   @default(true)
-  newGamePostMode     String    @default("favorites") // "all", "favorites", "custom"
-  customGameIds       String[]  @default([]) // 커스텀으로 선택한 게임 ID 배열
-  
+  newGamePostEnabled Boolean  @default(true)
+  newGamePostMode    String   @default("favorites") // "all", "favorites", "custom"
+  customGameIds      String[] @default([]) // 커스텀으로 선택한 게임 ID 배열
+
   // 참여중인 모임 알림 설정
   participatingGameEnabled     Boolean @default(true)
   participatingGameFullMeeting Boolean @default(true) // 다 모였을때 알람
@@ -517,49 +519,48 @@ model NotificationSetting {
   participatingGameMemberLeave Boolean @default(false) // 모임 참여 취소 알람
   participatingGameTimeChange  Boolean @default(true) // 모임 시간 변경시 알람
   participatingGameCancelled   Boolean @default(true) // 게임메이트 취소 알람
-  
+
   // 참여중인 모임 - 모임 전 알람 설정
-  participatingGameBeforeMeetingEnabled     Boolean @default(true) // 모임 전 알람
-  participatingGameBeforeMeetingMinutes     Int     @default(10) // 몇 분 전 (10, 30, 60)
-  participatingGameBeforeMeetingOnlyFull    Boolean @default(true) // 모임이 다 모였을때만
-  
+  participatingGameBeforeMeetingEnabled  Boolean @default(true) // 모임 전 알람
+  participatingGameBeforeMeetingMinutes  Int     @default(10) // 몇 분 전 (10, 30, 60)
+  participatingGameBeforeMeetingOnlyFull Boolean @default(true) // 모임이 다 모였을때만
+
   // 참여중인 모임 - 모임 시작 알람 설정
-  participatingGameMeetingStartEnabled      Boolean @default(true) // 모임 시작 알람
-  participatingGameMeetingStartOnlyFull     Boolean @default(true) // 모임이 다 모였을때만
-  
+  participatingGameMeetingStartEnabled  Boolean @default(true) // 모임 시작 알람
+  participatingGameMeetingStartOnlyFull Boolean @default(true) // 모임이 다 모였을때만
+
   // 내가 작성한 모임 알림 설정
   myGamePostEnabled     Boolean @default(true)
   myGamePostFullMeeting Boolean @default(true) // 다 모였을때 알람
   myGamePostMemberJoin  Boolean @default(false) // 모임 참여 알람
   myGamePostMemberLeave Boolean @default(false) // 모임 참여 취소 알람
-  
+
   // 내가 작성한 모임 - 모임 전 알람 설정
-  myGamePostBeforeMeetingEnabled     Boolean @default(true) // 모임 전 알람
-  myGamePostBeforeMeetingMinutes     Int     @default(10) // 몇 분 전 (10, 30, 60)
-  myGamePostBeforeMeetingOnlyFull    Boolean @default(true) // 모임이 다 모였을때만
-  
+  myGamePostBeforeMeetingEnabled  Boolean @default(true) // 모임 전 알람
+  myGamePostBeforeMeetingMinutes  Int     @default(10) // 몇 분 전 (10, 30, 60)
+  myGamePostBeforeMeetingOnlyFull Boolean @default(true) // 모임이 다 모였을때만
+
   // 내가 작성한 모임 - 모임 시작 알람 설정
-  myGamePostMeetingStartEnabled      Boolean @default(true) // 모임 시작 알람
-  myGamePostMeetingStartOnlyFull     Boolean @default(true) // 모임이 다 모였을때만
-  
+  myGamePostMeetingStartEnabled  Boolean @default(true) // 모임 시작 알람
+  myGamePostMeetingStartOnlyFull Boolean @default(true) // 모임이 다 모였을때만
+
   // 예비 참여 알림 설정
-  waitingListEnabled  Boolean   @default(true)
-  
+  waitingListEnabled Boolean @default(true)
+
   // 공지사항 알림 설정
-  noticeEnabled       Boolean   @default(true) // 공지사항 알림 받기
-  
+  noticeEnabled Boolean @default(true) // 공지사항 알림 받기
+
   // 일정 알림 설정
-  calendarEventEnabled         Boolean @default(true)  // 일정 알림 전체 토글
-  calendarEventNewEnabled      Boolean @default(true)  // 새 일정 등록 알림
-  calendarEventReminderEnabled Boolean @default(true)  // 일정 전 리마인더 알림
-  calendarEventReminderMinutes Int     @default(60)    // 리마인더 몇 분 전 (기본 60분)
-  
+  calendarEventEnabled         Boolean @default(true) // 일정 알림 전체 토글
+  calendarEventNewEnabled      Boolean @default(true) // 새 일정 등록 알림
+  calendarEventReminderEnabled Boolean @default(true) // 일정 전 리마인더 알림
+  calendarEventReminderMinutes Int     @default(60) // 리마인더 몇 분 전 (기본 60분)
+
   // 메타데이터
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([userId])
-  
   // 크론 잡에서 사용할 인덱스들
   @@index([participatingGameBeforeMeetingEnabled, participatingGameBeforeMeetingMinutes])
   @@index([myGamePostBeforeMeetingEnabled, myGamePostBeforeMeetingMinutes])
@@ -569,24 +570,24 @@ model NotificationSetting {
 
 // 통합 댓글 모델 (게임메이트 포스트와 공지사항 모두 사용)
 model Comment {
-  id        String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // 다형성 관계 - 게임메이트 포스트 또는 공지사항
   gamePostId String?
   gamePost   GamePost? @relation("GamePostComments", fields: [gamePostId], references: [id], onDelete: Cascade)
-  
-  noticeId   String?
-  notice     Notice?  @relation("NoticeComments", fields: [noticeId], references: [id], onDelete: Cascade)
-  
-  authorId  String
-  author    UserProfile @relation("UserProfileComments", fields: [authorId], references: [userId])
-  
-  content   String   // 단순 텍스트 댓글
-  isDeleted Boolean  @default(false) // 삭제된 댓글 표시
-  
+
+  noticeId String?
+  notice   Notice? @relation("NoticeComments", fields: [noticeId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   UserProfile @relation("UserProfileComments", fields: [authorId], references: [userId])
+
+  content   String // 단순 텍스트 댓글
+  isDeleted Boolean @default(false) // 삭제된 댓글 표시
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // 제약 조건: gamePostId 또는 noticeId 중 하나만 설정되어야 함
   @@index([gamePostId, createdAt])
   @@index([noticeId, createdAt])
@@ -595,33 +596,33 @@ model Comment {
 
 // 공지사항 모델
 model Notice {
-  id        String   @id @default(cuid())
-  title     String   // 공지사항 제목
-  content   Json     // 공지사항 내용 (리치텍스트 JSON)
-  summary   String?  // 요약 (선택사항)
-  
-  authorId  String
-  author    UserProfile @relation("UserProfileNotices", fields: [authorId], references: [userId])
-  
+  id      String  @id @default(cuid())
+  title   String // 공지사항 제목
+  content Json // 공지사항 내용 (리치텍스트 JSON)
+  summary String? // 요약 (선택사항)
+
+  authorId String
+  author   UserProfile @relation("UserProfileNotices", fields: [authorId], references: [userId])
+
   // 수정자 정보
   lastModifiedById String?
   lastModifiedBy   UserProfile? @relation("UserProfileNoticeModifications", fields: [lastModifiedById], references: [userId])
-  
-  isPublished Boolean @default(false) // 발행 여부
-  isPinned    Boolean @default(false) // 상단 고정 여부
-  isDeleted   Boolean @default(false) // 삭제 여부
+
+  isPublished   Boolean @default(false) // 발행 여부
+  isPinned      Boolean @default(false) // 상단 고정 여부
+  isDeleted     Boolean @default(false) // 삭제 여부
   allowComments Boolean @default(true) // 댓글 허용 여부
-  
-  viewCount  Int      @default(0)     // 조회수
-  priority   Int      @default(0)     // 우선순위 (높을수록 먼저 표시)
-  
+
+  viewCount Int @default(0) // 조회수
+  priority  Int @default(0) // 우선순위 (높을수록 먼저 표시)
+
   publishedAt DateTime? // 발행일시
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   // 댓글 관련
-  comments   Comment[] @relation("NoticeComments")
-  
+  comments Comment[] @relation("NoticeComments")
+
   @@index([isPublished, isPinned, priority, createdAt])
   @@index([authorId])
   @@index([isDeleted])
@@ -629,32 +630,32 @@ model Notice {
 
 // 일정 모델 (iCal VEVENT 매핑)
 model CalendarEvent {
-  id              String                @id @default(cuid())
-  uid             String                @unique // iCal UID ({uuid}@gclub)
-  title           String                // iCal SUMMARY
-  description     String?               @db.Text // iCal DESCRIPTION
-  location        String?               // iCal LOCATION
-  category        CalendarEventCategory @default(GENERAL) // iCal CATEGORIES
-  status          CalendarEventStatus   @default(CONFIRMED) // iCal STATUS
-  startAt         DateTime              // iCal DTSTART
-  endAt           DateTime              // iCal DTEND
-  isAllDay        Boolean               @default(false) // 종일 이벤트 여부
-  url             String?               // iCal URL
-  sequence        Int                   @default(0) // iCal SEQUENCE (수정 시 +1)
-  rrule           String?               // 향후 반복 일정용 (iCal RRULE)
-  
-  organizerId     String
-  organizer       UserProfile           @relation("UserProfileCalendarEvents", fields: [organizerId], references: [userId])
-  
-  maxParticipants Int?                  // 최대 참석 인원 (null=무제한)
-  color           String?               // 일정 표시 색상
-  
-  rsvps           EventRsvp[]           @relation("CalendarEventRsvps")
-  notifications   Notification[]        @relation("CalendarEventNotifications")
-  
-  createdAt       DateTime              @default(now()) // iCal CREATED
-  updatedAt       DateTime              @updatedAt      // iCal LAST-MODIFIED
-  
+  id          String                @id @default(cuid())
+  uid         String                @unique // iCal UID ({uuid}@gclub)
+  title       String // iCal SUMMARY
+  description String?               @db.Text // iCal DESCRIPTION
+  location    String? // iCal LOCATION
+  category    CalendarEventCategory @default(GENERAL) // iCal CATEGORIES
+  status      CalendarEventStatus   @default(CONFIRMED) // iCal STATUS
+  startAt     DateTime // iCal DTSTART
+  endAt       DateTime // iCal DTEND
+  isAllDay    Boolean               @default(false) // 종일 이벤트 여부
+  url         String? // iCal URL
+  sequence    Int                   @default(0) // iCal SEQUENCE (수정 시 +1)
+  rrule       String? // 향후 반복 일정용 (iCal RRULE)
+
+  organizerId String
+  organizer   UserProfile @relation("UserProfileCalendarEvents", fields: [organizerId], references: [userId])
+
+  maxParticipants Int? // 최대 참석 인원 (null=무제한)
+  color           String? // 일정 표시 색상
+
+  rsvps         EventRsvp[]    @relation("CalendarEventRsvps")
+  notifications Notification[] @relation("CalendarEventNotifications")
+
+  createdAt DateTime @default(now()) // iCal CREATED
+  updatedAt DateTime @updatedAt // iCal LAST-MODIFIED
+
   @@index([startAt, endAt])
   @@index([category])
   @@index([status, startAt])
@@ -669,12 +670,12 @@ model EventRsvp {
   userId      String
   user        UserProfile   @relation("UserProfileEventRsvps", fields: [userId], references: [userId], onDelete: Cascade)
   status      RsvpStatus    @default(TENTATIVE)
-  comment     String?       // 참석 메모
-  respondedAt DateTime?     // 응답 시간
-  
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  
+  comment     String? // 참석 메모
+  respondedAt DateTime? // 응답 시간
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([eventId, userId])
   @@index([eventId])
   @@index([userId])
@@ -684,34 +685,34 @@ model EventRsvp {
 
 // 경매 참가자 상태
 enum AuctionParticipantStatus {
-  WAITING   // 대기 중
-  BIDDING   // 경매 진행 중
-  SOLD      // 낙찰됨
-  PASSED    // 유찰됨
+  WAITING // 대기 중
+  BIDDING // 경매 진행 중
+  SOLD // 낙찰됨
+  PASSED // 유찰됨
 }
 
 // 경매 설정
 model AuctionConfig {
-  id                   String  @id @default(cuid())
+  id                   String    @id @default(cuid())
   name                 String
-  minBidIncrement      Int     @default(10)   // 최소 입찰 단위
-  baseTimer            Int     @default(30)   // 첫 입찰 전 대기 시간 (초)
-  extensionTimer       Int     @default(10)   // 입찰 후 연장 시간 (초)
-  isTierMode           Boolean @default(false) // 티어 제한 모드
-  maxTeamSize          Int     @default(5)    // 팀당 최대 인원
-  isActive             Boolean @default(false) // 경매 페이지 접근 활성화 여부
-  isPaused             Boolean @default(false) // 경매 진행 일시정지 여부
-  isAutoEndEnabled     Boolean @default(true)  // 타이머 종료 시 자동 유찰/낙찰 여부
-  timerEndsAt          DateTime?               // 서버 기반 정확한 타이머 종료 시각
-  remainingTimerMs     Int?                    // 일시정지 시 남은 시간 (밀리초)
-  currentParticipantId String?                 // 현재 진행 중인 매물 ID
+  minBidIncrement      Int       @default(10) // 최소 입찰 단위
+  baseTimer            Int       @default(30) // 첫 입찰 전 대기 시간 (초)
+  extensionTimer       Int       @default(10) // 입찰 후 연장 시간 (초)
+  isTierMode           Boolean   @default(false) // 티어 제한 모드
+  maxTeamSize          Int       @default(5) // 팀당 최대 인원
+  isActive             Boolean   @default(false) // 경매 페이지 접근 활성화 여부
+  isPaused             Boolean   @default(false) // 경매 진행 일시정지 여부
+  isAutoEndEnabled     Boolean   @default(true) // 타이머 종료 시 자동 유찰/낙찰 여부
+  timerEndsAt          DateTime? // 서버 기반 정확한 타이머 종료 시각
+  remainingTimerMs     Int? // 일시정지 시 남은 시간 (밀리초)
+  currentParticipantId String? // 현재 진행 중인 매물 ID
 
-  teams                AuctionTeam[]
-  participants         AuctionParticipant[]
-  bids                 AuctionBid[]
+  teams        AuctionTeam[]
+  participants AuctionParticipant[]
+  bids         AuctionBid[]
 
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // 경매 팀 (팀장)
@@ -719,16 +720,16 @@ model AuctionTeam {
   id            String        @id @default(cuid())
   auctionId     String
   auction       AuctionConfig @relation(fields: [auctionId], references: [id], onDelete: Cascade)
-  leaderName    String        // CSV에서 입력된 표시 이름
-  leaderId      String?       // Admin이 매칭한 UserProfile.userId
+  leaderName    String // CSV에서 입력된 표시 이름
+  leaderId      String? // Admin이 매칭한 UserProfile.userId
   leader        UserProfile?  @relation("AuctionTeamLeader", fields: [leaderId], references: [userId])
-  initialPoints Int           // 초기 포인트
-  currentPoints Int           // 현재 잔여 포인트
+  initialPoints Int // 초기 포인트
+  currentPoints Int // 현재 잔여 포인트
 
-  members       AuctionParticipant[] @relation("TeamMembers")
-  bids          AuctionBid[]
+  members AuctionParticipant[] @relation("TeamMembers")
+  bids    AuctionBid[]
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([auctionId])
   @@index([leaderId])
@@ -739,19 +740,19 @@ model AuctionParticipant {
   id             String                   @id @default(cuid())
   auctionId      String
   auction        AuctionConfig            @relation(fields: [auctionId], references: [id], onDelete: Cascade)
-  name           String                   // 참가자 이름
+  name           String // 참가자 이름
   tier           Int                      @default(4) // 티어 (1~4)
-  gameRank       String?                  // 게임 랭크
-  prefCharacters String?                  // 선호 캐릭터
-  bio            String?                  // 각오 / 한마디
+  gameRank       String? // 게임 랭크
+  prefCharacters String? // 선호 캐릭터
+  bio            String? // 각오 / 한마디
   status         AuctionParticipantStatus @default(WAITING)
-  orderIndex     Int                      // 경매 순서
-  winningBid     Int?                     // 낙찰 금액
-  teamId         String?                  // 낙찰된 팀
+  orderIndex     Int // 경매 순서
+  winningBid     Int? // 낙찰 금액
+  teamId         String? // 낙찰된 팀
   team           AuctionTeam?             @relation("TeamMembers", fields: [teamId], references: [id])
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([auctionId, orderIndex])
   @@index([auctionId, status])
@@ -764,12 +765,130 @@ model AuctionBid {
   auction       AuctionConfig @relation(fields: [auctionId], references: [id], onDelete: Cascade)
   teamId        String
   team          AuctionTeam   @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  participantId String        // 입찰 대상 매물 ID
-  amount        Int           // 입찰 금액
+  participantId String // 입찰 대상 매물 ID
+  amount        Int // 입찰 금액
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([auctionId, createdAt])
   @@index([teamId])
   @@index([participantId])
+}
+
+// ========== 발로란트 내전 기록실 (VCI) 확장 모델 ==========
+
+/// 발로란트 계정 정보 (부캐 대응을 위한 1인 N계정 구조)
+model ValorantAccount {
+  puuid    String @id
+  gameName String
+  tagLine  String
+
+  // UserProfile과의 관계
+  userId String?
+  user   UserProfile? @relation("UserValorantAccounts", fields: [userId], references: [userId], onDelete: SetNull)
+
+  // 상태 및 이레귤러 관리
+  isShared     Boolean  @default(false) // 공유 계정 여부
+  isActive     Boolean  @default(true) // 현재 주력 계정 여부
+  lastSyncedAt DateTime @default(now())
+  lastSyncRequestedAt DateTime? // 수동 갱신 쿨다운(3분)
+  needsDeepSync Boolean @default(true) // 과거 기록 탐색 대기열 플래그
+
+  // 통계 캐싱 (성능 최적화용)
+  avgAcs        Float?  @default(0)
+  consistency   Float? // ACS 표준편차 (안정성)
+  aggression    Float? // 첫 킬/데스 비중 (공격성)
+  winRate       Float?  @default(0)
+  currentTier   String? // 사용자의 라이엇 공식 티어
+
+  participations ValorantMatchParticipation[]
+
+  // 킬 기록 관계
+  killsMade     ValorantKillEvent[] @relation("KillsMade")
+  killsReceived ValorantKillEvent[] @relation("KillsReceived")
+
+  @@index([userId])
+}
+
+/// 내전 매치 정보
+model ValorantMatch {
+  id         String  @id // Riot Match ID
+  mapId      String
+  isOfficial Boolean @default(false) // 동아리원 8인 이상 참여 여부
+
+  isManualOverride Boolean      @default(false) // 수동으로 상태가 변경되었는지 여부
+  overrideByUserId String?      // 상태를 변경한 유저의 ID
+  overrideByUser   UserProfile? @relation("MatchOverrideUser", fields: [overrideByUserId], references: [userId], onDelete: SetNull)
+
+  blueScore   Int
+  redScore    Int
+  gameStartAt DateTime
+  gameLength  Int // 초 단위 경기 시간
+
+  participants ValorantMatchParticipation[]
+  killEvents   ValorantKillEvent[]
+
+  @@index([isOfficial, gameStartAt])
+}
+
+/// 매치별 참여자 상세 스탯 (성향 분석의 핵심 데이터)
+model ValorantMatchParticipation {
+  id      String        @id @default(cuid())
+  matchId String
+  match   ValorantMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  puuid   String
+  account ValorantAccount @relation(fields: [puuid], references: [puuid], onDelete: Cascade)
+
+  // 경기 지표
+  team          String // Blue or Red
+  characterId   String // 요원 UUID
+
+  isWin        Boolean // 개인 승률 계산 쿼리 최적화용
+  score        Int // 전투 점수(ACS)
+  damageDone   Int // ADR(라운드당 데미지) 계산용
+  kills        Int
+  deaths       Int
+  assists      Int
+  headshots    Int? // 헤드샷 비율 계산용
+  bodyshots    Int     @default(0) // 몸통 적중 횟수
+  legshots     Int     @default(0) // 다리 적중 횟수
+  
+  plants       Int     @default(0) // 스파이크 설치 횟수
+  defuses      Int     @default(0) // 스파이크 해체 횟수
+
+  abilityCasts Json?   // { grenade, ability1, ability2, ultimate } 형태 저장
+  friendlyFire Int     @default(0) // 아군에게 가한 총 피해량 (behavior.friendly_fire.outgoing)
+
+  firstBloods  Int     @default(0)
+  firstDeaths  Int     @default(0)
+  kast         Float? // 팀 기여도(%)
+  roundsPlayed Int
+
+  mmrDelta     Int?     // 이 매치에서 변동된 MMR
+  mmrSnapshot  Int?    // 이 매치 종료 직후의 MMR
+
+  @@unique([matchId, puuid])
+  @@index([puuid])
+  @@index([matchId])
+}
+
+// 발로란트 킬 이벤트 (동아리원 간의 킬 로그만 저장)
+model ValorantKillEvent {
+  id      String        @id @default(cuid())
+  matchId String
+  match   ValorantMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  killerPuuid String
+  killer      ValorantAccount @relation("KillsMade", fields: [killerPuuid], references: [puuid], onDelete: Cascade)
+
+  victimPuuid String
+  victim      ValorantAccount @relation("KillsReceived", fields: [victimPuuid], references: [puuid], onDelete: Cascade)
+
+  weaponId   String? // 어떤 무기로 죽였는지 (Vandal, Phantom 등)
+  weaponName String?
+  round      Int // 몇 라운드에 발생했는지
+
+  @@index([matchId])
+  @@index([killerPuuid, victimPuuid]) // 천적 쿼리 최적화용
 }

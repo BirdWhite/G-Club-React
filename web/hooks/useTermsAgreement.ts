@@ -52,9 +52,10 @@ export function useTermsAgreement() {
         checkedRef.current = true;
         
         if (!result.data.termsAgreed || !result.data.privacyAgreed) {
-          if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth/')) {
-            router.replace('/auth/terms');
-          }
+          // 리다이렉션 로직은 ClientLayout에서 중앙 집중식으로 처리하도록 변경
+          // if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth/')) {
+          //   router.replace('/auth/terms');
+          // }
         }
       } else {
         throw new Error(result.error || '약관 동의 상태 확인에 실패했습니다.');

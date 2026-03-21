@@ -107,6 +107,11 @@ const nextConfig = {
         hostname: 't1.kakaocdn.net',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'media.valorant-api.com',
+        pathname: '/**',
+      },
     ],
   },
   // 프로덕션 환경에서만 HTTPS 강제
