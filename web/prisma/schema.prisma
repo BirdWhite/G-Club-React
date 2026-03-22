@@ -175,6 +175,14 @@ model UserProfile {
   valorantAccounts    ValorantAccount[] @relation("UserValorantAccounts")
   valorantInternalMmr Int               @default(1000) // 동아리 자체 밸런싱을 위한 점수
   overriddenMatches   ValorantMatch[]   @relation("MatchOverrideUser")
+
+  // 트래커 점수 및 백분위 (추가)
+  trackerScore          Int?
+  acsPercentile         Float?
+  kastPercentile        Float?
+  damageDeltaPercentile Float?
+  winRatePercentile     Float?
+  topPercentage         Float?
 }
 
 // 채팅 관련 모델
