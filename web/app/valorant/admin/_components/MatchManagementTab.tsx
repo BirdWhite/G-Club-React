@@ -32,9 +32,11 @@ interface MatchManagementTabProps {
   isReprocessingAll: boolean;
   isRecalculating: boolean;
   isRecalculatingMmr: boolean;
+  isRecalculatingTracker: boolean;
   handleReprocessAllMatches: () => Promise<void>;
   handleRecalculate: () => Promise<void>;
   handleRecalculateMmr: () => Promise<void>;
+  handleRecalculateTracker: () => Promise<void>;
   handleToggleMatchOfficialStatus: (matchId: string, currentOfficial: boolean) => Promise<void>;
   fetchData: () => Promise<void>;
   totalMatchesCount: number;
@@ -48,9 +50,11 @@ export default function MatchManagementTab({
   isReprocessingAll,
   isRecalculating,
   isRecalculatingMmr,
+  isRecalculatingTracker,
   handleReprocessAllMatches,
   handleRecalculate,
   handleRecalculateMmr,
+  handleRecalculateTracker,
   handleToggleMatchOfficialStatus,
   fetchData,
   totalMatchesCount,
@@ -131,6 +135,16 @@ export default function MatchManagementTab({
           >
             {isRecalculatingMmr ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Database className="h-4 w-4 mr-2" />}
             전체 MMR 재계산
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={handleRecalculateTracker} 
+            className="h-9 bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+            disabled={isRecalculatingTracker}
+          >
+            {isRecalculatingTracker ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <RefreshCw className="h-4 w-4 mr-2" />}
+            전체 트래커 스코어 재계산
           </Button>
         </div>
       </div>

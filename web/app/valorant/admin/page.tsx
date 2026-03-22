@@ -13,6 +13,7 @@ import {
   toggleGuestMemberStatus,
   recalculateAllOfficialMatches,
   recalculateAllMmrOnly,
+  recalculateAllTrackerScores,
   adminReprocessMatch,
   getAdminMatches,
   getAdminUsers,
@@ -58,6 +59,7 @@ export default function ValorantAdminPage() {
   const [isRecalculatingMmr, setIsRecalculatingMmr] = useState(false);
   const [isReprocessing, setIsReprocessing] = useState(false);
   const [isReprocessingAll, setIsReprocessingAll] = useState(false);
+  const [isRecalculatingTracker, setIsRecalculatingTracker] = useState(false);
   
   // 매치 개별 재처리 상태
   const [targetMatchId, setTargetMatchId] = useState('');
@@ -259,6 +261,26 @@ export default function ValorantAdminPage() {
     }
   };
 
+  // 트래커 스코어 재계산 처리
+  const handleRecalculateTracker = async () => {
+    if (!confirm('모든 유저의 트래커 스코어(백분위 점수)를 재계산합니다. 정말로 진행하시겠습니까?')) return;
+    
+    setIsRecalculatingTracker(true);
+    try {
+      const result = await recalculateAllTrackerScores();
+      if (result.success) {
+        toast.success(`트래커 스코어 재계산이 완료되었습니다. (업데이트: ${result.count}명)`);
+        fetchData(currentPage, userPage, userSearchQuery);
+      } else {
+        toast.error(result.error || '재계산 실패');
+      }
+    } catch {
+      toast.error('서버 오류가 발생했습니다.');
+    } finally {
+      setIsRecalculatingTracker(false);
+    }
+  };
+
   // 매치 개별 재처리
   const handleReprocessMatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -425,11 +447,13 @@ export default function ValorantAdminPage() {
         <MatchManagementTab 
           matches={matches}
           isReprocessingAll={isReprocessingAll}
-          isRecalculating={isRecalculating}
+           isRecalculating={isRecalculating}
           isRecalculatingMmr={isRecalculatingMmr}
+          isRecalculatingTracker={isRecalculatingTracker}
           handleReprocessAllMatches={handleReprocessAllMatches}
           handleRecalculate={handleRecalculate}
           handleRecalculateMmr={handleRecalculateMmr}
+          handleRecalculateTracker={handleRecalculateTracker}
           handleToggleMatchOfficialStatus={handleToggleMatchOfficialStatus}
           fetchData={() => fetchData(currentPage, userPage, userSearchQuery)}
           totalMatchesCount={totalMatchesCount}

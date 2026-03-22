@@ -6,7 +6,9 @@ export interface LeaderboardEntry {
   image: string | null;
   mmr: number;
   matchCount: number;
-  tier: string; // "0" ~ "5" 또는 "unplaced"
+  tier: string;
+  trackerScore: number | null;
+  topPercentage: number | null;
 }
 
 /**
@@ -40,6 +42,8 @@ export async function getValorantLeaderboard(): Promise<LeaderboardEntry[]> {
       name: true,
       image: true,
       valorantInternalMmr: true,
+      trackerScore: true,
+      topPercentage: true,
       valorantAccounts: {
         select: {
           participations: {
@@ -64,6 +68,8 @@ export async function getValorantLeaderboard(): Promise<LeaderboardEntry[]> {
       name: user.name,
       image: user.image,
       mmr: user.valorantInternalMmr,
+      trackerScore: user.trackerScore,
+      topPercentage: user.topPercentage,
       matchCount
     };
   });
@@ -71,11 +77,21 @@ export async function getValorantLeaderboard(): Promise<LeaderboardEntry[]> {
   // 3. 배치 완료 유저와 미완료 유저 분리
   const placedUsers = processedUsers
     .filter(u => u.matchCount >= 5)
-    .sort((a, b) => b.mmr - a.mmr); // MMR 내림차순
+    .sort((a, b) => {
+      if ((b.trackerScore || 0) !== (a.trackerScore || 0)) {
+        return (b.trackerScore || 0) - (a.trackerScore || 0);
+      }
+      return b.mmr - a.mmr; // Tracker Score가 같으면 MMR 순
+    });
     
   const unplacedUsers = processedUsers
     .filter(u => u.matchCount < 5)
-    .sort((a, b) => b.mmr - a.mmr);
+    .sort((a, b) => {
+      if ((b.trackerScore || 0) !== (a.trackerScore || 0)) {
+        return (b.trackerScore || 0) - (a.trackerScore || 0);
+      }
+      return b.mmr - a.mmr;
+    });
 
   // 4. 배치 완료 유저에게 티어 부여 (백분위 기준)
   const totalPlaced = placedUsers.length;
@@ -103,15 +119,41 @@ export async function getValorantLeaderboard(): Promise<LeaderboardEntry[]> {
 /**
  * 특정 유저의 상세 티어 정보를 가져옵니다.
  */
-export async function getUserValorantTier(userId: string): Promise<{ tier: string; mmr: number; matchCount: number } | null> {
+export async function getUserValorantTier(userId: string): Promise<{ 
+  tier: string; 
+  mmr: number; 
+  matchCount: number;
+  trackerScore: number | null;
+  topPercentage: number | null;
+  acsPercentile: number | null;
+  kastPercentile: number | null;
+  damageDeltaPercentile: number | null;
+  winRatePercentile: number | null;
+} | null> {
   const leaderboard = await getValorantLeaderboard();
   const entry = leaderboard.find(e => e.userId === userId);
   
   if (!entry) return null;
+
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId },
+    select: {
+      acsPercentile: true,
+      kastPercentile: true,
+      damageDeltaPercentile: true,
+      winRatePercentile: true
+    }
+  });
   
   return {
     tier: entry.tier,
     mmr: entry.mmr,
-    matchCount: entry.matchCount
+    matchCount: entry.matchCount,
+    trackerScore: entry.trackerScore,
+    topPercentage: entry.topPercentage,
+    acsPercentile: profile?.acsPercentile ?? 0,
+    kastPercentile: profile?.kastPercentile ?? 0,
+    damageDeltaPercentile: profile?.damageDeltaPercentile ?? 0,
+    winRatePercentile: profile?.winRatePercentile ?? 0
   };
 }

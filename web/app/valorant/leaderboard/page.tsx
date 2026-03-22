@@ -3,8 +3,24 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Trophy, Medal, User, ChevronLeft } from 'lucide-react';
 
-export default async function ValorantLeaderboardPage() {
-  const leaderboard = await getValorantLeaderboard();
+export default async function ValorantLeaderboardPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await searchParams;
+  const currentTab = tab === 'mmr' ? 'mmr' : 'tracker';
+  
+  const leaderboardData = await getValorantLeaderboard();
+  
+  // 배치 완료 유저와 미완료 유저 분리
+  const placedUsers = leaderboardData.filter(u => u.tier !== 'unplaced');
+  const unplacedUsers = leaderboardData.filter(u => u.tier === 'unplaced');
+
+  // 정렬 로직 적용
+  if (currentTab === 'mmr') {
+    placedUsers.sort((a, b) => b.mmr - a.mmr);
+  } else {
+    placedUsers.sort((a, b) => (b.trackerScore || 0) - (a.trackerScore || 0));
+  }
+
+  const sortedLeaderboard = [...placedUsers, ...unplacedUsers];
 
   const getTierBadge = (tier: string) => {
     if (tier === 'unplaced') return { label: '배치 중', class: 'bg-slate-500/10 text-slate-500 border-slate-500/20' };
@@ -38,8 +54,24 @@ export default async function ValorantLeaderboardPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-white tracking-tight">VCI 순위표</h1>
-            <p className="text-slate-500 text-sm mt-1">G-Club 발로란트 내전 공식 랭킹 (Internal MMR)</p>
+            <p className="text-slate-500 text-sm mt-1">G-Club 발로란트 내전 공식 랭킹</p>
           </div>
+        </div>
+
+        {/* 탭 네비게이션 */}
+        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 mb-6 w-fit">
+          <Link
+            href="/valorant/leaderboard?tab=tracker"
+            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${currentTab === 'tracker' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            트래커 점수 순위
+          </Link>
+          <Link
+            href="/valorant/leaderboard?tab=mmr"
+            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${currentTab === 'mmr' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            MMR 순위
+          </Link>
         </div>
 
         {/* 리더보드 테이블 */}
@@ -48,22 +80,24 @@ export default async function ValorantLeaderboardPage() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-slate-800/40 border-b border-slate-800">
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">순위</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">플레이어</th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">티어</th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">MMR</th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">참여</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">순위</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">플레이어</th>
+                  <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">티어</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">트래커 점수</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">MMR</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">상위 %</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">참여</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {leaderboard.length === 0 ? (
+                {sortedLeaderboard.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center text-slate-500 font-medium">
+                    <td colSpan={7} className="px-6 py-20 text-center text-slate-500 font-medium">
                       데이터가 아직 없습니다.
                     </td>
                   </tr>
                 ) : (
-                  leaderboard.map((entry, index) => {
+                  sortedLeaderboard.map((entry, index) => {
                     const badge = getTierBadge(entry.tier);
                     const isTop3 = entry.tier !== 'unplaced' && index < 3;
                     
@@ -106,8 +140,18 @@ export default async function ValorantLeaderboardPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <span className={`font-mono font-bold ${isTop3 ? 'text-indigo-400' : 'text-slate-300'}`}>
+                          <span className={`font-mono font-bold ${currentTab === 'tracker' ? 'text-indigo-400' : 'text-slate-300'}`}>
+                            {entry.trackerScore ?? '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <span className={`font-mono font-bold ${currentTab === 'mmr' ? 'text-indigo-400' : 'text-slate-300'}`}>
                             {entry.mmr}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <span className="text-slate-400 text-sm">
+                            {entry.topPercentage != null ? `Top ${entry.topPercentage}%` : '-'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-slate-500 text-sm font-medium">
@@ -123,9 +167,16 @@ export default async function ValorantLeaderboardPage() {
         </div>
 
         {/* 하단 정보 */}
-        <div className="mt-8 p-4 bg-slate-900/30 rounded-xl border border-slate-800/50 text-xs text-slate-500 leading-relaxed">
-          <p className="mb-2">💡 <span className="font-bold text-slate-400 underline underline-offset-4 decoration-indigo-500/50">MMR 시스템 안내:</span> G-Club 내전은 캐리력과 기여도를 기반으로 한 자체 MMR 공식을 사용합니다. (ACS 70% + KDA 30% 반영)</p>
-          <p>📍 5판 이상의 공식 내전(isOfficial)에 참여한 플레이어만 티어가 산정됩니다. 티어는 참여 인원 중 상대적 백분위에 따라 실시간으로 변동됩니다.</p>
+        <div className="mt-8 p-6 bg-slate-900/30 rounded-xl border border-slate-800/50 text-xs text-slate-500 leading-relaxed space-y-4">
+          <div>
+            <p className="mb-2">💡 <span className="font-bold text-slate-400 underline underline-offset-4 decoration-indigo-500/50">트래커 스코어 안내:</span></p>
+            <p>전체 유저 데이터를 기준으로 백분위(Percentile)를 산출하여 1000점 만점으로 계산합니다. (ACS 30%, KAST 30%, Damage Delta 20%, 승률 20% 반영)</p>
+          </div>
+          <div>
+            <p className="mb-2">💡 <span className="font-bold text-slate-400 underline underline-offset-4 decoration-indigo-500/50">MMR 시스템 안내:</span></p>
+            <p>개인 활약도와 승패에 따라 변동되는 점수입니다. (ACS 50% + KDA 50% 반영)</p>
+          </div>
+          <p>📍 5판 이상의 공식 내전(isOfficial)에 참여한 플레이어만 랭킹에 집계됩니다.</p>
         </div>
       </div>
     </div>

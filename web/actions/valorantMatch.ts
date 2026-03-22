@@ -3,6 +3,8 @@
 import prisma from '@/lib/database/prisma';
 import { getCurrentUser } from '@/lib/database/supabase/auth';
 import { revalidatePath } from 'next/cache';
+import { getMatchPerformancePercentiles, recalculateTrackerScores } from '@/lib/valorant/trackerPercentile';
+
 
 export async function getMatchDetails(matchId: string) {
   try {
@@ -77,6 +79,9 @@ export async function toggleMatchOfficialStatus(matchId: string, newStatus: bool
       }
     });
 
+    // 전체 트래커 스코어 재계산
+    await recalculateTrackerScores();
+
     // 화면 갱신을 위해 revalidatePath 호출
     revalidatePath('/valorant/profile/[puuid]', 'page');
 
@@ -86,3 +91,14 @@ export async function toggleMatchOfficialStatus(matchId: string, newStatus: bool
     return { success: false, error: '상태 변경 중 오류가 발생했습니다.' };
   }
 }
+
+export async function getMatchPerformance(matchId: string, puuid: string) {
+  try {
+    const data = await getMatchPerformancePercentiles(matchId, puuid);
+    return { success: true, data };
+  } catch (error) {
+    console.error('getMatchPerformance error:', error);
+    return { success: false, error: 'Failed to fetch match performance' };
+  }
+}
+

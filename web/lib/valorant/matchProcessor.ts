@@ -1,6 +1,7 @@
 import prisma from '@/lib/database/prisma';
 import { calculateMmrDelta, calculateKda } from './valorantMmr';
 import { calculateKAST, calculateDDDelta, calculateRoundWinPercentage } from './advancedStats';
+import { recalculateTrackerScores } from './trackerPercentile';
 
 const API_BASE_URL = 'https://api.henrikdev.xyz/valorant';
 
@@ -372,6 +373,9 @@ export async function processAndSaveMatches(matches: ValorantMatchData[]) {
       }
     });
   }
+
+  // 매치 처리가 끝난 후 모든 유저의 트래커 스코어 재계산
+  await recalculateTrackerScores();
 }
 
 /**

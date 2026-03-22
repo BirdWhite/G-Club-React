@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { syncRecentMatches } from '@/actions/valorantSync';
-import { getMatchDetails, toggleMatchOfficialStatus } from '@/actions/valorantMatch';
+import { getMatchDetails, toggleMatchOfficialStatus, getMatchPerformance } from '@/actions/valorantMatch';
+
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,9 @@ interface MatchParticipation {
   match: MatchInfo;
   mmrDelta?: number | null;
   mmrSnapshot?: number | null;
+  kast?: number | null;
+  damageDeltaPerRound?: number;
+  roundWinPercentage?: number;
 }
 
 interface ParticipantWithAccount {
@@ -53,6 +57,21 @@ interface FullMatchInfo extends MatchInfo {
   participants: ParticipantWithAccount[];
 }
 
+interface MatchPerformance {
+  matchTrackerScore: number;
+  acs: number;
+  kast: number;
+  damageDelta: number;
+  roundWinRate: number;
+  percentiles: {
+    acs: number;
+    kast: number;
+    damageDelta: number;
+    roundWinRate: number;
+  };
+}
+
+
 interface ProfileClientProps {
   account: {
     puuid: string;
@@ -68,6 +87,12 @@ interface ProfileClientProps {
     tier: string;
     mmr: number;
     matchCount: number;
+    trackerScore?: number | null;
+    topPercentage?: number | null;
+    acsPercentile?: number | null;
+    kastPercentile?: number | null;
+    damageDeltaPercentile?: number | null;
+    winRatePercentile?: number | null;
   } | null;
 }
 
@@ -75,13 +100,19 @@ export default function ProfileClient({ account, participations, internalTierInf
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'official'>('all');
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [matchDetailsCache, setMatchDetailsCache] = useState<Record<string, FullMatchInfo | any>>({});
+  const [matchDetailsCache, setMatchDetailsCache] = useState<Record<string, FullMatchInfo>>({});
+
+  const [matchPerformanceCache, setMatchPerformanceCache] = useState<Record<string, MatchPerformance>>({});
+
   const [isLoadingMatch, setIsLoadingMatch] = useState(false);
+
   const [cooldown, setCooldown] = useState(0);
   const [agentMap, setAgentMap] = useState<Record<string, { icon: string, name: string }>>({});
   const [mapMap, setMapMap] = useState<Record<string, { name: string, icon: string }>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const router = useRouter();
+
 
   const handleToggleOfficial = async (matchId: string, currentStatus: boolean, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -103,13 +134,23 @@ export default function ProfileClient({ account, participations, internalTierInf
     setExpandedMatchId(matchId);
     if (!matchDetailsCache[matchId]) {
       setIsLoadingMatch(true);
-      const res = await getMatchDetails(matchId);
-      if (res.success && res.data) {
-        setMatchDetailsCache((prev) => ({ ...prev, [matchId]: res.data }));
+      const [detailsRes, performanceRes] = await Promise.all([
+        getMatchDetails(matchId),
+        getMatchPerformance(matchId, account.puuid)
+      ]);
+      
+      if (detailsRes.success && detailsRes.data) {
+        setMatchDetailsCache((prev) => ({ ...prev, [matchId]: detailsRes.data as unknown as FullMatchInfo }));
       }
+
+      if (performanceRes.success && performanceRes.data) {
+        setMatchPerformanceCache((prev) => ({ ...prev, [matchId]: performanceRes.data as MatchPerformance }));
+      }
+
       setIsLoadingMatch(false);
     }
   };
+
 
   useEffect(() => {
     if (!account.lastSyncRequestedAt) return;
@@ -170,6 +211,11 @@ export default function ProfileClient({ account, participations, internalTierInf
     fetchAgents();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+
   const handleSync = async () => {
     setIsSyncing(true);
     const res = await syncRecentMatches(account.puuid);
@@ -185,12 +231,22 @@ export default function ProfileClient({ account, participations, internalTierInf
 
   // Calculate official stats
   const officialMatches = participations.filter((p) => p.match.isOfficial);
-  const wins = officialMatches.filter((p) => p.isWin).length;
-  const winRate = officialMatches.length > 0 ? (wins / officialMatches.length * 100).toFixed(1) : 0;
-  const totalKills = officialMatches.reduce((acc: number, p) => acc + p.kills, 0);
-  const totalDeaths = officialMatches.reduce((acc: number, p) => acc + p.deaths, 0);
-  const totalAssists = officialMatches.reduce((acc: number, p) => acc + p.assists, 0);
-  const kda = totalDeaths > 0 ? ((totalKills + totalAssists) / totalDeaths).toFixed(2) : 'Perfect';
+  // 요청된 5가지 지표 계산
+  const avgAcs = officialMatches.length > 0 
+    ? Math.round(officialMatches.reduce((acc, p) => acc + (p.score / Math.max(1, p.match.blueScore + p.match.redScore)), 0) / officialMatches.length) 
+    : 0;
+  
+  const avgKast = officialMatches.length > 0
+    ? (officialMatches.reduce((acc, p) => acc + (p.kast || 0), 0) / officialMatches.length).toFixed(1)
+    : 0;
+    
+  const avgRoundWinRate = officialMatches.length > 0
+    ? (officialMatches.reduce((acc, p) => acc + (p.roundWinPercentage || 0), 0) / officialMatches.length).toFixed(1)
+    : 0;
+    
+  const avgDamageDelta = officialMatches.length > 0
+    ? (officialMatches.reduce((acc, p) => acc + (p.damageDeltaPerRound || 0), 0) / officialMatches.length).toFixed(1)
+    : 0;
 
   // 내전 티어 라벨 설정
   const getInternalTierLabel = (tier: string) => {
@@ -202,6 +258,19 @@ export default function ProfileClient({ account, participations, internalTierInf
   };
 
   const internalTier = internalTierInfo ? getInternalTierLabel(internalTierInfo.tier) : null;
+
+  // 백분율 색상 및 포맷팅 헬퍼
+  const renderPercentile = (percentile: number | null | undefined) => {
+    if (percentile === null || percentile === undefined) return null;
+    // 백분위는 높을수록 좋음 (클수록 100에 가까움) -> Top %는 (100 - percentile)
+    const topP = Math.round((100 - percentile) * 10) / 10;
+    const color = topP <= 50 ? 'text-emerald-400' : 'text-red-400';
+    return (
+      <div className={`text-[10px] font-bold mt-1 ${color}`}>
+        Top {topP}%
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -300,22 +369,37 @@ export default function ProfileClient({ account, participations, internalTierInf
       {/* Tab Content */}
       <div className="py-2">
         {activeTab === 'official' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="p-5 bg-slate-900/50 border border-slate-800 rounded-xl text-center shadow-md hover:bg-slate-900 transition-colors">
-              <div className="text-slate-400 text-sm mb-1 font-medium">참여 횟수</div>
-              <div className="text-2xl font-bold text-white">{officialMatches.length}전</div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div className="p-5 bg-indigo-500/5 border border-indigo-500/20 rounded-xl text-center shadow-md hover:bg-indigo-500/10 transition-colors">
+              <div className="text-indigo-400 text-sm mb-1 font-medium">트래커 스코어</div>
+              <div className="text-2xl font-bold text-white">{internalTierInfo?.trackerScore || 0}</div>
+              {internalTierInfo?.topPercentage != null && (
+                <div className="text-[10px] font-black text-indigo-500 mt-1 uppercase">Top {internalTierInfo.topPercentage}%</div>
+              )}
             </div>
+
             <div className="p-5 bg-slate-900/50 border border-slate-800 rounded-xl text-center shadow-md hover:bg-slate-900 transition-colors">
-              <div className="text-slate-400 text-sm mb-1 font-medium">승률</div>
-              <div className="text-2xl font-bold text-blue-400">{winRate}%</div>
+              <div className="text-slate-400 text-sm mb-1 font-medium">라운드 승률</div>
+              <div className="text-2xl font-bold text-blue-400">{avgRoundWinRate}%</div>
+              {renderPercentile(internalTierInfo?.winRatePercentile)}
             </div>
+            
             <div className="p-5 bg-slate-900/50 border border-slate-800 rounded-xl text-center shadow-md hover:bg-slate-900 transition-colors">
-              <div className="text-slate-400 text-sm mb-1 font-medium">승패</div>
-              <div className="text-2xl font-bold text-white">{wins}승 {officialMatches.length - wins}패</div>
+              <div className="text-slate-400 text-sm mb-1 font-medium">KAST</div>
+              <div className="text-2xl font-bold text-white">{avgKast}%</div>
+              {renderPercentile(internalTierInfo?.kastPercentile)}
             </div>
+
             <div className="p-5 bg-slate-900/50 border border-slate-800 rounded-xl text-center shadow-md hover:bg-slate-900 transition-colors">
-              <div className="text-slate-400 text-sm mb-1 font-medium">KDA</div>
-              <div className="text-2xl font-bold text-emerald-400">{kda}</div>
+              <div className="text-slate-400 text-sm mb-1 font-medium">ACS</div>
+              <div className="text-2xl font-bold text-white">{avgAcs}</div>
+              {renderPercentile(internalTierInfo?.acsPercentile)}
+            </div>
+
+            <div className="p-5 bg-slate-900/50 border border-slate-800 rounded-xl text-center shadow-md hover:bg-slate-900 transition-colors">
+              <div className="text-slate-400 text-sm mb-1 font-medium">DD 델타/라운드</div>
+              <div className="text-2xl font-bold text-emerald-400">{avgDamageDelta}</div>
+              {renderPercentile(internalTierInfo?.damageDeltaPercentile)}
             </div>
           </div>
         )}
@@ -323,9 +407,12 @@ export default function ProfileClient({ account, participations, internalTierInf
         <div className="space-y-4">
           {(() => {
             let lastDateStr = '';
-            const matchesToRender = activeTab === 'all' ? participations : officialMatches;
+            const allMatchesToRender = activeTab === 'all' ? participations : officialMatches;
+            const matchesToRender = allMatchesToRender.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
             
-            if (matchesToRender.length === 0) {
+            if (allMatchesToRender.length === 0) {
+
               return (
                 <div className="text-center py-20 bg-slate-900/30 rounded-xl border border-slate-800 border-dashed">
                   <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-ghost mx-auto text-slate-600 mb-4"><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/></svg>
@@ -446,8 +533,71 @@ export default function ProfileClient({ account, participations, internalTierInf
                         </div>
                       ) : matchDetails ? (
                         <div className="space-y-4">
+                          {/* Match Performance Stats (Individual) */}
+                          {matchPerformanceCache[p.match.id] && (
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-2">
+                              <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl text-center shadow-sm group/card hover:bg-indigo-500/20 transition-colors">
+                                <div className="text-indigo-400 text-[10px] mb-1 font-bold uppercase tracking-wider opacity-70">매치 트래커 스코어</div>
+                                <div className="text-2xl font-black text-white group-hover/card:scale-110 transition-transform">{matchPerformanceCache[p.match.id].matchTrackerScore}</div>
+                              </div>
+                              
+                              <div className="p-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-center shadow-sm hover:border-slate-700 transition-colors">
+                                <div className="text-slate-500 text-[10px] mb-1 font-bold uppercase tracking-wider">라운드 승률</div>
+                                <div className="text-xl font-black text-blue-400">{matchPerformanceCache[p.match.id].roundWinRate}%</div>
+                                {(() => {
+                                  const topP = Math.round((100 - matchPerformanceCache[p.match.id].percentiles.roundWinRate) * 10) / 10;
+                                  return (
+                                    <div className={`text-[10px] font-black mt-1 ${topP <= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      TOP {topP}%
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+
+                              <div className="p-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-center shadow-sm hover:border-slate-700 transition-colors">
+                                <div className="text-slate-500 text-[10px] mb-1 font-bold uppercase tracking-wider">KAST</div>
+                                <div className="text-xl font-black text-white">{matchPerformanceCache[p.match.id].kast}%</div>
+                                {(() => {
+                                  const topP = Math.round((100 - matchPerformanceCache[p.match.id].percentiles.kast) * 10) / 10;
+                                  return (
+                                    <div className={`text-[10px] font-black mt-1 ${topP <= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      TOP {topP}%
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+
+                              <div className="p-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-center shadow-sm hover:border-slate-700 transition-colors">
+                                <div className="text-slate-500 text-[10px] mb-1 font-bold uppercase tracking-wider">ACS</div>
+                                <div className="text-xl font-black text-white">{matchPerformanceCache[p.match.id].acs}</div>
+                                {(() => {
+                                  const topP = Math.round((100 - matchPerformanceCache[p.match.id].percentiles.acs) * 10) / 10;
+                                  return (
+                                    <div className={`text-[10px] font-black mt-1 ${topP <= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      TOP {topP}%
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+
+                              <div className="p-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-center shadow-sm hover:border-slate-700 transition-colors">
+                                <div className="text-slate-500 text-[10px] mb-1 font-bold uppercase tracking-wider text-wrap">DD 델타</div>
+                                <div className="text-xl font-black text-emerald-400">{matchPerformanceCache[p.match.id].damageDelta}</div>
+                                {(() => {
+                                  const topP = Math.round((100 - matchPerformanceCache[p.match.id].percentiles.damageDelta) * 10) / 10;
+                                  return (
+                                    <div className={`text-[10px] font-black mt-1 ${topP <= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      TOP {topP}%
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          )}
+
                           {/* Match Score */}
-                          <div className="flex items-center justify-center gap-4 text-xl font-black bg-slate-950 py-3 rounded-lg border border-slate-800">
+                          <div className="flex items-center justify-center gap-4 text-xl font-black bg-slate-950 py-3 rounded-xl border border-slate-800 shadow-inner">
+
                             <span className="text-blue-500">BLUE {matchDetails.blueScore}</span>
                             <span className="text-slate-500">VS</span>
                             <span className="text-red-500">{matchDetails.redScore} RED</span>
@@ -542,7 +692,62 @@ export default function ProfileClient({ account, participations, internalTierInf
               );
             });
           })()}
+
+          {/* Pagination Controls */}
+          {(() => {
+            const allMatchesToRender = activeTab === 'all' ? participations : officialMatches;
+            const totalPages = Math.ceil(allMatchesToRender.length / itemsPerPage);
+            
+            if (totalPages <= 1) return null;
+            
+            // Calculate slice of page numbers to show
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            if (endPage - startPage + 1 < maxVisiblePages) {
+              startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            return (
+              <div className="flex flex-col items-center gap-4 py-8">
+                <div className="flex items-center gap-1">
+                  {/* Previous */}
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  </button>
+                  
+                  {/* Page Numbers */}
+                  {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map(num => (
+                    <button 
+                      key={num}
+                      onClick={() => setCurrentPage(num)}
+                      className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold transition-all ${num === currentPage ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800'}`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                  
+                  {/* Next */}
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                </div>
+                <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                  Page {currentPage} of {totalPages}
+                </div>
+              </div>
+            );
+          })()}
         </div>
+
       </div>
     </div>
   );

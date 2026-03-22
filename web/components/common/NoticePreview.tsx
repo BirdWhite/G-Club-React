@@ -5,6 +5,8 @@ import { DateTimeDisplay } from '@/components/common/DateTimeDisplay';
 import { Eye, ChevronRight, Megaphone, Pin } from 'lucide-react';
 import { useNoticeListSubscription } from '@/hooks/useRealtimeSubscription';
 import { extractFirstImageUrl } from '@/lib/utils';
+import Image from 'next/image';
+
 
 export function NoticePreview() {
   // 실시간 구독 훅 사용
@@ -69,10 +71,12 @@ export function NoticePreview() {
               >
                 {thumbnailUrl && (
                   <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-video self-stretch">
-                    <img
+                    <Image
                       src={thumbnailUrl}
                       alt=""
-                      className="absolute inset-0 w-full h-full object-cover"
+                      fill
+                      sizes="(max-width: 640px) 100px, 120px"
+                      className="object-cover"
                     />
                   </div>
                 )}

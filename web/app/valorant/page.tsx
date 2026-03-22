@@ -145,9 +145,24 @@ export default async function ValorantHubPage() {
                         {tierDisplay?.label}
                       </span>
                     </div>
-                    <div className="text-3xl font-black text-white flex items-baseline gap-2">
-                      {internalTierInfo.mmr}
-                      <span className="text-sm font-medium text-slate-500">MMR</span>
+                    <div className="flex items-center gap-6">
+                      <div className="flex flex-col">
+                        <div className="text-xs font-bold text-slate-500 mb-1">Tracker Score</div>
+                        <div className="text-3xl font-black text-indigo-400 flex items-baseline gap-2">
+                          {internalTierInfo.trackerScore || 0}
+                          <span className="text-sm font-medium text-indigo-400/50">pts</span>
+                        </div>
+                      </div>
+                      
+                      <div className="w-px h-10 bg-white/10" />
+
+                      <div className="flex flex-col">
+                        <div className="text-xs font-bold text-slate-500 mb-1">Internal MMR</div>
+                        <div className="text-3xl font-black text-white flex items-baseline gap-2">
+                          {internalTierInfo.mmr}
+                          <span className="text-sm font-medium text-slate-500 uppercase tracking-tighter">mmr</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

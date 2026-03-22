@@ -8,6 +8,7 @@ import { searchValorantAccount, updateValorantAccountInfo } from './valorantAcco
 import { reprocessMatchKills } from '@/lib/valorant/matchProcessor';
 import { calculateMmrDelta, calculateKda } from '@/lib/valorant/valorantMmr';
 import { calculateKAST, calculateDDDelta, calculateRoundWinPercentage } from '@/lib/valorant/advancedStats';
+import { recalculateTrackerScores } from '@/lib/valorant/trackerPercentile';
 
 export interface UnlinkedAccount {
   puuid: string;
@@ -664,6 +665,30 @@ export async function recalculateAllMmrOnly(): Promise<{ success: boolean; count
 }
 
 /**
+ * 전 유저의 트래커 스코어(백분위 기반)를 재계산합니다.
+ */
+export async function recalculateAllTrackerScores(): Promise<{ success: boolean; count: number; error?: string }> {
+  try {
+    const adminCheck = await verifyAdminAction();
+    if (!adminCheck.success) return { success: false, count: 0, error: adminCheck.error };
+
+    const result = await recalculateTrackerScores();
+    
+    revalidatePath('/valorant/admin');
+    revalidatePath('/valorant');
+    revalidatePath('/valorant/leaderboard');
+
+    return {
+      success: true,
+      count: result?.updatedCount || 0
+    };
+  } catch (error) {
+    console.error('Recalculate tracker scores error:', error);
+    return { success: false, count: 0, error: '트래커 스코어 재계산 중 오류가 발생했습니다.' };
+  }
+}
+
+/**
  * 모든 매치 데이터를 최신 로직으로 재처리합니다. (최근 200개 한정)
  */
 export async function reprocessAllMatches(): Promise<{ 
@@ -683,64 +708,60 @@ export async function reprocessAllMatches(): Promise<{
       select: { id: true }
     });
 
+    let currentMatchesToProcess = matches.map(m => m.id);
     let successCount = 0;
     let failCount = 0;
     const failedMatches: string[] = [];
+    let attempt = 1;
+    const MAX_ATTEMPT = 3;
 
     console.log(`[ADMIN] 데이터 전체 재처리 시작 (대상: ${matches.length}개)`);
 
-    for (let i = 0; i < matches.length; i++) {
-      const match = matches[i];
-      let retryCount = 0;
-      const MAX_RETRIES = 3;
-      let processed = false;
-
-      while (retryCount <= MAX_RETRIES && !processed) {
+    while (attempt <= MAX_ATTEMPT && currentMatchesToProcess.length > 0) {
+      const retryList: string[] = [];
+      console.log(`[ADMIN] ${attempt}차 처리 시작 (대상: ${currentMatchesToProcess.length}개)`);
+      
+      for (let i = 0; i < currentMatchesToProcess.length; i++) {
+        const matchId = currentMatchesToProcess[i];
         try {
-          if (retryCount > 0) {
-            console.log(`[ADMIN] [재시도 ${retryCount}/${MAX_RETRIES}] 매치 처리 중: ${match.id}`);
-          } else {
-            console.log(`[ADMIN] [${i + 1}/${matches.length}] 매치 처리 중: ${match.id}`);
-          }
-
-          const res = await adminReprocessMatch(match.id);
+          console.log(`[ADMIN] [시도 ${attempt}/3] [${i + 1}/${currentMatchesToProcess.length}] 매치 처리 중: ${matchId}`);
+          
+          const res = await adminReprocessMatch(matchId);
           if (res.success) {
             successCount++;
-            processed = true;
+          } else if (res.error?.includes('429')) {
+            retryList.push(matchId);
+            console.warn(`[ADMIN] 레이트 리밋(429) 도달: ${matchId}. 이후 재시도 리스트에 추가.`);
           } else {
-            // 429 에러인 경우 재시도 로직
-            if (res.error?.includes('429')) {
-              if (retryCount < MAX_RETRIES) {
-                retryCount++;
-                console.warn(`[ADMIN] 레이트 리밋(429) 도달. 60초 후 재시도합니다... (시도 ${retryCount}/${MAX_RETRIES})`);
-                await new Promise(resolve => setTimeout(resolve, 1000 * 60)); // 60초 대기
-                continue; // 다음 루프(재시도)로
-              } else {
-                console.error(`[ADMIN] 최대 재시도 횟수 초과 (${match.id})`);
-                failCount++;
-                failedMatches.push(match.id);
-                processed = true; // 실패로 간주하고 종료
-              }
-            } else {
-              // 일반 에러는 재시도 없이 실패 처리
-              failCount++;
-              failedMatches.push(match.id);
-              console.error(`[ADMIN] 매치 처리 실패 (${match.id}): ${res.error}`);
-              processed = true;
-            }
+            failCount++;
+            failedMatches.push(matchId);
+            console.error(`[ADMIN] 매치 처리 실패 (${matchId}): ${res.error}`);
           }
         } catch (err) {
           failCount++;
-          failedMatches.push(match.id);
-          console.error(`[ADMIN] 예외 발생 (${match.id}):`, err);
-          processed = true;
+          failedMatches.push(matchId);
+          console.error(`[ADMIN] 예외 발생 (${matchId}):`, err);
+        }
+
+        // 요청 간 파이프라인 방지용 짧은 대기 (2.1초)
+        if (i < currentMatchesToProcess.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2100));
         }
       }
 
-      // 요청 간 간격: 2초 (정상 상황에서도 약간의 여유)
-      if (i < matches.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      currentMatchesToProcess = retryList;
+      if (currentMatchesToProcess.length > 0 && attempt < MAX_ATTEMPT) {
+        console.log(`[ADMIN] ${attempt}차 처리 완료. 429 에러 ${retryList.length}개 발생. 60초 후 재시도합니다.`);
+        await new Promise(resolve => setTimeout(resolve, 60000));
       }
+      attempt++;
+    }
+
+    // 최종적으로 남은 429 실패 건들은 실패로 기록
+    if (currentMatchesToProcess.length > 0) {
+      failCount += currentMatchesToProcess.length;
+      failedMatches.push(...currentMatchesToProcess);
+      console.error(`[ADMIN] 최대 재시도 후에도 실패한 레이트 리밋 건들: ${currentMatchesToProcess.length}개`);
     }
 
     console.log(`[ADMIN] 데이터 전체 재처리 완료 (성공: ${successCount}, 실패: ${failCount})`);
