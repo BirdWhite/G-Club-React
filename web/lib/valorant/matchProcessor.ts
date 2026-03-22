@@ -1,5 +1,6 @@
 import prisma from '@/lib/database/prisma';
 import { calculateMmrDelta, calculateKda } from './valorantMmr';
+import { calculateKAST, calculateDDDelta, calculateRoundWinPercentage } from './advancedStats';
 
 const API_BASE_URL = 'https://api.henrikdev.xyz/valorant';
 
@@ -54,8 +55,10 @@ interface ValorantRound {
 
 interface ValorantKill {
   round: number;
+  time_in_round_in_ms: number;
   killer: { puuid: string; name: string; tag: string };
   victim: { puuid: string; name: string; tag: string };
+  assistants: { puuid: string; name: string; tag: string }[];
   weapon: { id: string; name: string };
 }
 
@@ -236,7 +239,32 @@ export async function processAndSaveMatches(matches: ValorantMatchData[]) {
           friendlyFire: p.behavior?.friendly_fire?.outgoing || 0,
           firstBloods: firstBloodsMap.get(p.puuid) || 0,
           firstDeaths: firstDeathsMap.get(p.puuid) || 0,
-          kast: null,
+          kast: calculateKAST(
+            p.puuid,
+            team,
+            match.kills.map(k => ({
+              round: k.round,
+              time_in_round_in_ms: k.time_in_round_in_ms,
+              killer: { puuid: k.killer.puuid },
+              victim: { puuid: k.victim.puuid },
+              assistants: k.assistants.map(a => ({ puuid: a.puuid }))
+            })),
+            roundsPlayed,
+            match.players.map(pl => ({ puuid: pl.puuid, team_id: pl.team_id }))
+          ),
+          damageDealt: p.stats?.damage?.dealt || p.stats?.damage?.dealth || 0,
+          damageReceived: p.stats?.damage?.received || 0,
+          damageDeltaPerRound: calculateDDDelta(
+            (p.stats?.damage?.dealt || p.stats?.damage?.dealth || 0),
+            (p.stats?.damage?.received || 0),
+            roundsPlayed
+          ),
+          roundsWon: team === 'Blue' ? blueScore : redScore,
+          totalRounds: roundsPlayed,
+          roundWinPercentage: calculateRoundWinPercentage(
+            (team === 'Blue' ? blueScore : redScore),
+            roundsPlayed
+          ),
           roundsPlayed
         };
       });
@@ -324,7 +352,9 @@ export async function processAndSaveMatches(matches: ValorantMatchData[]) {
             victimPuuid: k.victim?.puuid,
             weaponId: k.weapon?.id || null,
             weaponName: k.weapon?.name || null,
-            round: k.round ?? 0
+            round: k.round ?? 0,
+            timeInRound: k.time_in_round_in_ms,
+            roundNum: k.round ?? 0
           });
         }
       }

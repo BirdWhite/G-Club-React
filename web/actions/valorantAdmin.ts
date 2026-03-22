@@ -7,6 +7,7 @@ import { isAdmin_Server } from '@/lib/database/auth/serverAuth';
 import { searchValorantAccount, updateValorantAccountInfo } from './valorantAccount';
 import { reprocessMatchKills } from '@/lib/valorant/matchProcessor';
 import { calculateMmrDelta, calculateKda } from '@/lib/valorant/valorantMmr';
+import { calculateKAST, calculateDDDelta, calculateRoundWinPercentage } from '@/lib/valorant/advancedStats';
 
 export interface UnlinkedAccount {
   puuid: string;
@@ -337,7 +338,8 @@ export async function recalculateAllOfficialMatches(): Promise<{ success: boolea
     const allMatches = await prisma.valorantMatch.findMany({
       orderBy: { gameStartAt: 'asc' },
       include: {
-        participants: true
+        participants: true,
+        killEvents: true
       }
     });
 
@@ -387,8 +389,32 @@ export async function recalculateAllOfficialMatches(): Promise<{ success: boolea
           }, 0);
           const avgKda = totalKda / 10;
 
-          // 우리 식구들의 MMR 업데이트
+          const totalRounds = match.blueScore + match.redScore;
+
+          // 우리 식구들의 MMR 및 고급 통계 업데이트
           for (const p of match.participants) {
+            // 고급 통계 계산
+            const roundsWon = p.team === 'Blue' ? match.blueScore : match.redScore;
+            const damageDealt = (p as any).damageDealt || p.damageDone || 0;
+            const damageReceived = (p as any).damageReceived || 0;
+            
+            const kast = calculateKAST(
+              p.puuid,
+              p.team,
+              match.killEvents.map(k => ({
+                round: k.round,
+                time_in_round_in_ms: (k as any).timeInRound || 0,
+                killer: { puuid: k.killerPuuid },
+                victim: { puuid: k.victimPuuid },
+                assistants: [] // 과거 데이터에는 어시스트 정보가 없을 수 있음
+              })),
+              totalRounds,
+              match.participants.map(pl => ({ puuid: pl.puuid, team_id: pl.team }))
+            );
+
+            const ddDelta = calculateDDDelta(damageDealt, damageReceived, totalRounds);
+            const winRate = calculateRoundWinPercentage(roundsWon, totalRounds);
+
             const userId = puuidToUserId.get(p.puuid);
             if (userId) {
               const userProfile = await tx.userProfile.findUnique({
@@ -414,9 +440,33 @@ export async function recalculateAllOfficialMatches(): Promise<{ success: boolea
                 });
                 await tx.valorantMatchParticipation.update({
                   where: { matchId_puuid: { matchId: match.id, puuid: p.puuid } },
-                  data: { mmrDelta: delta, mmrSnapshot: newMmr }
+                  data: { 
+                    mmrDelta: delta, 
+                    mmrSnapshot: newMmr,
+                    kast,
+                    damageDealt,
+                    damageReceived,
+                    damageDeltaPerRound: ddDelta,
+                    roundsWon,
+                    totalRounds,
+                    roundWinPercentage: winRate
+                  } as any
                 });
               }
+            } else {
+              // 유저 프로필이 없는 일반 참여자도 고급 통계는 업데이트
+              await tx.valorantMatchParticipation.update({
+                where: { matchId_puuid: { matchId: match.id, puuid: p.puuid } },
+                data: {
+                  kast,
+                  damageDealt,
+                  damageReceived,
+                  damageDeltaPerRound: ddDelta,
+                  roundsWon,
+                  totalRounds,
+                  roundWinPercentage: winRate
+                } as any
+              });
             }
           }
         }
@@ -458,7 +508,8 @@ export async function recalculateAllMmrOnly(): Promise<{ success: boolean; count
       where: { isOfficial: true },
       orderBy: { gameStartAt: 'asc' },
       include: {
-        participants: true
+        participants: true,
+        killEvents: true
       }
     });
 
@@ -503,13 +554,84 @@ export async function recalculateAllMmrOnly(): Promise<{ success: boolean; count
             avgKda
           );
 
+          // 고급 통계 계산
+          const totalRounds = match.blueScore + match.redScore;
+          const roundsWon = p.team === 'Blue' ? match.blueScore : match.redScore;
+          const damageDealt = (p as any).damageDealt || p.damageDone || 0;
+          const damageReceived = (p as any).damageReceived || 0;
+
+          const kast = calculateKAST(
+            p.puuid,
+            p.team,
+            match.killEvents.map(k => ({
+              round: k.round,
+              time_in_round_in_ms: (k as any).timeInRound || 0,
+              killer: { puuid: k.killerPuuid },
+              victim: { puuid: k.victimPuuid },
+              assistants: []
+            })),
+            totalRounds,
+            match.participants.map(pl => ({ puuid: pl.puuid, team_id: pl.team }))
+          );
+
+          const ddDelta = calculateDDDelta(damageDealt, damageReceived, totalRounds);
+          const winRate = calculateRoundWinPercentage(roundsWon, totalRounds);
+
           const newMmr = currentMmr + delta;
           userMmrMap.set(userId, newMmr);
 
           participationUpdates.push(
             prisma.valorantMatchParticipation.update({
               where: { matchId_puuid: { matchId: match.id, puuid: p.puuid } },
-              data: { mmrDelta: delta, mmrSnapshot: newMmr }
+              data: { 
+                mmrDelta: delta, 
+                mmrSnapshot: newMmr,
+                kast,
+                damageDealt,
+                damageReceived,
+                damageDeltaPerRound: ddDelta,
+                roundsWon,
+                totalRounds,
+                roundWinPercentage: winRate
+              } as any
+            })
+          );
+        } else {
+          // 유저가 아니더라도 통계는 업데이트
+          const totalRounds = match.blueScore + match.redScore;
+          const roundsWon = p.team === 'Blue' ? match.blueScore : match.redScore;
+          const damageDealt = (p as any).damageDealt || p.damageDone || 0;
+          const damageReceived = (p as any).damageReceived || 0;
+
+          const kast = calculateKAST(
+            p.puuid,
+            p.team,
+            match.killEvents.map(k => ({
+              round: k.round,
+              time_in_round_in_ms: (k as any).timeInRound || 0,
+              killer: { puuid: k.killerPuuid },
+              victim: { puuid: k.victimPuuid },
+              assistants: []
+            })),
+            totalRounds,
+            match.participants.map(pl => ({ puuid: pl.puuid, team_id: pl.team }))
+          );
+
+          const ddDelta = calculateDDDelta(damageDealt, damageReceived, totalRounds);
+          const winRate = calculateRoundWinPercentage(roundsWon, totalRounds);
+
+          participationUpdates.push(
+            prisma.valorantMatchParticipation.update({
+              where: { matchId_puuid: { matchId: match.id, puuid: p.puuid } },
+              data: {
+                kast,
+                damageDealt,
+                damageReceived,
+                damageDeltaPerRound: ddDelta,
+                roundsWon,
+                totalRounds,
+                roundWinPercentage: winRate
+              } as any
             })
           );
         }

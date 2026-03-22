@@ -862,7 +862,13 @@ model ValorantMatchParticipation {
 
   firstBloods  Int     @default(0)
   firstDeaths  Int     @default(0)
-  kast         Float? // 팀 기여도(%)
+  kast         Float? // KAST 백분율 (예: 75.5)
+  damageDealt         Int      @default(0) // 가한 총 피해량
+  damageReceived      Int      @default(0) // 받은 총 피해량
+  damageDeltaPerRound Float    @default(0) // (가한 피해 - 받은 피해) / 총 라운드 수
+  roundsWon           Int      @default(0) // 해당 플레이어 팀의 승리 라운드
+  totalRounds         Int      @default(0) // 매치의 총 라운드 수
+  roundWinPercentage  Float    @default(0) // (승리 라운드 / 총 라운드) * 100
   roundsPlayed Int
 
   mmrDelta     Int?     // 이 매치에서 변동된 MMR
@@ -888,6 +894,8 @@ model ValorantKillEvent {
   weaponId   String? // 어떤 무기로 죽였는지 (Vandal, Phantom 등)
   weaponName String?
   round      Int // 몇 라운드에 발생했는지
+  timeInRound         Int?      // 라운드 내 킬 발생 시간 (API의 time_in_round_in_ms)
+  roundNum            Int?      // 발생 라운드 번호
 
   @@index([matchId])
   @@index([killerPuuid, victimPuuid]) // 천적 쿼리 최적화용
