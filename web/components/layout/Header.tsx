@@ -232,8 +232,6 @@ export function Header() {
                   ) : session && !isPendingMember ? (
                     <>
                       <NavLink href="/game-mate" pathname={pathname}>게임메이트</NavLink>
-                      <NavLink href="/valorant" pathname={pathname}>내전 기록실</NavLink>
-                      <NavLink href="/calendar" pathname={pathname}>일정</NavLink>
                       <NavLink href="/notifications" pathname={pathname} showBadge={true} badgeCount={unreadNotificationCount}>알림</NavLink>
                       {isAdmin && (
                         <NavLink href="/admin/dashboard" pathname={pathname}>

@@ -5,6 +5,8 @@ import { NotificationPreview } from '@/components/common/NotificationPreview';
 import { CalendarPreview } from '@/components/common/CalendarPreview';
 import { GamePostPreview } from '@/components/common/GamePostPreview';
 import { AuctionBanner } from '@/components/auction/AuctionBanner';
+import Link from 'next/link';
+import { Trophy, ChevronRight } from 'lucide-react';
 
 // 메인 페이지의 히어로 섹션 컴포넌트 (공지사항, 일정, 게임메이트, 알림 표시)
 export function HeroSection() {
@@ -31,6 +33,18 @@ export function HeroSection() {
         {/* 3행 - 알림 */}
         <div className="w-full">
           <NotificationPreview />
+        </div>
+
+        {/* 내전 기록실 바로가기 */}
+        <div className="w-full flex justify-start pb-8">
+          <Link 
+            href="/valorant" 
+            className="flex items-center gap-2 text-xl font-bold text-foreground hover:text-primary transition-colors group"
+          >
+            <Trophy className="w-5 h-5" />
+            <span>내전 기록실</span>
+            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </Link>
         </div>
       </div>
     </section>

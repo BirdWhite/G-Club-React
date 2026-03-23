@@ -229,8 +229,9 @@ export default function ProfileClient({ account, participations, internalTierInf
     }
   };
 
-  // Calculate official stats
-  const officialMatches = participations.filter((p) => p.match.isOfficial);
+  // Calculate official stats (Limit to last 10 for averages)
+  const allOfficialMatches = participations.filter((p) => p.match.isOfficial);
+  const officialMatches = allOfficialMatches.slice(0, 10);
   // 요청된 5가지 지표 계산
   const avgAcs = officialMatches.length > 0 
     ? Math.round(officialMatches.reduce((acc, p) => acc + (p.score / Math.max(1, p.match.blueScore + p.match.redScore)), 0) / officialMatches.length) 
@@ -407,7 +408,7 @@ export default function ProfileClient({ account, participations, internalTierInf
         <div className="space-y-4">
           {(() => {
             let lastDateStr = '';
-            const allMatchesToRender = activeTab === 'all' ? participations : officialMatches;
+            const allMatchesToRender = activeTab === 'all' ? participations : allOfficialMatches;
             const matchesToRender = allMatchesToRender.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
             
@@ -695,7 +696,7 @@ export default function ProfileClient({ account, participations, internalTierInf
 
           {/* Pagination Controls */}
           {(() => {
-            const allMatchesToRender = activeTab === 'all' ? participations : officialMatches;
+            const allMatchesToRender = activeTab === 'all' ? participations : allOfficialMatches;
             const totalPages = Math.ceil(allMatchesToRender.length / itemsPerPage);
             
             if (totalPages <= 1) return null;

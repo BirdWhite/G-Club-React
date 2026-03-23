@@ -83,7 +83,12 @@ export async function recalculateTrackerScores() {
               totalRounds: true,
               kast: true,
               damageDeltaPerRound: true,
-              roundWinPercentage: true
+              roundWinPercentage: true,
+              match: {
+                select: {
+                  gameStartAt: true
+                }
+              }
             }
           }
         }
@@ -105,28 +110,49 @@ export async function recalculateTrackerScores() {
       wrP: number;
     }[] = [];
 
+    // 유저의 모든 공식 매치 참여 데이터를 하나로 모으기 (여러 계정 통합)
+    interface ParticipationWithMatch {
+      score: number;
+      totalRounds: number;
+      kast: number | null;
+      damageDeltaPerRound: number | null;
+      roundWinPercentage: number | null;
+      match: {
+        gameStartAt: Date;
+      };
+    }
+    const allUserParticipations: ParticipationWithMatch[] = [];
     user.valorantAccounts.forEach(account => {
       account.participations.forEach(p => {
-        const acs = p.score / Math.max(1, p.totalRounds);
-        const kast = p.kast || 0;
-        const dd = p.damageDeltaPerRound || 0;
-        const wr = p.roundWinPercentage || 0;
+        allUserParticipations.push(p as unknown as ParticipationWithMatch);
+      });
+    });
 
-        // 개별 매치의 백분위 및 점수 계산
-        const acsP = calculatePercentile(acs, distributions.allAcs);
-        const kastP = calculatePercentile(kast, distributions.allKast);
-        const ddP = calculatePercentile(dd, distributions.allDd);
-        const wrP = calculatePercentile(wr, distributions.allWr);
+    // 최근 10판만 추출 (날짜 내림차순 정렬 후 slicing)
+    const recentParticipations = allUserParticipations
+      .sort((a, b) => new Date(b.match.gameStartAt).getTime() - new Date(a.match.gameStartAt).getTime())
+      .slice(0, 10);
 
-        const matchTrackerScore = Math.round((acsP * 3) + (kastP * 3) + (ddP * 2) + (wrP * 2));
+    recentParticipations.forEach(p => {
+      const acs = p.score / Math.max(1, p.totalRounds);
+      const kast = p.kast || 0;
+      const dd = p.damageDeltaPerRound || 0;
+      const wr = p.roundWinPercentage || 0;
 
-        userParticipations.push({
-          matchTrackerScore,
-          acsP,
-          kastP,
-          ddP,
-          wrP
-        });
+      // 개별 매치의 백분위 및 점수 계산 (전체 분포와 비교)
+      const acsP = calculatePercentile(acs, distributions.allAcs);
+      const kastP = calculatePercentile(kast, distributions.allKast);
+      const ddP = calculatePercentile(dd, distributions.allDd);
+      const wrP = calculatePercentile(wr, distributions.allWr);
+
+      const matchTrackerScore = Math.round((acsP * 3) + (kastP * 3) + (ddP * 2) + (wrP * 2));
+
+      userParticipations.push({
+        matchTrackerScore,
+        acsP,
+        kastP,
+        ddP,
+        wrP
       });
     });
 
