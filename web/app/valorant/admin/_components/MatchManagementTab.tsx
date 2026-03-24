@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { 
-  Loader2, 
   History,
   CheckCircle2,
   XCircle,
@@ -113,7 +112,7 @@ export default function MatchManagementTab({
             className="h-9 border-primary/20 text-primary hover:bg-primary/5"
             disabled={isReprocessingAll}
           >
-            {isReprocessingAll ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Database className="h-4 w-4 mr-2" />}
+            {isReprocessingAll ? <RefreshCw className="h-4 w-4 animate-spin mr-2"/> : <Database className="h-4 w-4 mr-2" />}
             전체 데이터 다시 불러오기
           </Button>
           <Button 
@@ -133,17 +132,17 @@ export default function MatchManagementTab({
             className="h-9 bg-primary hover:bg-primary/90"
             disabled={isRecalculatingMmr}
           >
-            {isRecalculatingMmr ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Database className="h-4 w-4 mr-2" />}
+            {isRecalculatingMmr ? <RefreshCw className="h-4 w-4 animate-spin mr-2"/> : <Database className="h-4 w-4 mr-2" />}
             전체 MMR 재계산
           </Button>
           <Button 
             variant="default" 
             size="sm" 
             onClick={handleRecalculateTracker} 
-            className="h-9 bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+            className="h-9 bg-primary hover:bg-primary/90 shadow-sm"
             disabled={isRecalculatingTracker}
           >
-            {isRecalculatingTracker ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <RefreshCw className="h-4 w-4 mr-2" />}
+            {isRecalculatingTracker ? <RefreshCw className="h-4 w-4 animate-spin mr-2"/> : <RefreshCw className="h-4 w-4 mr-2" />}
             전체 트래커 스코어 재계산
           </Button>
         </div>

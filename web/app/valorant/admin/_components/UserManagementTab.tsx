@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import {
   Search,
   User,
-  Loader2,
+  RefreshCw,
   Link as LinkIcon,
   UserMinus,
   Plus,
@@ -135,7 +135,7 @@ export default function UserManagementTab({
                 className="w-full h-9 gap-2"
                 disabled={isActionLoading || !newName || !newTag}
               >
-                {isActionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                {isActionLoading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                 데이터 풀에 추가
               </Button>
             </form>

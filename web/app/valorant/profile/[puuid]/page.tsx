@@ -25,12 +25,16 @@ export default async function ValorantProfilePage({ params }: { params: Promise<
   const internalTierInfo = account.userId ? await getUserValorantTier(account.userId) : null;
 
   return (
-    <div className="container py-8 max-w-4xl mx-auto space-y-6">
-      <ProfileClient 
-        account={account} 
-        participations={account.participations} 
-        internalTierInfo={internalTierInfo}
-      />
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="flex flex-col items-center page-content-padding py-12">
+        <div className="w-full max-w-4xl">
+          <ProfileClient 
+            account={account} 
+            participations={account.participations} 
+            internalTierInfo={internalTierInfo}
+          />
+        </div>
+      </div>
     </div>
   );
 }

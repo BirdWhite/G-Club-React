@@ -40,7 +40,7 @@ export async function searchValorantAccount(name: string, tag: string) {
   }
 }
 
-export async function registerValorantAccount(puuid: string, gameName: string, tagLine: string) {
+export async function registerValorantAccount(puuid: string, gameName: string, tagLine: string, cardImageUrl?: string) {
   try {
     const user = await getCurrentUser();
     if (!user || !user.id) {
@@ -62,6 +62,7 @@ export async function registerValorantAccount(puuid: string, gameName: string, t
         puuid,
         gameName,
         tagLine,
+        cardImageUrl,
         userId: user.id,
         needsDeepSync: true,  // 최초 등록 시 3개월치 전적 딥싱크 예약
       }
@@ -95,12 +96,14 @@ export async function updateValorantAccountInfo(puuid: string): Promise<{ succes
 
     let gameName: string | undefined;
     let tagLine: string | undefined;
+    let cardImageUrl: string | undefined;
 
     if (accountRes.ok) {
-      const accountData = await accountRes.json();
-      if (accountData.status === 200 && accountData.data) {
+      const accountData = await accountRes.ok ? await accountRes.json() : null;
+      if (accountData && accountData.status === 200 && accountData.data) {
         gameName = accountData.data.name;
         tagLine = accountData.data.tag;
+        cardImageUrl = accountData.data.card?.small;
       }
     }
 
@@ -121,13 +124,14 @@ export async function updateValorantAccountInfo(puuid: string): Promise<{ succes
     }
 
     // 데이터베이스 업데이트
-    if (gameName || tagLine || currentTier) {
+    if (gameName || tagLine || currentTier || cardImageUrl) {
       await prisma.valorantAccount.update({
         where: { puuid },
         data: {
           ...(gameName ? { gameName } : {}),
           ...(tagLine ? { tagLine } : {}),
           ...(currentTier ? { currentTier } : {}),
+          ...(cardImageUrl ? { cardImageUrl } : {}),
           lastSyncedAt: new Date(),
         },
       });

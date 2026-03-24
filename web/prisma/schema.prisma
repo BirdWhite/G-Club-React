@@ -798,6 +798,7 @@ model ValorantAccount {
   // 상태 및 이레귤러 관리
   isShared     Boolean  @default(false) // 공유 계정 여부
   isActive     Boolean  @default(true) // 현재 주력 계정 여부
+  cardImageUrl String? // 라이엇 API 프로필 카드 이미지 URL
   lastSyncedAt DateTime @default(now())
   lastSyncRequestedAt DateTime? // 수동 갱신 쿨다운(3분)
   needsDeepSync Boolean @default(true) // 과거 기록 탐색 대기열 플래그

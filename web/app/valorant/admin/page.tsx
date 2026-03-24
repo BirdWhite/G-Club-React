@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { isAdmin } from '@/lib/database/auth/roles';
 import { 
@@ -23,12 +24,12 @@ import {
 import type { UnlinkedAccount, UserData } from '@/actions/valorantAdmin';
 import { toast } from 'react-hot-toast';
 import { 
-  Loader2, 
   ShieldAlert,
   RefreshCw,
   Users,
   LayoutGrid,
-  FileCode
+  FileCode,
+  ChevronLeft
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -351,7 +352,7 @@ export default function ValorantAdminPage() {
     return (
       <div className="flex h-[70vh] items-center justify-center">
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <RefreshCw className="h-10 w-10 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground font-medium">관리자 데이터를 불러오는 중...</p>
         </div>
       </div>
@@ -363,8 +364,19 @@ export default function ValorantAdminPage() {
   }
 
   return (
-    <div className="container mx-auto py-10 px-4 space-y-8 max-w-7xl">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="flex flex-col items-center page-content-padding py-12">
+        <div className="w-full max-w-7xl space-y-8">
+          {/* 뒤로가기 */}
+          <Link 
+            href="/valorant" 
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-4 group"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            내전 기록실로 돌아가기
+          </Link>
+
+          <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6 border-border">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <ShieldAlert className="h-8 w-8 text-primary" />
@@ -394,7 +406,7 @@ export default function ValorantAdminPage() {
               disabled={isReprocessing || !targetMatchId.trim()}
               className="h-9 px-3 border-primary/20 hover:bg-primary/5"
             >
-              {isReprocessing ? <Loader2 className="h-3.5 w-3.5 animate-spin"/> : <RefreshCw className="h-3.5 w-3.5 mr-1.5"/>}
+              {isReprocessing ? <RefreshCw className="h-3.5 w-3.5 animate-spin"/> : <RefreshCw className="h-3.5 w-3.5 mr-1.5"/>}
               매치 재동기화
             </Button>
           </form>
@@ -463,9 +475,11 @@ export default function ValorantAdminPage() {
         />
       )}
       
-      <footer className="pt-10 border-t text-center text-[10px] text-muted-foreground">
-        © G-Club Valorant Admin System | All accounts remain in pool when unlinked.
-      </footer>
+          <footer className="pt-10 border-t border-border text-center text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+            © G-Club Valorant Admin System | All accounts remain in pool when unlinked.
+          </footer>
+        </div>
+      </div>
     </div>
   );
 }
