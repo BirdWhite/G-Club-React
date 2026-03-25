@@ -28,6 +28,7 @@ export function startGamePostCleanup() {
       const { data: fullPosts, error: fullError } = await supabase
         .from('GamePost')
         .select('id, title, startTime, status, isFull')
+        .eq('status', 'OPEN')
         .eq('isFull', true)
         .lte('startTime', currentTime.toISOString());
 
