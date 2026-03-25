@@ -38,6 +38,7 @@ export interface MatchParticipation {
   kast?: number | null;
   damageDeltaPerRound?: number;
   roundWinPercentage?: number;
+  trackerScore?: number;
 }
 
 export interface ParticipantWithAccount {
