@@ -12,11 +12,13 @@ export async function GET(request: Request) {
   const forwardedHost = request.headers.get('x-forwarded-host')
   const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
 
+  const envSiteUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL;
   let baseUrl = origin
-  if (forwardedHost) {
+
+  if (envSiteUrl) {
+    baseUrl = envSiteUrl.replace(/\/$/, '')
+  } else if (forwardedHost) {
     baseUrl = `${forwardedProto}://${forwardedHost}`
-  } else if (process.env.NEXT_PUBLIC_SITE_URL) {
-    baseUrl = process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
   }
 
   // OAuth 에러가 있는 경우

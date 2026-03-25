@@ -8,21 +8,27 @@ function getRedirectUrl(request: NextRequest, path: string): URL {
   // Nginx 등 리버스 프록시 환경에서 원래 호스트와 프로토콜 복원
   const forwardedHost = request.headers.get('x-forwarded-host');
   const forwardedProto = request.headers.get('x-forwarded-proto');
+  
+  // 환경변수에 설정된 사이트 URL이 있으면 우선 사용 (localhost 방지)
+  const envSiteUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL;
 
-  if (forwardedHost) {
-    url.host = forwardedHost;
-    url.protocol = forwardedProto ? `${forwardedProto}:` : url.protocol;
-    url.port = ''; // 호스트에 포트가 포함되어 있을 수 있으므로 초기화
-  } else if (process.env.NEXT_PUBLIC_SITE_URL) {
-    // 환경변수에 설정된 사이트 URL이 있으면 우선 사용 (localhost 방지)
+  if (envSiteUrl) {
     try {
-      const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL);
+      const siteUrl = new URL(envSiteUrl);
       url.host = siteUrl.host;
       url.protocol = siteUrl.protocol;
-      url.port = siteUrl.port;
+      // host에 포트가 포함되어 있으면 port는 자동으로 설정되지만 명시적으로 설정
+      if (siteUrl.port) {
+        url.port = siteUrl.port;
+      }
     } catch (e) {
-      console.error('Invalid NEXT_PUBLIC_SITE_URL:', e);
+      console.error('Invalid site URL environment variable:', e);
     }
+  } else if (forwardedHost) {
+    url.host = forwardedHost;
+    url.protocol = forwardedProto ? `${forwardedProto}:` : url.protocol;
+    // forwardedHost에 포트가 포함되어 있지 않고 원래 URL에 포트가 있다면 유지 시도
+    // 단, request.nextUrl.port가 있으면 이미 url.port에 복제되어 있음
   }
 
   return url;

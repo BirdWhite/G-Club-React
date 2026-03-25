@@ -50,14 +50,43 @@ export async function getGlobalPerformanceDistributions() {
   });
 
   if (allParticipations.length === 0) {
-    return { allAcs: [], allKast: [], allDd: [], allWr: [] };
+    return { allAcs: [], allKast: [], allDd: [], allWr: [], allMatchTrackerScores: [] };
   }
 
+  const allAcs = allParticipations.map(p => p.score / Math.max(1, p.totalRounds));
+  const allKast = allParticipations.map(p => p.kast || 0);
+  const allDd = allParticipations.map(p => p.damageDeltaPerRound || 0);
+  const allWr = allParticipations.map(p => p.roundWinPercentage || 0);
+
+  // 각 지표별 백분위 분포를 미리 계산하여 트래커 스코어 분포 산출
+  const getAllPs = (values: number[]) => {
+    const sorted = [...values].sort((a, b) => a - b);
+    return values.map(v => {
+      let low = 0, high = sorted.length;
+      while (low < high) {
+        const mid = (low + high) >>> 1;
+        if (sorted[mid] <= v) low = mid + 1;
+        else high = mid;
+      }
+      return (low / sorted.length) * 100;
+    });
+  };
+
+  const acsPs = getAllPs(allAcs);
+  const kastPs = getAllPs(allKast);
+  const ddPs = getAllPs(allDd);
+  const wrPs = getAllPs(allWr);
+
+  const allMatchTrackerScores = allAcs.map((_, i) => 
+    Math.round((acsPs[i] * 3) + (kastPs[i] * 3) + (ddPs[i] * 2) + (wrPs[i] * 2))
+  );
+
   return {
-    allAcs: allParticipations.map(p => p.score / Math.max(1, p.totalRounds)),
-    allKast: allParticipations.map(p => p.kast || 0),
-    allDd: allParticipations.map(p => p.damageDeltaPerRound || 0),
-    allWr: allParticipations.map(p => p.roundWinPercentage || 0)
+    allAcs,
+    allKast,
+    allDd,
+    allWr,
+    allMatchTrackerScores
   };
 }
 
@@ -178,11 +207,10 @@ export async function recalculateTrackerScores() {
 
   if (results.length === 0) return;
 
-  // 4. 전체 유저 중 상위 % (Top Percentage) 계산
-  // 트래커 스코어 기준 (유저 간 상대 평가)
-  const allTrackerScores = results.map(r => r.trackerScore);
+  // 4. 전체 매치 분포 중 상위 % (Top Percentage) 계산
+  // 매치 트래커 스코어 분포 기준 (다른 지표들과 일관성 유지)
   const resultsWithTopP = results.map(r => {
-    const scoreP = calculatePercentile(r.trackerScore, allTrackerScores);
+    const scoreP = calculatePercentile(r.trackerScore, distributions.allMatchTrackerScores);
     return {
       ...r,
       topPercentage: Math.round((100 - scoreP) * 10) / 10
@@ -240,6 +268,9 @@ export async function getMatchPerformancePercentiles(matchId: string, puuid: str
   // 6. 트래커 스코어 계산 (ACS 30%, KAST 30%, DD 20%, WR 20%)
   const trackerScore = Math.round((acsP * 3) + (kastP * 3) + (ddP * 2) + (wrP * 2));
 
+  // 7. 트래커 스코어 자체의 백분위 산출 (매치 분포 기준)
+  const trackerScoreP = calculatePercentile(trackerScore, distributions.allMatchTrackerScores);
+
   return {
     matchTrackerScore: trackerScore,
     acs: Math.round(acs),
@@ -250,8 +281,42 @@ export async function getMatchPerformancePercentiles(matchId: string, puuid: str
       acs: acsP,
       kast: kastP,
       damageDelta: ddP,
-      roundWinRate: wrP
+      roundWinRate: wrP,
+      matchTrackerScore: trackerScoreP
     }
   };
+}
+
+/**
+ * 특정 매치의 모든 참여자에 대한 트래커 스코어를 계산하여 반환합니다.
+ */
+export async function getMatchParticipantsScores(matchId: string) {
+  const participants = await prisma.valorantMatchParticipation.findMany({
+    where: { matchId },
+  });
+
+  if (participants.length === 0) return {};
+
+  const distributions = await getGlobalPerformanceDistributions();
+  if (distributions.allAcs.length === 0) return {};
+
+  const results: Record<string, number> = {};
+
+  participants.forEach(target => {
+    const acs = target.score / Math.max(1, target.totalRounds);
+    const kast = target.kast || 0;
+    const dd = target.damageDeltaPerRound || 0;
+    const wr = target.roundWinPercentage || 0;
+
+    const acsP = calculatePercentile(acs, distributions.allAcs);
+    const kastP = calculatePercentile(kast, distributions.allKast);
+    const ddP = calculatePercentile(dd, distributions.allDd);
+    const wrP = calculatePercentile(wr, distributions.allWr);
+
+    const trackerScore = Math.round((acsP * 3) + (kastP * 3) + (ddP * 2) + (wrP * 2));
+    results[target.puuid] = trackerScore;
+  });
+
+  return results;
 }
 

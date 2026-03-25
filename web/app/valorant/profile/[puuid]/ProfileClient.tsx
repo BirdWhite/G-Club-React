@@ -9,9 +9,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
-import { RefreshCw, ChevronLeft, Sparkle } from 'lucide-react';
+import { RefreshCw, ChevronLeft } from 'lucide-react';
+import { TrackerScoreBadge } from '@/components/valorant/TrackerScoreBadge';
+import { MatchCard } from './MatchCard';
 
-interface MatchInfo {
+export interface MatchInfo {
   id: string;
   isOfficial?: boolean;
   gameStartAt: string | Date;
@@ -22,7 +24,7 @@ interface MatchInfo {
   overrideByUser?: { name: string } | null;
 }
 
-interface MatchParticipation {
+export interface MatchParticipation {
   id: string;
   isWin: boolean;
   kills: number;
@@ -38,7 +40,7 @@ interface MatchParticipation {
   roundWinPercentage?: number;
 }
 
-interface ParticipantWithAccount {
+export interface ParticipantWithAccount {
   id: string;
   puuid: string;
   characterId: string;
@@ -52,13 +54,14 @@ interface ParticipantWithAccount {
     tagLine: string;
     currentTier?: string | null;
   };
+  matchTrackerScore?: number;
 }
 
-interface FullMatchInfo extends MatchInfo {
+export interface FullMatchInfo extends MatchInfo {
   participants: ParticipantWithAccount[];
 }
 
-interface MatchPerformance {
+export interface MatchPerformance {
   matchTrackerScore: number;
   acs: number;
   kast: number;
@@ -69,6 +72,7 @@ interface MatchPerformance {
     kast: number;
     damageDelta: number;
     roundWinRate: number;
+    matchTrackerScore: number;
   };
 }
 
@@ -96,11 +100,12 @@ interface ProfileClientProps {
     damageDeltaPercentile?: number | null;
     winRatePercentile?: number | null;
   } | null;
+  connectedUser: { name: string } | null;
 }
 
-export default function ProfileClient({ account, participations, internalTierInfo }: ProfileClientProps) {
+export default function ProfileClient({ account, participations, internalTierInfo, connectedUser }: ProfileClientProps) {
   const [isSyncing, setIsSyncing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'official'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'official'>('official');
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
   const [matchDetailsCache, setMatchDetailsCache] = useState<Record<string, FullMatchInfo>>({});
 
@@ -251,17 +256,6 @@ export default function ProfileClient({ account, participations, internalTierInf
     ? (officialMatches.reduce((acc, p) => acc + (p.damageDeltaPerRound || 0), 0) / officialMatches.length).toFixed(1)
     : 0;
 
-  // 내전 티어 라벨 설정
-  const getInternalTierLabel = (tier: string) => {
-    if (tier === 'unplaced') return { label: '배치 중', color: 'text-slate-400' };
-    return { 
-      label: `Tier ${tier}`, 
-      color: tier === '0' ? 'text-yellow-400' : tier === '1' ? 'text-red-400' : tier === '2' ? 'text-emerald-400' : 'text-indigo-400'
-    };
-  };
-
-  const internalTier = internalTierInfo ? getInternalTierLabel(internalTierInfo.tier) : null;
-
   // 백분율 색상 및 포맷팅 헬퍼
   const renderPercentile = (percentile: number | null | undefined) => {
     if (percentile === null || percentile === undefined) return null;
@@ -287,47 +281,14 @@ export default function ProfileClient({ account, participations, internalTierInf
       </Link>
 
       {/* Profile Header */}
-      <div className="card flex flex-col md:flex-row items-center justify-between p-8 relative overflow-hidden group border-primary/20">
+      <div className="card flex flex-col md:flex-row items-center justify-between p-5 md:p-8 relative overflow-hidden group border-primary/20">
         {/* 배경 효과 */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-primary/10 transition-colors duration-700" />
         
-        <div className="relative flex flex-col md:flex-row items-center gap-8">
-          {/* 아바타 영역 (라이엇 카드 이미지 + 트래커 점수 프로그레스 바) */}
-          <div className="relative w-28 h-28 flex items-center justify-center">
-            {internalTierInfo && (
-              <svg className="absolute inset-0 w-full h-full -rotate-90 transform">
-                {/* 배경 원 */}
-                <circle
-                  cx="56"
-                  cy="56"
-                  r="50"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="transparent"
-                  className="text-secondary/50"
-                />
-                {/* 진행 원 */}
-                <circle
-                  cx="56"
-                  cy="56"
-                  r="50"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="transparent"
-                  strokeDasharray={2 * Math.PI * 50}
-                  strokeDashoffset={2 * Math.PI * 50 * (1 - Math.min(1000, internalTierInfo.trackerScore || 0) / 1000)}
-                  strokeLinecap="round"
-                  className={`transition-all duration-1000 ease-out ${
-                    (internalTierInfo.trackerScore || 0) < 200 ? 'text-slate-400' :
-                    (internalTierInfo.trackerScore || 0) < 400 ? 'text-blue-400' :
-                    (internalTierInfo.trackerScore || 0) < 600 ? 'text-emerald-400' :
-                    (internalTierInfo.trackerScore || 0) < 800 ? 'text-yellow-400' :
-                    'text-red-500'
-                  }`}
-                />
-              </svg>
-            )}
-            <div className="relative w-24 h-24 rounded-3xl bg-secondary border border-border flex items-center justify-center shadow-inner overflow-hidden group/avatar">
+        <div className="relative flex items-center gap-5 sm:gap-8 w-full">
+          {/* 아바타 영역 (라이엇 카드 이미지) */}
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0">
+            <div className="relative w-full h-full rounded-xl sm:rounded-3xl bg-secondary border border-border flex items-center justify-center shadow-inner overflow-hidden group/avatar">
               {account.cardImageUrl ? (
                 <Image 
                   src={account.cardImageUrl} 
@@ -337,48 +298,30 @@ export default function ProfileClient({ account, participations, internalTierInf
                   unoptimized
                 />
               ) : (
-                <span className="text-4xl font-black text-foreground group-hover/avatar:scale-110 transition-transform duration-300">
+                <span className="text-2xl sm:text-4xl font-black text-foreground group-hover/avatar:scale-110 transition-transform duration-300">
                   {account.gameName.charAt(0).toUpperCase()}
                 </span>
               )}
-              {/* Sparkles Overlay (Optional but nice for higher scores) */}
-              {(internalTierInfo?.trackerScore || 0) >= 600 && (
-                <div className="absolute top-1 right-1 z-10 pointer-events-none">
-                  <Sparkle className={`w-4 h-4 animate-pulse ${
-                    (internalTierInfo?.trackerScore || 0) < 800 ? 'text-yellow-400' : 'text-red-500'
-                  }`} />
-                </div>
-              )}
             </div>
-            {account.isActive && (
-              <div className="absolute top-1 right-1 w-6 h-6 bg-primary rounded-full border-2 border-background flex items-center justify-center shadow-lg z-20">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              </div>
-            )}
           </div>
 
-          <div className="text-center md:text-left">
-            <h1 className="text-4xl font-black flex flex-wrap items-center justify-center md:justify-start gap-2 text-foreground tracking-tighter">
+          <div className="flex-1 min-w-0 text-left">
+            <h1 className="text-2xl sm:text-4xl font-black flex flex-wrap items-center gap-x-2 text-foreground tracking-tighter mb-2 sm:mb-4">
               {account.gameName} 
-              <span className="text-muted-foreground/40 text-2xl font-bold tracking-normal">#{account.tagLine}</span>
+              <span className="text-muted-foreground/40 text-lg sm:text-2xl font-bold tracking-normal">#{account.tagLine}</span>
             </h1>
             
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               {/* 라이엇 티어 */}
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-lg border border-border">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Riot Rank</span>
-                <span className="text-sm font-bold text-foreground">{account.currentTier || 'Unranked'}</span>
+              <div className="flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 bg-secondary/50 rounded-lg border border-border">
+                <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-widest">Riot</span>
+                <span className="text-xs sm:text-sm font-bold text-foreground">{account.currentTier || 'Unranked'}</span>
               </div>
 
-              {/* 내전 티어 (G-Club) */}
-              {internalTierInfo && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
-                  <span className="text-[10px] font-black text-primary uppercase tracking-widest italic">내전 티어</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-sm font-black ${internalTier?.color && internalTier.color.replace('slate', 'muted-foreground').replace('indigo', 'primary')}`}>{internalTier?.label}</span>
-                    <span className="w-1 h-1 rounded-full bg-border" />
-                    <span className="text-sm font-bold text-foreground">{internalTierInfo.mmr} MMR</span>
-                  </div>
+              {/* 연결된 사용자 */}
+              {connectedUser && (
+                <div className="flex items-center px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
+                  <span className="text-xs sm:text-sm font-black text-primary uppercase tracking-wider">{connectedUser.name}</span>
                 </div>
               )}
             </div>
@@ -389,7 +332,7 @@ export default function ProfileClient({ account, participations, internalTierInf
           <Button 
             onClick={handleSync} 
             disabled={isSyncing || cooldown > 0 || !account.isActive}
-            className="btn-primary px-8 py-6 h-auto text-lg"
+            className="btn-primary px-6 py-4 md:px-8 md:py-6 h-auto text-base md:text-lg w-full md:w-auto"
           >
             {isSyncing ? (
               <div className="flex items-center gap-2">
@@ -398,7 +341,17 @@ export default function ProfileClient({ account, participations, internalTierInf
               </div>
             ) : (cooldown > 0 ? `재시도 (${cooldown}초)` : (!account.isActive ? '갱신 비활성' : '전적 동기화'))}
           </Button>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Henrik API v4</p>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            {account.lastSyncRequestedAt 
+              ? `최근 동기화: ${new Date(account.lastSyncRequestedAt).toLocaleString('ko-KR', {
+                  month: 'numeric',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                })}`
+              : '동기화 기록 없음'}
+          </p>
         </div>
       </div>
 
@@ -418,55 +371,61 @@ export default function ProfileClient({ account, participations, internalTierInf
       {/* Tabs */}
       <div className="flex bg-secondary p-1 rounded-xl border border-border w-fit">
         <button 
-          onClick={() => setActiveTab('all')}
-          className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'all' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
-        >
-          전체 전적
-        </button>
-        <button 
           onClick={() => setActiveTab('official')}
-          className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'official' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'official' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
         >
           내전 기록
+        </button>
+        <button 
+          onClick={() => setActiveTab('all')}
+          className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'all' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          전체 전적
         </button>
       </div>
       {/* Tab Content */}
       <div className="py-2">
         {activeTab === 'official' && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <div className="card p-5 bg-primary/5 border-primary/20 text-center shadow-md hover:bg-primary/10 transition-colors">
-              <div className="text-primary text-sm mb-1 font-medium flex items-center justify-center gap-1.5">
-                <Sparkle className="w-3.5 h-3.5" />
-                트래커 점수
+          <div className="card overflow-hidden bg-secondary/30 border-border/50 shadow-md mb-6 p-0">
+            <div className="grid grid-cols-2 md:grid-cols-5 divide-x divide-y md:divide-y-0 divide-border/50">
+              <div className="p-3 md:p-5 flex flex-row items-center justify-center gap-3 md:gap-4 bg-primary/5 hover:bg-primary/10 transition-colors col-span-2 md:col-span-1">
+                <TrackerScoreBadge 
+                  score={internalTierInfo?.trackerScore || 0} 
+                  size="sm" 
+                  className="scale-90 md:scale-100"
+                />
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="text-muted-foreground text-xs md:text-sm mb-0.5 md:mb-1 font-medium">트래커 점수</div>
+                  <div className="text-xl md:text-2xl font-bold text-foreground leading-none">{internalTierInfo?.trackerScore || 0}</div>
+                  {internalTierInfo?.topPercentage != null && (
+                    <div className="text-[9px] md:text-[10px] font-bold mt-1 text-emerald-400">Top {internalTierInfo.topPercentage}%</div>
+                  )}
+                </div>
               </div>
-              <div className="text-2xl font-bold text-foreground">{internalTierInfo?.trackerScore || 0}</div>
-              {internalTierInfo?.topPercentage != null && (
-                <div className="text-[10px] font-black text-primary mt-1 uppercase">Top {internalTierInfo.topPercentage}%</div>
-              )}
-            </div>
 
-            <div className="card p-5 bg-secondary/30 text-center shadow-md hover:bg-secondary/50 transition-colors">
-              <div className="text-muted-foreground text-sm mb-1 font-medium">라운드 승률</div>
-              <div className="text-2xl font-bold text-blue-400">{avgRoundWinRate}%</div>
-              {renderPercentile(internalTierInfo?.winRatePercentile)}
-            </div>
-            
-            <div className="card p-5 bg-secondary/30 text-center shadow-md hover:bg-secondary/50 transition-colors">
-              <div className="text-muted-foreground text-sm mb-1 font-medium">KAST</div>
-              <div className="text-2xl font-bold text-foreground">{avgKast}%</div>
-              {renderPercentile(internalTierInfo?.kastPercentile)}
-            </div>
+              <div className="p-3 md:p-5 text-center flex flex-col justify-center hover:bg-secondary/50 transition-colors">
+                <div className="text-muted-foreground text-xs md:text-sm mb-0.5 md:mb-1 font-medium">라운드 승률</div>
+                <div className="text-xl md:text-2xl font-bold text-blue-400">{avgRoundWinRate}%</div>
+                {renderPercentile(internalTierInfo?.winRatePercentile)}
+              </div>
+              
+              <div className="p-3 md:p-5 text-center flex flex-col justify-center hover:bg-secondary/50 transition-colors">
+                <div className="text-muted-foreground text-xs md:text-sm mb-0.5 md:mb-1 font-medium">KAST</div>
+                <div className="text-xl md:text-2xl font-bold text-foreground">{avgKast}%</div>
+                {renderPercentile(internalTierInfo?.kastPercentile)}
+              </div>
 
-            <div className="card p-5 bg-secondary/30 text-center shadow-md hover:bg-secondary/50 transition-colors">
-              <div className="text-muted-foreground text-sm mb-1 font-medium">ACS</div>
-              <div className="text-2xl font-bold text-foreground">{avgAcs}</div>
-              {renderPercentile(internalTierInfo?.acsPercentile)}
-            </div>
+              <div className="p-3 md:p-5 text-center flex flex-col justify-center hover:bg-secondary/50 transition-colors">
+                <div className="text-muted-foreground text-xs md:text-sm mb-0.5 md:mb-1 font-medium">ACS</div>
+                <div className="text-xl md:text-2xl font-bold text-foreground">{avgAcs}</div>
+                {renderPercentile(internalTierInfo?.acsPercentile)}
+              </div>
 
-            <div className="card p-5 bg-secondary/30 text-center shadow-md hover:bg-secondary/50 transition-colors">
-              <div className="text-muted-foreground text-sm mb-1 font-medium">DD 델타/라운드</div>
-              <div className="text-2xl font-bold text-emerald-400">{avgDamageDelta}</div>
-              {renderPercentile(internalTierInfo?.damageDeltaPercentile)}
+              <div className="p-3 md:p-5 text-center flex flex-col justify-center hover:bg-secondary/50 transition-colors">
+                <div className="text-muted-foreground text-xs md:text-sm mb-0.5 md:mb-1 font-medium">DDΔ/라운드</div>
+                <div className="text-xl md:text-2xl font-bold text-emerald-400">{avgDamageDelta}</div>
+                {renderPercentile(internalTierInfo?.damageDeltaPercentile)}
+              </div>
             </div>
           </div>
         )}
@@ -489,8 +448,6 @@ export default function ProfileClient({ account, participations, internalTierInf
             }
 
             return matchesToRender.map((p) => {
-              const isExpanded = expandedMatchId === p.match.id;
-              const matchDetails = matchDetailsCache[p.match.id];
               const gameStartAt = new Date(p.match.gameStartAt);
               const isCurrentYear = gameStartAt.getFullYear() === new Date().getFullYear();
               
@@ -507,253 +464,25 @@ export default function ProfileClient({ account, participations, internalTierInf
               return (
               <div key={p.id} className="space-y-4">
                 {showDateDivider && (
-                  <div className="flex items-center gap-3 pt-8 pb-3 first:pt-2">
-                    <span className="text-lg font-black text-slate-100 tracking-tighter">
+                  <div className="flex items-center gap-2 md:gap-3 pt-6 md:pt-8 pb-3 first:pt-2">
+                    <span className="text-base md:text-lg font-black text-slate-100 tracking-tighter">
                       {matchDate}
                     </span>
                     <div className="h-px flex-1 bg-gradient-to-r from-slate-700 to-transparent opacity-40"></div>
                   </div>
                 )}
-                <div className="card flex flex-col overflow-hidden border-border/50 shadow hover:shadow-primary/10 transition-shadow">
-                  <div 
-                    onClick={() => handleMatchClick(p.match.id)}
-                    className={`flex flex-col md:flex-row p-5 border-l-4 cursor-pointer transition-colors ${p.isWin ? 'border-l-blue-500 bg-blue-500/5 hover:bg-blue-500/10' : 'border-l-red-500 bg-red-500/5 hover:bg-red-500/10'} ${isExpanded ? 'bg-secondary/50' : ''}`}
-                  >
-                     <div className="flex-1 flex flex-col justify-center">
-                      <div className="flex items-center gap-3">
-                         <span className={`text-sm font-bold px-2 py-0.5 rounded ${p.isWin ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'}`}>
-                           {p.isWin ? '승리' : '패배'}
-                         </span>
-                         <div className="flex items-center gap-3">
-                           <div className="w-12 h-12 flex items-center justify-center bg-secondary rounded-full overflow-hidden border-2 border-border shadow-inner">
-                             {agentMap[p.characterId] ? (
-                               <Image src={agentMap[p.characterId].icon} alt={agentMap[p.characterId].name} width={48} height={48} className="object-cover" />
-                             ) : (
-                               <div className="text-[10px] font-bold text-muted-foreground">?</div>
-                             )}
-                           </div>
-                           <div>
-                             <div className="font-bold text-xl text-foreground">
-                               {agentMap[p.characterId]?.name || 'Unknown'}
-                             </div>
-                           </div>
-                         </div>
-                         {p.match.isManualOverride && p.match.overrideByUser && (
-                           <div className="text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex items-center gap-1 ml-2">
-                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                             {p.match.overrideByUser.name}님이 수동으로 변경함
-                           </div>
-                         )}
-                       </div>
-                      <div className="text-muted-foreground text-sm mt-3 flex items-center gap-3 flex-wrap">
-                        <div className="flex items-center gap-1.5 font-medium text-foreground bg-secondary px-2 py-0.5 rounded">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-map"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg>
-                           {mapMap[p.match.mapId]?.name || 'Unknown Map'}
-                        </div>
-                        <div className="font-bold text-foreground tracking-wider">
-                          {p.match.blueScore} : {p.match.redScore}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-muted-foreground/60">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-calendar-days"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
-                          {new Date(p.match.gameStartAt).toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-5">
-                      <div className="flex flex-col items-end justify-center">
-                        <div className="font-extrabold text-2xl tracking-tight text-foreground mb-2">
-                          {p.kills} <span className="text-muted-foreground/40 font-normal mx-1">/</span> <span className="text-red-400">{p.deaths}</span> <span className="text-muted-foreground/40 font-normal mx-1">/</span> {p.assists}
-                        </div>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={(e) => handleToggleOfficial(p.match.id, !!p.match.isOfficial, e)}
-                            className={`text-[10px] font-bold px-2.5 py-1 rounded transition-all border ${p.match.isOfficial ? 'bg-primary/10 border-primary/50 text-primary hover:bg-primary/20' : 'bg-secondary/50 border-border text-muted-foreground hover:bg-secondary'}`}
-                          >
-                            {p.match.isOfficial ? '내전' : '커스텀'}
-                          </button>
-                          <div className="text-muted-foreground text-sm font-medium bg-secondary/50 px-3 py-1 rounded-full border border-border">
-                            ACS: <span className="text-foreground">{Math.round(p.score / Math.max(1, p.match.blueScore + p.match.redScore))}</span>
-                          </div>
-                          {p.match.isOfficial && p.mmrDelta != null && (
-                            <div className="text-muted-foreground text-sm font-medium bg-secondary/50 px-3 py-1 rounded-full border border-border flex items-center gap-1.5">
-                              MMR: <span className={p.mmrDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                                {p.mmrDelta > 0 ? `+${p.mmrDelta}` : p.mmrDelta}
-                              </span>
-                              <span className="text-xs text-muted-foreground/60 mx-1">→</span>
-                              <span className="text-primary font-bold">{p.mmrSnapshot}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className={`text-muted-foreground/40 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-primary' : 'group-hover:text-muted-foreground'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Dropdown Content */}
-                  {isExpanded && (
-                    <div className="bg-secondary/30 p-5 border-t border-border">
-                      {isLoadingMatch && !matchDetails ? (
-                        <div className="flex justify-center py-8 text-muted-foreground">
-                          <RefreshCw className="w-6 h-6 animate-spin" />
-                        </div>
-                      ) : matchDetails ? (
-                        <div className="space-y-4">
-                          {/* Match Performance Stats (Individual) */}
-                          {matchPerformanceCache[p.match.id] && (
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-2">
-                              <div className="card p-4 bg-primary/10 border-primary/20 text-center shadow-sm group/card hover:bg-primary/20 transition-colors">
-                                <div className="text-primary text-[10px] mb-1 font-bold uppercase tracking-wider opacity-70">매치 트래커 스코어</div>
-                                <div className="text-2xl font-black text-foreground group-hover/card:scale-110 transition-transform">{matchPerformanceCache[p.match.id].matchTrackerScore}</div>
-                              </div>
-                              
-                              <div className="card p-4 bg-secondary/50 border-border/50 text-center shadow-sm hover:border-primary/30 transition-colors">
-                                <div className="text-muted-foreground text-[10px] mb-1 font-bold uppercase tracking-wider">라운드 승률</div>
-                                <div className="text-xl font-black text-blue-400">{matchPerformanceCache[p.match.id].roundWinRate}%</div>
-                                {(() => {
-                                  const topP = Math.round((100 - matchPerformanceCache[p.match.id].percentiles.roundWinRate) * 10) / 10;
-                                  return (
-                                    <div className={`text-[10px] font-black mt-1 ${topP <= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                      TOP {topP}%
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-
-                              <div className="card p-4 bg-secondary/50 border-border/50 text-center shadow-sm hover:border-primary/30 transition-colors">
-                                <div className="text-muted-foreground text-[10px] mb-1 font-bold uppercase tracking-wider">KAST</div>
-                                <div className="text-xl font-black text-foreground">{matchPerformanceCache[p.match.id].kast}%</div>
-                                {(() => {
-                                  const topP = Math.round((100 - matchPerformanceCache[p.match.id].percentiles.kast) * 10) / 10;
-                                  return (
-                                    <div className={`text-[10px] font-black mt-1 ${topP <= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                      TOP {topP}%
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-
-                              <div className="card p-4 bg-secondary/50 border-border/50 text-center shadow-sm hover:border-primary/30 transition-colors">
-                                <div className="text-muted-foreground text-[10px] mb-1 font-bold uppercase tracking-wider">ACS</div>
-                                <div className="text-xl font-black text-foreground">{matchPerformanceCache[p.match.id].acs}</div>
-                                {(() => {
-                                  const topP = Math.round((100 - matchPerformanceCache[p.match.id].percentiles.acs) * 10) / 10;
-                                  return (
-                                    <div className={`text-[10px] font-black mt-1 ${topP <= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                      TOP {topP}%
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-
-                              <div className="card p-4 bg-secondary/50 border-border/50 text-center shadow-sm hover:border-primary/30 transition-colors">
-                                <div className="text-muted-foreground text-[10px] mb-1 font-bold uppercase tracking-wider text-wrap">DD 델타</div>
-                                <div className="text-xl font-black text-emerald-400">{matchPerformanceCache[p.match.id].damageDelta}</div>
-                                {(() => {
-                                  const topP = Math.round((100 - matchPerformanceCache[p.match.id].percentiles.damageDelta) * 10) / 10;
-                                  return (
-                                    <div className={`text-[10px] font-black mt-1 ${topP <= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                      TOP {topP}%
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Match Score */}
-                          <div className="flex items-center justify-center gap-4 text-xl font-black bg-background py-3 rounded-xl border border-border shadow-inner">
-                            <span className="text-blue-500">BLUE {matchDetails.blueScore}</span>
-                            <span className="text-muted-foreground/40 font-bold mx-2">VS</span>
-                            <span className="text-red-500">{matchDetails.redScore} RED</span>
-                          </div>
-                          
-                          {/* Participants Table */}
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            {/* Blue Team */}
-                            <div className="bg-blue-950/30 border border-blue-900/40 rounded-lg overflow-hidden">
-                              <div className="bg-blue-900/50 py-2 px-3 border-b border-blue-900/40">
-                                <h3 className="text-blue-400 font-bold text-sm tracking-widest text-center">BLUE TEAM</h3>
-                              </div>
-                              <div className="p-2 space-y-1">
-                                {matchDetails.participants.filter((pt: ParticipantWithAccount) => pt.team === 'Blue').map((pt: ParticipantWithAccount) => (
-                                  <Link 
-                                    key={pt.id} 
-                                    href={`/valorant/profile/${pt.puuid}`}
-                                    className={`flex items-center justify-between p-2 rounded transition-colors ${pt.puuid === account.puuid ? 'bg-blue-800/60 border border-blue-500/50 shadow-sm' : 'hover:bg-slate-800/50'}`}
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-md overflow-hidden border border-slate-700/50">
-                                        {agentMap[pt.characterId] ? (
-                                          <Image src={agentMap[pt.characterId].icon} alt={agentMap[pt.characterId].name} width={40} height={40} />
-                                        ) : (
-                                          <div className="text-[10px] font-bold text-slate-500">AGENT</div>
-                                        )}
-                                      </div>
-                                      <div>
-                                        <div className="font-semibold text-sm text-white">{pt.account.gameName}</div>
-                                        <div className="text-[10px] text-slate-500 uppercase tracking-tighter">
-                                          {agentMap[pt.characterId]?.name || 'Unknown'}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <div className="text-sm font-medium text-slate-300">
-                                        {pt.kills}/{pt.deaths}/{pt.assists}
-                                      </div>
-                                      <div className="text-xs text-slate-500">ACS: {Math.round(pt.score / Math.max(1, matchDetails.blueScore + matchDetails.redScore))}</div>
-                                    </div>
-                                  </Link>
-                                ))}
-                              </div>
-                            </div>
-    
-                            {/* Red Team */}
-                            <div className="bg-red-950/30 border border-red-900/40 rounded-lg overflow-hidden">
-                              <div className="bg-red-900/50 py-2 px-3 border-b border-red-900/40">
-                                <h3 className="text-red-400 font-bold text-sm tracking-widest text-center">RED TEAM</h3>
-                              </div>
-                              <div className="p-2 space-y-1">
-                                {matchDetails.participants.filter((pt: ParticipantWithAccount) => pt.team === 'Red').map((pt: ParticipantWithAccount) => (
-                                  <Link 
-                                    key={pt.id} 
-                                    href={`/valorant/profile/${pt.puuid}`}
-                                    className={`flex items-center justify-between p-2 rounded transition-colors ${pt.puuid === account.puuid ? 'bg-red-800/60 border border-blue-500/50 shadow-sm' : 'hover:bg-slate-800/50'}`}
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-md overflow-hidden border border-slate-700/50">
-                                        {agentMap[pt.characterId] ? (
-                                          <Image src={agentMap[pt.characterId].icon} alt={agentMap[pt.characterId].name} width={40} height={40} />
-                                        ) : (
-                                          <div className="text-[10px] font-bold text-slate-500">AGENT</div>
-                                        )}
-                                      </div>
-                                      <div>
-                                        <div className="font-semibold text-sm text-white">{pt.account.gameName}</div>
-                                        <div className="text-[10px] text-slate-500 uppercase tracking-tighter">
-                                          {agentMap[pt.characterId]?.name || 'Unknown'}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <div className="text-sm font-medium text-slate-300">
-                                        {pt.kills}/{pt.deaths}/{pt.assists}
-                                      </div>
-                                      <div className="text-xs text-slate-500">ACS: {Math.round(pt.score / Math.max(1, matchDetails.blueScore + matchDetails.redScore))}</div>
-                                    </div>
-                                  </Link>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-4 text-slate-500">상세 정보를 불러오지 못했습니다.</div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <MatchCard 
+                  participation={p}
+                  isExpanded={expandedMatchId === p.match.id}
+                  onMatchClick={handleMatchClick}
+                  onToggleOfficial={handleToggleOfficial}
+                  agentMap={agentMap}
+                  mapMap={mapMap}
+                  matchDetails={matchDetailsCache[p.match.id]}
+                  isLoadingMatch={isLoadingMatch}
+                  matchPerformance={matchPerformanceCache[p.match.id]}
+                  accountPuuid={account.puuid}
+                />
               </div>
               );
             });

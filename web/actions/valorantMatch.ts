@@ -3,7 +3,7 @@
 import prisma from '@/lib/database/prisma';
 import { getCurrentUser } from '@/lib/database/supabase/auth';
 import { revalidatePath } from 'next/cache';
-import { getMatchPerformancePercentiles, recalculateTrackerScores } from '@/lib/valorant/trackerPercentile';
+import { getMatchPerformancePercentiles, recalculateTrackerScores, getMatchParticipantsScores } from '@/lib/valorant/trackerPercentile';
 
 
 export async function getMatchDetails(matchId: string) {
@@ -38,9 +38,22 @@ export async function getMatchDetails(matchId: string) {
       return { success: false, error: 'Match not found' };
     }
 
+
+    // 모든 참여자의 트래커 스코어 계산
+    const scores = await getMatchParticipantsScores(matchId);
+    
+    // 참여자 데이터에 스코어 병합
+    const participantsWithScores = match.participants.map(p => ({
+      ...p,
+      matchTrackerScore: scores[p.puuid] || 0
+    }));
+
     return {
       success: true,
-      data: match
+      data: {
+        ...match,
+        participants: participantsWithScores
+      }
     };
   } catch (error) {
     console.error('getMatchDetails error:', error);

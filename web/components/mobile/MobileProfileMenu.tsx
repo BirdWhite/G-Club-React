@@ -18,7 +18,9 @@ interface MenuItem {
   onClick?: () => void;
   isButton?: boolean;
   isLogout?: boolean;
+  isInstall?: boolean;
 }
+
 
 export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
   const router = useRouter();
@@ -81,6 +83,16 @@ export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
         </svg>
       )
     }] : []),
+    {
+      href: '/pwa-install',
+      label: '앱 설치',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+      ),
+      isInstall: true
+    },
     {
       onClick: handleSignOut,
       label: '로그아웃',
@@ -154,14 +166,16 @@ export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
                 className={`w-full flex items-center justify-between p-4 transition-colors duration-200 text-left ${
                   item.isLogout 
                     ? 'hover:bg-red-500/10' 
+                    : item.isInstall
+                    ? 'hover:bg-blue-500/10'
                     : 'hover:bg-cyber-black-100/50'
                 }`}
               >
                 <div className="flex items-center space-x-4">
-                  <div className={item.isLogout ? 'text-destructive' : 'text-cyber-gray'}>
+                  <div className={item.isLogout ? 'text-destructive' : item.isInstall ? 'text-blue-500' : 'text-cyber-gray'}>
                     {item.icon}
                   </div>
-                  <span className={`font-medium text-base ${item.isLogout ? 'text-danger' : 'text-cyber-gray'}`}>
+                  <span className={`font-medium text-base ${item.isLogout ? 'text-danger' : item.isInstall ? 'text-blue-500' : 'text-cyber-gray'}`}>
                     {item.label}
                   </span>
                 </div>

@@ -5,8 +5,9 @@ import prisma from '@/lib/database/prisma';
 import { createServerClient } from '@/lib/database/supabase';
 import { getUserProfile } from '@/lib/user';
 import { isAdmin_Server } from '@/lib/database/auth/serverAuth';
-import { Shield, Plus, Gamepad2, Zap, Trophy, Sparkle } from 'lucide-react';
+import { Shield, Plus, Gamepad2, Zap, Trophy } from 'lucide-react';
 import { getUserValorantTier } from '@/lib/valorant/valorantTier';
+import { TrackerScoreBadge } from '@/components/valorant/TrackerScoreBadge';
 
 // 티어 색상 맵 (Riot 티어 기준)
 function getTierColor(tier: string | null | undefined): string {
@@ -89,15 +90,7 @@ export default async function ValorantHubPage() {
             </div>
 
             {/* 상단 버튼군 */}
-            <div className="flex items-center gap-3 self-start sm:self-auto">
-              <Link
-                href="/valorant/leaderboard"
-                className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors font-semibold text-sm group"
-              >
-                <Trophy className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                순위표
-              </Link>
-
+            <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
               {adminUser && (
                 <Link
                   href="/valorant/admin"
@@ -107,110 +100,70 @@ export default async function ValorantHubPage() {
                   관리
                 </Link>
               )}
+
+              <Link
+                href="/valorant/leaderboard"
+                className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors font-semibold text-sm group"
+              >
+                <Trophy className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                순위표
+              </Link>
             </div>
           </div>
 
           {/* 내전 MMR 요약 카드 */}
           {internalTierInfo && (
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2 p-6 card flex flex-col sm:flex-row items-center justify-between gap-6">
-                <div className="flex items-center gap-6">
-                  {/* 트래커 점수 원형 프로그레스 바 */}
-                  <div className="relative w-24 h-24 flex items-center justify-center">
-                    <svg className="w-full h-full -rotate-90 transform">
-                      {/* 배경 원 */}
-                      <circle
-                        cx="48"
-                        cy="48"
-                        r="42"
-                        stroke="currentColor"
-                        strokeWidth="6"
-                        fill="transparent"
-                        className="text-secondary"
-                      />
-                      {/* 진행 원 */}
-                      <circle
-                        cx="48"
-                        cy="48"
-                        r="42"
-                        stroke="currentColor"
-                        strokeWidth="6"
-                        fill="transparent"
-                        strokeDasharray={2 * Math.PI * 42}
-                        strokeDashoffset={2 * Math.PI * 42 * (1 - Math.min(1000, internalTierInfo.trackerScore || 0) / 1000)}
-                        strokeLinecap="round"
-                        className={`transition-all duration-1000 ease-out ${(internalTierInfo.trackerScore || 0) < 200 ? 'text-slate-400' :
-                            (internalTierInfo.trackerScore || 0) < 400 ? 'text-blue-400' :
-                              (internalTierInfo.trackerScore || 0) < 600 ? 'text-emerald-400' :
-                                (internalTierInfo.trackerScore || 0) < 800 ? 'text-yellow-400' :
-                                  'text-red-500'
-                          }`}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className={`w-16 h-16 rounded-full bg-background border border-border flex items-center justify-center shadow-inner ${(internalTierInfo.trackerScore || 0) < 200 ? 'text-slate-400/20' :
-                          (internalTierInfo.trackerScore || 0) < 400 ? 'text-blue-400/20' :
-                            (internalTierInfo.trackerScore || 0) < 600 ? 'text-emerald-400/20' :
-                              (internalTierInfo.trackerScore || 0) < 800 ? 'text-yellow-400/20' :
-                                'text-red-500/20'
-                        }`}>
-                        <Sparkle className={`w-8 h-8 ${(internalTierInfo.trackerScore || 0) < 200 ? 'text-slate-400' :
-                            (internalTierInfo.trackerScore || 0) < 400 ? 'text-blue-400' :
-                              (internalTierInfo.trackerScore || 0) < 600 ? 'text-emerald-400' :
-                                (internalTierInfo.trackerScore || 0) < 800 ? 'text-yellow-400' :
-                                  'text-red-500'
-                          } drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]`} />
+            <div className="mt-8">
+              <div className="p-5 sm:p-6 card">
+                <div className="flex items-center gap-4 sm:gap-6">
+                  {/* 트래커 점수 원형 프로그레스 바 (뱃지) */}
+                  <TrackerScoreBadge 
+                    score={internalTierInfo.trackerScore || 0} 
+                    size="md" 
+                    className="flex-shrink-0"
+                  />
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1 mb-2.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">내전 티어</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${tierDisplay?.bg} ${tierDisplay?.color} border ${tierDisplay?.border}`}>
+                          {tierDisplay?.label}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end flex-shrink-0">
+                        <div className="px-1.5 py-0.5 bg-secondary/40 rounded text-[10px] font-bold text-muted-foreground whitespace-nowrap">
+                          {internalTierInfo.matchCount} 매치
+                        </div>
+                        {internalTierInfo.matchCount < 5 && (
+                          <div className="text-[8px] text-primary font-medium italic mt-0.5 whitespace-nowrap leading-none">
+                            배치 중
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">내전 티어</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${tierDisplay?.bg} ${tierDisplay?.color} border ${tierDisplay?.border}`}>
-                        {tierDisplay?.label}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="flex flex-col">
-                        <div className="text-xs font-bold text-muted-foreground mb-1">트래커 점수</div>
-                        <div className="text-3xl font-black text-primary flex items-baseline gap-2">
+
+                    <div className="flex items-center gap-4 sm:gap-8">
+                      <div className="flex flex-col items-start">
+                        <div className="text-[10px] sm:text-xs font-bold text-muted-foreground mb-1 whitespace-nowrap">트래커 점수</div>
+                        <div className="text-xl sm:text-3xl font-black text-primary flex items-baseline gap-1">
                           {internalTierInfo.trackerScore || 0}
-                          <span className="text-sm font-medium text-primary/50">pts</span>
+                          <span className="text-[10px] sm:text-sm font-medium text-primary/50">pts</span>
                         </div>
                       </div>
 
-                      <div className="w-px h-10 bg-border" />
+                      <div className="w-px h-8 bg-border/60" />
 
-                      <div className="flex flex-col">
-                        <div className="text-xs font-bold text-muted-foreground mb-1">내전 MMR</div>
-                        <div className="text-3xl font-black text-foreground flex items-baseline gap-2">
+                      <div className="flex flex-col items-start">
+                        <div className="text-[10px] sm:text-xs font-bold text-muted-foreground mb-1 whitespace-nowrap">내전 MMR</div>
+                        <div className="text-xl sm:text-3xl font-black text-foreground flex items-baseline gap-1">
                           {internalTierInfo.mmr}
-                          <span className="text-sm font-medium text-muted-foreground uppercase tracking-tighter">mmr</span>
+                          <span className="text-[10px] sm:text-sm font-medium text-muted-foreground uppercase tracking-tighter">mmr</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                <div className="text-center sm:text-right">
-                  <div className="text-xs font-bold text-muted-foreground mb-1">참여 횟수</div>
-                  <div className="text-xl font-bold text-foreground">{internalTierInfo.matchCount} <span className="text-sm text-muted-foreground">matches</span></div>
-                  {internalTierInfo.matchCount < 5 && (
-                    <div className="text-[10px] text-primary mt-1 font-medium italic">배치 완료까지 {5 - internalTierInfo.matchCount}판 남음</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-6 card border-l-4 border-l-primary flex flex-col justify-center">
-                <div className="text-xs font-bold text-primary mb-2 uppercase tracking-widest flex items-center gap-2">
-                  <Zap className="w-3 h-3" />
-                  상태 요약
-                </div>
-                <p className="text-foreground text-sm font-medium leading-relaxed">
-                  {internalTierInfo.tier === 'unplaced'
-                    ? '공식 내전에 참여하여 티어를 획득하고 랭킹에 이름을 올려보세요!'
-                    : `상위 백분위 기준 Tier ${internalTierInfo.tier}에 배정되었습니다. 더 높은 곳을 향해 도전하세요!`}
-                </p>
               </div>
             </div>
           )}

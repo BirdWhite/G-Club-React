@@ -173,6 +173,22 @@ export function DesktopProfilePage({ targetProfile, isOwnProfile }: DesktopProfi
                     </Link>
                   )}
 
+                  {/* 앱 설치 */}
+                  <Link
+                    href="/pwa-install"
+                    className="flex items-center gap-3 px-4 py-3 transition-colors w-fit"
+                    style={{
+                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                      color: 'white',
+                      borderRadius: 'var(--radius)'
+                    }}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    앱 설치
+                  </Link>
+
                   {/* 로그아웃 */}
                   <button 
                     onClick={handleSignOut}

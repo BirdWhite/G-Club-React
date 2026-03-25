@@ -18,13 +18,13 @@ interface MobileGamePostHeaderProps {
   loading: boolean;
 }
 
-export function MobileGamePostHeader({ 
-  post, 
-  onDelete, 
-  onEdit, 
-  isOwner, 
+export function MobileGamePostHeader({
+  post,
+  onDelete,
+  onEdit,
+  isOwner,
   canDelete = false,
-  loading 
+  loading
 }: MobileGamePostHeaderProps) {
   // 상태 정보 정의 (사이버펑크 테마에 맞게 수정)
   const statusInfo = {
@@ -33,9 +33,9 @@ export function MobileGamePostHeader({
     COMPLETED: { text: '종료', className: 'bg-cyber-gray/20 text-cyber-gray border border-cyber-gray/30' },
     EXPIRED: { text: '만료', className: 'bg-cyber-gray/20 text-cyber-gray border border-cyber-gray/30' },
   };
-  
+
   const fullStatus = { text: '가득 참', className: 'bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30' };
-  
+
   // OPEN 상태일 때만 가득 찬 경우 표시
   const currentStatus = (post.isFull && post.status === 'OPEN') ? fullStatus : (statusInfo[post.status] || statusInfo.COMPLETED);
 
@@ -55,7 +55,7 @@ export function MobileGamePostHeader({
           <ChevronLeft className="w-4 h-4" />
           목록
         </Link>
-        
+
         <div className="flex items-center gap-2">
           <KakaoShareButton post={post} />
           {isOwner && (
@@ -78,7 +78,7 @@ export function MobileGamePostHeader({
           )}
         </div>
       </div>
-      
+
       {/* 두 번째 줄: 제목+상태뱃지(왼쪽) | 게임 아이콘(오른쪽) */}
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-3 flex-1 min-w-0">

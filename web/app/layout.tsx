@@ -4,7 +4,6 @@ import Script from "next/script";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
-import { PWAInstaller } from "@/components/common/PWAInstaller";
 import { PWAManager } from "@/components/PWAManager";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 
@@ -71,7 +70,6 @@ export default function RootLayout({
             <ClientLayout>
               {children}
             </ClientLayout>
-            <PWAInstaller />
           </PWAManager>
         </ProfileProvider>
         <Toaster

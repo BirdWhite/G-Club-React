@@ -37,7 +37,7 @@ export default async function ValorantLeaderboardPage({ searchParams }: { search
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="flex flex-col items-center page-content-padding py-12">
+      <div className="flex flex-col items-center page-content-padding py-8 sm:py-12">
         <div className="w-full max-w-4xl">
           {/* 뒤로가기 */}
           <Link
@@ -49,13 +49,13 @@ export default async function ValorantLeaderboardPage({ searchParams }: { search
           </Link>
 
           {/* 헤더 */}
-          <div className="flex items-center gap-4 mb-10">
-            <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 shadow-lg shadow-primary/10">
-              <Trophy className="w-8 h-8 text-primary" />
+          <div className="flex items-center gap-3 sm:gap-4 mb-8 sm:mb-10">
+            <div className="p-2.5 sm:p-3 bg-primary/10 rounded-2xl border border-primary/20 shadow-lg shadow-primary/10">
+              <Trophy className="w-6 h-6 sm:w-8 h-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-foreground tracking-tight">VCI 순위표</h1>
-              <p className="text-muted-foreground text-sm mt-1">G-Club 발로란트 내전 공식 랭킹</p>
+              <h1 className="text-xl sm:text-3xl font-black text-foreground tracking-tight">VCI 순위표</h1>
+              <p className="text-muted-foreground text-xs sm:text-sm mt-0.5 sm:mt-1">G-Club 발로란트 내전 공식 랭킹</p>
             </div>
           </div>
 
@@ -63,13 +63,13 @@ export default async function ValorantLeaderboardPage({ searchParams }: { search
           <div className="flex bg-secondary p-1 rounded-xl border border-border mb-6 w-fit">
             <Link
               href="/valorant/leaderboard?tab=tracker"
-              className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${currentTab === 'tracker' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${currentTab === 'tracker' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
             >
               트래커 점수 순위
             </Link>
             <Link
               href="/valorant/leaderboard?tab=mmr"
-              className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${currentTab === 'mmr' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${currentTab === 'mmr' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}
             >
               MMR 순위
             </Link>
@@ -81,13 +81,11 @@ export default async function ValorantLeaderboardPage({ searchParams }: { search
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-muted/50 border-b border-border">
-                    <th className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">순위</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">플레이어</th>
-                    <th className="px-6 py-4 text-center text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">티어</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">트래커 점수</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">내전 MMR</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">상위 %</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">참여</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">순위</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">플레이어</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-center text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">티어</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-right text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">기록</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-right text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">참여</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -107,86 +105,53 @@ export default async function ValorantLeaderboardPage({ searchParams }: { search
                           key={entry.userId}
                           className={`group transition-colors ${isTop3 ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-muted/20'}`}
                         >
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap">
                             {entry.tier === 'unplaced' ? (
                               <span className="text-muted-foreground/40 font-bold">-</span>
                             ) : (
-                              <div className="flex items-center gap-2">
-                                {index === 0 && <Medal className="w-4 h-4 text-yellow-500" />}
-                                {index === 1 && <Medal className="w-4 h-4 text-slate-300" />}
-                                {index === 2 && <Medal className="w-4 h-4 text-amber-700" />}
-                                <span className={`font-black text-lg ${isTop3 ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+                              <div className="flex items-center gap-1.5 sm:gap-2">
+                                {index === 0 && <Medal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500" />}
+                                {index === 1 && <Medal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-300" />}
+                                {index === 2 && <Medal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-700" />}
+                                <span className={`font-black text-base sm:text-lg ${isTop3 ? 'text-foreground' : 'text-muted-foreground/60'}`}>
                                   {index + 1}
                                 </span>
                               </div>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <div className="relative w-12 h-12 flex items-center justify-center">
-                                <svg className="absolute inset-0 w-full h-full -rotate-90 transform">
-                                  <circle
-                                    cx="24"
-                                    cy="24"
-                                    r="20"
-                                    stroke="currentColor"
-                                    strokeWidth="3"
-                                    fill="transparent"
-                                    className="text-secondary/50"
-                                  />
-                                  <circle
-                                    cx="24"
-                                    cy="24"
-                                    r="20"
-                                    stroke="currentColor"
-                                    strokeWidth="3"
-                                    fill="transparent"
-                                    strokeDasharray={2 * Math.PI * 20}
-                                    strokeDashoffset={2 * Math.PI * 20 * (1 - Math.min(1000, entry.trackerScore || 0) / 1000)}
-                                    strokeLinecap="round"
-                                    className={`transition-all duration-1000 ease-out ${(entry.trackerScore || 0) < 200 ? 'text-slate-400' :
-                                        (entry.trackerScore || 0) < 400 ? 'text-blue-400' :
-                                          (entry.trackerScore || 0) < 600 ? 'text-emerald-400' :
-                                            (entry.trackerScore || 0) < 800 ? 'text-yellow-400' :
-                                              'text-red-500'
-                                      }`}
-                                  />
-                                </svg>
-                                <div className="relative w-10 h-10 rounded-full bg-secondary border border-border overflow-hidden flex items-center justify-center">
+                          <td className="px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                               <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-secondary border border-border overflow-hidden flex items-center justify-center">
                                   {entry.image ? (
                                     <Image src={entry.image} alt={entry.name} fill className="object-cover" unoptimized />
                                   ) : (
-                                    <User className="w-5 h-5 text-muted-foreground/60" />
+                                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground/60" />
                                   )}
                                 </div>
-                              </div>
-                              <span className="font-bold text-foreground group-hover:text-primary transition-colors">
+                              <span className="font-bold text-xs sm:text-base text-foreground group-hover:text-primary transition-colors">
                                 {entry.name}
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
-                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tight border ${badge.class}`}>
+                          <td className="px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap text-center">
+                            <span className={`inline-flex px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-tight border ${badge.class}`}>
                               {badge.label}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <span className={`font-mono font-bold ${currentTab === 'tracker' ? 'text-primary' : 'text-foreground/80'}`}>
-                              {entry.trackerScore ?? '-'}
-                            </span>
+                          <td className="px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap text-right">
+                            <div className="flex flex-col items-end">
+                              <span className="font-mono font-bold text-sm sm:text-base text-primary">
+                                {currentTab === 'tracker' ? entry.trackerScore ?? '-' : entry.mmr}
+                              </span>
+                              <div className="flex items-center sm:hidden">
+                                <span className="text-[8px] px-1 rounded bg-secondary text-muted-foreground font-bold border border-border">
+                                  {entry.matchCount} 게임
+                                </span>
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <span className={`font-mono font-bold ${currentTab === 'mmr' ? 'text-primary' : 'text-foreground/80'}`}>
-                              {entry.mmr}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <span className="text-muted-foreground text-sm">
-                              {entry.topPercentage != null ? `Top ${entry.topPercentage}%` : '-'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-muted-foreground text-sm font-medium">
-                            {entry.matchCount} <span className="text-[10px] uppercase">GAMES</span>
+                          <td className="px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap text-right text-muted-foreground text-[10px] sm:text-sm font-medium hidden sm:table-cell">
+                            {entry.matchCount} <span className="text-[8px] sm:text-[10px] uppercase">게임</span>
                           </td>
                         </tr>
                       );
@@ -197,19 +162,18 @@ export default async function ValorantLeaderboardPage({ searchParams }: { search
             </div>
           </div>
 
-          {/* 하단 정보 */}
-          <div className="mt-8 p-6 card bg-muted/20 text-xs text-muted-foreground leading-relaxed space-y-4">
+          <div className="mt-8 p-4 sm:p-6 card bg-muted/20 text-[10px] sm:text-xs text-muted-foreground leading-relaxed space-y-4">
             <div>
-              <p className="mb-2">💡 <span className="font-bold text-foreground underline underline-offset-4 decoration-primary/50">트래커 점수 안내:</span></p>
+              <p className="mb-1 sm:mb-2">💡 <span className="font-bold text-foreground underline underline-offset-4 decoration-primary/50">트래커 점수 안내:</span></p>
               <p>전체 유저 데이터를 기준으로 백분위(Percentile)를 산출하여 1000점 만점으로 계산합니다. (ACS 30%, KAST 30%, Damage Delta 20%, 승률 20% 반영)</p>
             </div>
             <div>
-              <p className="mb-2">💡 <span className="font-bold text-foreground underline underline-offset-4 decoration-primary/50">내전 MMR 시스템 안내:</span></p>
+              <p className="mb-1 sm:mb-2">💡 <span className="font-bold text-foreground underline underline-offset-4 decoration-primary/50">내전 MMR 시스템 안내:</span></p>
               <p>개인 활약도와 승패에 따라 변동되는 점수입니다. (ACS 50% + KDA 50% 반영)</p>
             </div>
-            <p className="flex items-center gap-1.5 pt-2 text-[11px] font-medium text-primary">
+            <p className="flex items-center gap-1.5 pt-1 sm:pt-2 text-[9px] sm:text-[11px] font-medium text-primary">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              5판 이상의 공식 내전(isOfficial)에 참여한 플레이어만 랭킹에 집계됩니다.
+              5판 이상의 공식 내전에 참여한 플레이어만 랭킹에 집계됩니다.
             </p>
           </div>
         </div>
