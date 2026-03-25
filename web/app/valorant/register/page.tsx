@@ -8,7 +8,7 @@ import { searchValorantAccount, registerValorantAccount } from '@/actions/valora
 import { toast } from 'react-hot-toast';
 
 // 아이콘 (Lucide React)
-import { Search, ShieldAlert, CheckCircle2, RefreshCw, UserPlus, ChevronLeft } from 'lucide-react';
+import { Search, ShieldAlert, CheckCircle2, RefreshCw, UserPlus, ChevronLeft, SearchX } from 'lucide-react';
 
 interface ValorantAccountSearchResult {
   puuid: string;
@@ -30,6 +30,8 @@ export default function ValorantRegisterPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [accountData, setAccountData] = useState<ValorantAccountSearchResult | null>(null);
+  const [searchAttempted, setSearchAttempted] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,17 +42,26 @@ export default function ValorantRegisterPage() {
 
     setIsSearching(true);
     setAccountData(null);
+    setSearchAttempted(false);
+    setSearchError(null);
     
     try {
       const result = await searchValorantAccount(gameName.trim(), tagLine.trim());
       if (result.success && result.data) {
         setAccountData(result.data);
+        setSearchAttempted(true);
         toast.success('계정을 찾았습니다!');
       } else {
-        toast.error(result.error || '계정을 찾을 수 없습니다.');
+        const errorMsg = result.error || '계정을 찾을 수 없습니다.';
+        setSearchError(errorMsg);
+        setSearchAttempted(true);
+        toast.error(errorMsg);
       }
     } catch {
-      toast.error('검색 중 오류가 발생했습니다.');
+      const errorMsg = '검색 중 오류가 발생했습니다.';
+      setSearchError(errorMsg);
+      setSearchAttempted(true);
+      toast.error(errorMsg);
     } finally {
       setIsSearching(false);
     }
@@ -71,7 +82,7 @@ export default function ValorantRegisterPage() {
       if (result.success) {
         toast.success('계정이 성공적으로 등록되었습니다.');
         // 프로필 페이지나 메인으로 이동
-        router.push('/profile');
+        router.push('/valorant');
       } else {
         // 이미 등록된 경우 등 에러
         toast.error(result.error || '계정 등록에 실패했습니다.');
@@ -143,6 +154,21 @@ export default function ValorantRegisterPage() {
             </button>
           </form>
         </div>
+
+        {searchAttempted && !accountData && !isSearching && (
+          <div className="card p-8 flex flex-col items-center justify-center text-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+              <SearchX className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground text-lg">검색 결과 없음</h3>
+              <p className="text-muted-foreground text-sm mt-1">
+                {searchError || `'${gameName}#${tagLine}' 계정을 찾을 수 없습니다.`}
+              </p>
+              <p className="text-muted-foreground text-xs mt-2">닉네임과 태그를 다시 확인해주세요.</p>
+            </div>
+          </div>
+        )}
 
         {accountData && (
           <div className="card overflow-hidden border-primary/50 animate-in fade-in slide-in-from-bottom-4 duration-500">

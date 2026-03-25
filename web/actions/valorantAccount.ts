@@ -53,7 +53,27 @@ export async function registerValorantAccount(puuid: string, gameName: string, t
     });
 
     if (existingAccount) {
-      return { success: false, error: '이미 다른 사용자가 등록한 계정입니다.' };
+      // userId가 이미 채워져 있으면 다른 사람이 등록한 계정 → 거부
+      if (existingAccount.userId) {
+        return { success: false, error: '이미 다른 사용자가 등록한 계정입니다.' };
+      }
+      // userId가 비어있으면 (관리자가 미리 등록한 계정 등) → 현재 유저로 연결
+      const updatedAccount = await prisma.valorantAccount.update({
+        where: { puuid },
+        data: {
+          userId: user.id,
+          gameName,
+          tagLine,
+          cardImageUrl,
+          needsDeepSync: true,
+        }
+      });
+
+      await updateValorantAccountInfo(puuid).catch(err => {
+        console.error('Initial account info update failed:', err);
+      });
+
+      return { success: true, account: updatedAccount };
     }
 
     // 계정 생성 연결 (needsDeepSync: true → 처음 등록 시 딥싱크 대기열에 자동 추가)

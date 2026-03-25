@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { PWAInstaller } from "@/components/common/PWAInstaller";
@@ -73,6 +74,17 @@ export default function RootLayout({
             <PWAInstaller />
           </PWAManager>
         </ProfileProvider>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: 'var(--card)',
+              color: 'var(--foreground)',
+              border: '1px solid var(--border)',
+            },
+          }}
+        />
       </body>
       <Script
         src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.0/kakao.min.js"
