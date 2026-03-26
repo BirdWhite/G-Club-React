@@ -83,15 +83,12 @@ export async function processAndSaveMatches(matches: ValorantMatchData[]) {
     }
   });
 
-  // DB에 등록된 공식(활성) 계정인지 확인 (isOfficial 및 천적 필터링 위해)
-  // userId가 있거나 isActive가 true인 계정을 우리 식구로 간주
+  // DB에 등록된 공식(부원) 계정인지 확인 (isOfficial 및 천적 필터링 위해)
+  // isActive가 true인 계정(가입 부원 + 미가입 부원)을 우리 식구로 간주
   const registeredAccounts = await prisma.valorantAccount.findMany({
     where: {
       puuid: { in: Array.from(allPuuids) },
-      OR: [
-        { isActive: true },
-        { userId: { not: null } }
-      ]
+      isActive: true
     },
     select: { puuid: true }
   });
@@ -108,7 +105,7 @@ export async function processAndSaveMatches(matches: ValorantMatchData[]) {
       update: {
         gameName,
         tagLine,
-        ...(currentTier !== 'Unranked' ? { currentTier } : {})
+        currentTier
       },
       create: {
         puuid: p.puuid,

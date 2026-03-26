@@ -34,7 +34,7 @@ export async function getValorantLeaderboard(): Promise<LeaderboardEntry[]> {
   const users = await prisma.userProfile.findMany({
     where: {
       valorantAccounts: {
-        some: {} // 발로란트 계정이 하나라도 있는 유저
+        some: { isActive: true } // 멤버계정(부원)이 하나라도 있는 유저
       }
     },
     select: {
@@ -45,6 +45,7 @@ export async function getValorantLeaderboard(): Promise<LeaderboardEntry[]> {
       trackerScore: true,
       topPercentage: true,
       valorantAccounts: {
+        where: { isActive: true },
         select: {
           participations: {
             where: {

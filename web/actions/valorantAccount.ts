@@ -29,7 +29,7 @@ export async function searchValorantAccount(name: string, tag: string) {
     }
 
     const data = await res.json();
-    
+
     if (data.status !== 200 || !data.data) {
       return { success: false, error: '계정을 찾을 수 없습니다.' };
     }
@@ -77,7 +77,7 @@ export async function registerValorantAccount(puuid: string, gameName: string, t
 
       revalidatePath('/valorant');
       revalidatePath('/valorant/admin');
-      
+
       return { success: true, account: updatedAccount };
     }
 
@@ -128,7 +128,7 @@ export async function updateValorantAccountInfo(puuid: string): Promise<{ succes
     let cardImageUrl: string | undefined;
 
     if (accountRes.ok) {
-      const accountData = await accountRes.ok ? await accountRes.json() : null;
+      const accountData = await accountRes.json();
       if (accountData && accountData.status === 200 && accountData.data) {
         gameName = accountData.data.name;
         tagLine = accountData.data.tag;
@@ -143,16 +143,15 @@ export async function updateValorantAccountInfo(puuid: string): Promise<{ succes
       cache: 'no-store',
     });
 
-    let currentTier: string | undefined;
-
+    let currentTier: string = 'Unranked';
     if (mmrRes.ok) {
       const mmrData = await mmrRes.json();
       if (mmrData.status === 200 && mmrData.data) {
-        currentTier = mmrData.data.currenttierpatched;
+        currentTier = mmrData.data.currenttierpatched || 'Unranked';
       }
     }
 
-    // 데이터베이스 업데이트
+    // 데이터베이스 업데이트 (API 응답 기반으로 즉시 동기화)
     if (gameName || tagLine || currentTier || cardImageUrl) {
       await prisma.valorantAccount.update({
         where: { puuid },
@@ -164,6 +163,10 @@ export async function updateValorantAccountInfo(puuid: string): Promise<{ succes
           lastSyncedAt: new Date(),
         },
       });
+
+      // 캐시 갱신
+      revalidatePath(`/valorant/profile/${puuid}`);
+      revalidatePath('/valorant');
     }
 
     return { success: true };

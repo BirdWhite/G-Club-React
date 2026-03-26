@@ -216,14 +216,6 @@ export default async function ValorantHubPage() {
                     className="card group p-5 hover:border-primary/50"
                   >
                     <div className="relative">
-                      {/* 주력 계정 배지 */}
-                      {account.isActive && (
-                        <div className="absolute -top-1 -right-1 flex items-center gap-1 px-2 py-0.5 bg-primary/20 backdrop-blur-sm rounded-full border border-primary/30">
-                          <Zap className="w-2.5 h-2.5 text-primary" />
-                          <span className="text-[10px] text-primary font-bold tracking-wide">주력</span>
-                        </div>
-                      )}
-
                       {/* 아바타 / 프로필 카드 이미지 */}
                       <div className="w-12 h-12 rounded-xl bg-secondary border border-border flex items-center justify-center mb-4 group-hover:border-primary/40 transition-colors overflow-hidden relative">
                         {account.cardImageUrl ? (
