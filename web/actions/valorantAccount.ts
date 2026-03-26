@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/database/prisma';
 import { getCurrentUser } from '@/lib/database/supabase/auth';
+import { revalidatePath } from 'next/cache';
 
 export async function searchValorantAccount(name: string, tag: string) {
   try {
@@ -65,6 +66,7 @@ export async function registerValorantAccount(puuid: string, gameName: string, t
           gameName,
           tagLine,
           cardImageUrl,
+          isActive: true,      // 유저가 본인 계정으로 등록 시 활성화 보장
           needsDeepSync: true,
         }
       });
@@ -73,6 +75,9 @@ export async function registerValorantAccount(puuid: string, gameName: string, t
         console.error('Initial account info update failed:', err);
       });
 
+      revalidatePath('/valorant');
+      revalidatePath('/valorant/admin');
+      
       return { success: true, account: updatedAccount };
     }
 
@@ -84,6 +89,7 @@ export async function registerValorantAccount(puuid: string, gameName: string, t
         tagLine,
         cardImageUrl,
         userId: user.id,
+        isActive: true,      // 최초 등록 시 활성 계정으로 설정
         needsDeepSync: true,  // 최초 등록 시 3개월치 전적 딥싱크 예약
       }
     });
@@ -92,6 +98,9 @@ export async function registerValorantAccount(puuid: string, gameName: string, t
     await updateValorantAccountInfo(puuid).catch(err => {
       console.error('Initial account info update failed:', err);
     });
+
+    revalidatePath('/valorant');
+    revalidatePath('/valorant/admin');
 
     return { success: true, account: newAccount };
   } catch (error) {

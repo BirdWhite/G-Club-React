@@ -74,13 +74,28 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             </div>
           </div>
 
-          {/* 2. 요원 이미지 (공용) */}
-          <div className="w-10 h-10 md:w-14 md:h-14 flex-shrink-0 flex items-center justify-center bg-secondary rounded-full overflow-hidden border-2 border-border shadow-inner">
-            {agentMap[p.characterId] ? (
-              <Image src={agentMap[p.characterId].icon} alt={agentMap[p.characterId].name} width={56} height={56} className="object-cover scale-110" />
-            ) : (
-              <div className="text-[10px] font-bold text-muted-foreground">?</div>
-            )}
+          {/* 요원 이미지 & 4. 트래커 합집합 (간격 축소) */}
+          <div className="flex flex-row items-center gap-1 md:gap-2">
+            {/* 2. 요원 이미지 (공용) */}
+            <div className="w-10 h-10 md:w-14 md:h-14 flex-shrink-0 flex items-center justify-center bg-secondary rounded-full overflow-hidden border-2 border-border shadow-inner">
+              {agentMap[p.characterId] ? (
+                <Image src={agentMap[p.characterId].icon} alt={agentMap[p.characterId].name} width={56} height={56} className="object-cover scale-110" />
+              ) : (
+                <div className="text-[10px] font-bold text-muted-foreground">?</div>
+              )}
+            </div>
+
+            {/* 4. 트래커 (공용) */}
+            <div className="flex flex-col items-center justify-center gap-0.5 min-w-[40px] md:min-w-[60px]">
+              <TrackerScoreBadge 
+                score={p.trackerScore || 0} 
+                size="sm" 
+                className="scale-[0.7] md:scale-90 origin-center"
+              />
+              <span className="text-[10px] md:text-sm font-black text-foreground/80 leading-none">
+                {p.trackerScore || 0}
+              </span>
+            </div>
           </div>
 
           {/* 데스크탑 전용 시간/맵 (모바일 숨김) */}
@@ -106,17 +121,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             </div>
           </div>
 
-          {/* 4. 트래커 (공용) */}
-          <div className="flex flex-col items-center justify-center gap-0.5 min-w-[40px] md:min-w-[60px]">
-            <TrackerScoreBadge 
-              score={p.trackerScore || 0} 
-              size="sm" 
-              className="scale-[0.7] md:scale-90 origin-center"
-            />
-            <span className="text-[10px] md:text-sm font-black text-foreground/80 leading-none">
-              {p.trackerScore || 0}
-            </span>
-          </div>
 
           {/* 5. KDA & 통계 (모바일에서는 세로 배치) */}
           <div className="flex flex-col items-end justify-center min-w-[75px] md:min-w-[120px] md:ml-auto">
@@ -220,12 +224,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                           href={`/valorant/profile/${pt.puuid}`}
                           className={`grid grid-cols-[32px_40px_1fr] md:grid-cols-[40px_40px_1fr_90px] items-center gap-1.5 md:gap-3 p-1.5 md:p-2 rounded transition-all ${pt.puuid === accountPuuid ? (team === 'Blue' ? 'bg-blue-500/20 border border-blue-500/40 shadow-sm' : 'bg-red-500/20 border border-red-500/40 shadow-sm') : 'hover:bg-background/40'}`}
                         >
-                          {/* Tracker Score */}
-                          <div className="flex flex-col items-center justify-center">
-                            <TrackerScoreBadge score={pt.matchTrackerScore || 0} size="sm" className="scale-50 md:scale-75 origin-center" />
-                            <span className="text-[8px] md:text-[9px] text-slate-400 font-bold -mt-2.5 md:-mt-2">{pt.matchTrackerScore || 0}</span>
-                          </div>
-
                           {/* Agent Icon */}
                           <div className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0 flex items-center justify-center bg-background/50 rounded-md overflow-hidden border border-border/50">
                             {agentMap[pt.characterId] ? (
@@ -233,6 +231,12 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                             ) : (
                               <div className="text-[10px] font-bold text-muted-foreground">?</div>
                             )}
+                          </div>
+
+                          {/* Tracker Score */}
+                          <div className="flex flex-col items-center justify-center">
+                            <TrackerScoreBadge score={pt.matchTrackerScore || 0} size="sm" className="scale-50 md:scale-75 origin-center" />
+                            <span className="text-[8px] md:text-[9px] text-slate-400 font-bold -mt-2.5 md:-mt-2">{pt.matchTrackerScore || 0}</span>
                           </div>
                           
                           {/* Info Section (Name & Stats) */}
