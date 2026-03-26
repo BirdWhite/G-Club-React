@@ -480,6 +480,11 @@ export async function recalculateAllOfficialMatches(): Promise<{ success: boolea
     revalidatePath('/valorant');
     revalidatePath('/valorant/leaderboard');
 
+    // 최종적으로 모든 유저의 트래커 점수(백분위) 재계산 트리거
+    await recalculateTrackerScores().catch(err => {
+      console.error('Final tracker score recalculation failed after match recalculation:', err);
+    });
+
     return {
       success: true,
       count: officialCount
@@ -489,6 +494,7 @@ export async function recalculateAllOfficialMatches(): Promise<{ success: boolea
     return { success: false, count: 0, error: '재계산 중 오류가 발생했습니다.' };
   }
 }
+
 
 /**
  * 오직 MMR만 다시 계산하는 독립적인 관리자 기능입니다.
@@ -654,6 +660,11 @@ export async function recalculateAllMmrOnly(): Promise<{ success: boolean; count
     revalidatePath('/valorant');
     revalidatePath('/valorant/leaderboard');
 
+    // 최종적으로 모든 유저의 트래커 점수(백분위) 재계산 트리거
+    await recalculateTrackerScores().catch(err => {
+      console.error('Final tracker score recalculation failed after MMR recalculation:', err);
+    });
+
     return {
       success: true,
       count: officialMatches.length
@@ -663,6 +674,7 @@ export async function recalculateAllMmrOnly(): Promise<{ success: boolean; count
     return { success: false, count: 0, error: 'MMR 재계산 중 오류가 발생했습니다.' };
   }
 }
+
 
 /**
  * 전 유저의 트래커 스코어(백분위 기반)를 재계산합니다.
@@ -876,6 +888,11 @@ export async function toggleMatchOfficialStatus(matchId: string, isOfficial: boo
       }
     });
 
+    // 티어 점수(백분위 점수) 재계산 트리거
+    await recalculateTrackerScores().catch(err => {
+      console.error('Tracker score recalculation failed after match toggle:', err);
+    });
+
     revalidatePath('/valorant/admin');
     revalidatePath('/valorant');
     revalidatePath('/valorant/leaderboard');
@@ -886,3 +903,4 @@ export async function toggleMatchOfficialStatus(matchId: string, isOfficial: boo
     return { success: false, error: '매치 상태 변경 중 오류가 발생했습니다.' };
   }
 }
+

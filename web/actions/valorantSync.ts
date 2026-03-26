@@ -4,6 +4,7 @@ import prisma from '@/lib/database/prisma';
 import { getCurrentUser } from '@/lib/database/supabase/auth';
 import { updateValorantAccountInfo } from './valorantAccount';
 import { processAndSaveMatches } from '@/lib/valorant/matchProcessor';
+import { recalculateTrackerScores } from '@/lib/valorant/trackerPercentile';
 
 
 const API_BASE_URL = 'https://api.henrikdev.xyz/valorant';
@@ -54,11 +55,14 @@ export async function syncRecentMatches(puuid: string) {
     const json = await res.json();
     const matches = json.data || [];
     
+    // 최근 전적이 아예 없는 경우
     if (matches.length === 0) {
       await prisma.valorantAccount.update({
         where: { puuid },
         data: { lastSyncRequestedAt: new Date() }
       });
+      // 혹시 모르니 재계산 트리거 (수동 변경사항 반영용)
+      await recalculateTrackerScores().catch(() => {});
       return { success: true, message: '최근 전적이 없습니다.' };
     }
 
@@ -92,6 +96,8 @@ export async function syncRecentMatches(puuid: string) {
           // needsDeepSync는 건드리지 않음
         }
       });
+      // 수동 변경사항(내전 여부 등) 반영을 위해 새로운 매치가 없더라도 재계산 트리거
+      await recalculateTrackerScores().catch(() => {});
       return { success: true, message: '이미 모든 전적이 최신 상태입니다.', updatedCount: 0 };
     }
 
@@ -100,7 +106,7 @@ export async function syncRecentMatches(puuid: string) {
       new Date(a.metadata.started_at).getTime() - new Date(b.metadata.started_at).getTime()
     );
 
-    // 트랜잭션으로 새로운 매치와 참여 기록 저장
+    // 트랜잭션으로 새로운 매치와 참여 기록 저장 (내부에서 recalculateTrackerScores 호출함)
     await processAndSaveMatches(sortedNewMatches);
 
     // 계정 업데이트 (쿨다운, needsDeepSync)
@@ -118,6 +124,7 @@ export async function syncRecentMatches(puuid: string) {
       updatedCount: newMatches.length,
       needsDeepSync: isGapDetected ? true : account.needsDeepSync
     };
+
 
   } catch (error) {
     console.error('Valorant sync error:', error);
