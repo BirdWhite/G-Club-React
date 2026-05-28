@@ -55,7 +55,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
 
   if (!isMounted) {
     return (
-      <div className="h-screen grid grid-rows-[auto_1fr] overflow-hidden">
+      <div className="h-screen grid grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-[auto_1fr] overflow-hidden">
         <Header />
         <main className="overflow-y-auto min-h-0">
           <div className="flex items-center justify-center h-64">
@@ -69,7 +69,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   // 인증된 사용자가 역할을 확인 중이거나 약관 상태를 확인 중인 경우 로딩 표시
   if (!isAuthPage && (isLoading || isProfileLoading)) {
     return (
-      <div className="h-screen grid grid-rows-[auto_1fr] overflow-hidden">
+      <div className="h-screen grid grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-[auto_1fr] overflow-hidden">
         <Header />
         <main className="overflow-y-auto min-h-0">
           <div className="flex items-center justify-center h-64">
@@ -87,7 +87,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
 
   if (isRedirecting) {
     return (
-      <div className="h-screen grid grid-rows-[auto_1fr] overflow-hidden">
+      <div className="h-screen grid grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-[auto_1fr] overflow-hidden">
         <Header />
         <main className="overflow-y-auto min-h-0">
           <div className="flex items-center justify-center h-64">
@@ -99,7 +99,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   }
 
   return (
-    <div className="h-screen grid grid-rows-[auto_1fr] overflow-hidden">
+    <div className="h-screen grid grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-[auto_1fr] overflow-hidden">
       <Header />
       <main className="overflow-y-auto min-h-0">
         {children}

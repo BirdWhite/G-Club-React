@@ -20,7 +20,7 @@ export function WebSocketStatus() {
   }, []);
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1 bg-zinc-950/60 border border-zinc-800 rounded-full shadow-inner select-none">
+    <div className="flex items-center gap-2 px-3 py-1 bg-background/60 border border-border rounded-full shadow-inner select-none">
       <span className="relative flex h-2.5 w-2.5">
         {isOnline ? (
           <>
@@ -34,7 +34,7 @@ export function WebSocketStatus() {
           </>
         )}
       </span>
-      <span className="text-[11px] font-bold tracking-wide uppercase text-zinc-400 flex items-center gap-1 font-mono">
+      <span className="text-[11px] font-bold tracking-wide uppercase text-muted-foreground flex items-center gap-1 font-mono">
         {isOnline ? (
           <>
             <Wifi className="w-3.5 h-3.5 text-emerald-400 inline" />

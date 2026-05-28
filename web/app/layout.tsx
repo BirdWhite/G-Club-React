@@ -6,6 +6,7 @@ import "./globals.css";
 import { ProfileProvider } from "@/contexts/ProfileProvider";
 import { PWAManager } from "@/components/PWAManager";
 import { ClientLayout } from "@/components/layout/ClientLayout";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 // 크론 작업 초기화는 next.config.mjs에서 서버 시작 시에만 실행
 
@@ -53,7 +54,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -65,24 +66,31 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="512x512" href="/icons/maskable_icon_x512.png" />
       </head>
       <body className={inter.className}>
-        <ProfileProvider>
-          <PWAManager>
-            <ClientLayout>
-              {children}
-            </ClientLayout>
-          </PWAManager>
-        </ProfileProvider>
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: 'var(--card)',
-              color: 'var(--foreground)',
-              border: '1px solid var(--border)',
-            },
-          }}
-        />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ProfileProvider>
+            <PWAManager>
+              <ClientLayout>
+                {children}
+              </ClientLayout>
+            </PWAManager>
+          </ProfileProvider>
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: 'var(--card)',
+                color: 'var(--foreground)',
+                border: '1px solid var(--border)',
+              },
+            }}
+          />
+        </ThemeProvider>
       </body>
       <Script
         src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.0/kakao.min.js"

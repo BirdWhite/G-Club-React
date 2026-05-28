@@ -135,7 +135,7 @@ export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
               )}
             </button>
             {/* 연필 아이콘 */}
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-cyber-blue rounded-full flex items-center justify-center border-2 border-cyber-black-200">
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-cyber-blue rounded-full flex items-center justify-center border-2 border-background">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
@@ -168,7 +168,7 @@ export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
                     ? 'hover:bg-red-500/10' 
                     : item.isInstall
                     ? 'hover:bg-blue-500/10'
-                    : 'hover:bg-cyber-black-100/50'
+                    : 'hover:bg-muted/50'
                 }`}
               >
                 <div className="flex items-center space-x-4">
@@ -186,7 +186,7 @@ export function MobileProfileMenu({ profile }: MobileProfileMenuProps) {
             ) : (
               <Link
                 href={item.href!}
-                className="w-full flex items-center justify-between p-4 hover:bg-cyber-black-100/50 transition-colors duration-200"
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors duration-200"
               >
                 <div className="flex items-center space-x-4">
                   <div className="text-cyber-gray">

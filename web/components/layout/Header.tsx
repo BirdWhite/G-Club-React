@@ -10,6 +10,7 @@ import { MobileNavigation } from '@/components/layout/MobileNavigation';
 import { NavLink } from '@/components/layout/NavLink';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 import { useNotificationSubscription } from '@/hooks/useRealtimeSubscription';
+import { Home, Gamepad2, Bell, LogIn, Trophy, Wrench } from 'lucide-react';
 
 
 export function Header() {
@@ -165,34 +166,193 @@ export function Header() {
   
   return (
     <>
-      <header className="header-container">
+      {/* 데스크톱 사이드바 헤더 (md 이상에서만 표시) */}
+      <header className="hidden md:flex flex-col justify-between items-center w-20 lg:w-24 h-full py-6 border-r border-border bg-header-background shrink-0">
+        <div className="flex flex-col items-center space-y-6 w-full">
+          {/* 상단: 로고 */}
+          <div className="flex flex-col items-center">
+            <Link href="/" className="flex items-center justify-center p-2 group rounded-xl transition-all duration-200">
+              <svg 
+                version="1.2" 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 250 250" 
+                width="36" 
+                height="36"
+                className="header-logo transition-colors duration-200"
+              >
+                <title>Ultimate</title>
+                <g id="Layer 1">
+                  <path id="모양 3" fillRule="evenodd" className="fill-current" d="m125.3 178.4l17.7-15.4v-67.8l96.4-51.5 5.2-40.6-137 72.5v87.3z"/>
+                  <path id="모양 1" fillRule="evenodd" className="fill-current" d="m6 3l4.9 40.6 76.8 40.9v-38z"/>
+                  <path id="모양 2" fillRule="evenodd" className="fill-current" d="m14.3 70.7l4.9 40.5 33 17.6v55.7l73.2 61.8 72.9-61.4-0.2-56 32.8-17.5 5.3-40.7-73.5 39.1 0.1 60.4-37.5 31.7-37.4-31.4v-60.6z"/>
+                </g>
+              </svg>
+            </Link>
+          </div>
+
+          {/* 중단: 네비게이션 메뉴 */}
+          <nav className="flex flex-col items-center space-y-4 w-full px-2">
+            {isNavLoading && showSkeleton ? (
+              <>
+                {/* 스켈레톤 로딩 */}
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-muted/45 animate-pulse" />
+                ))}
+              </>
+            ) : isNavLoading ? (
+              /* 투명 플레이스홀더 */
+              <div className="w-16 h-48 opacity-0 pointer-events-none" />
+            ) : (
+              <>
+                {/* 홈 링크 */}
+                {(() => {
+                  const isActive = pathname === '/';
+                  return (
+                    <Link
+                      href="/"
+                      className={`flex flex-col items-center justify-center w-16 h-16 lg:w-18 lg:h-18 rounded-xl transition-all duration-200 group relative ${
+                        isActive 
+                          ? 'text-primary bg-primary/10 font-semibold' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                      }`}
+                    >
+                      <Home className={`w-6 h-6 mb-1.5 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                      <span className="text-[10px] tracking-tight">홈</span>
+                    </Link>
+                  );
+                })()}
+
+                {/* 게임메이트 링크 */}
+                {session && !isPendingMember && (() => {
+                  const isActive = pathname.startsWith('/game-mate');
+                  return (
+                    <Link
+                      href="/game-mate"
+                      className={`flex flex-col items-center justify-center w-16 h-16 lg:w-18 lg:h-18 rounded-xl transition-all duration-200 group relative ${
+                        isActive 
+                          ? 'text-primary bg-primary/10 font-semibold' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                      }`}
+                    >
+                      <Gamepad2 className={`w-6 h-6 mb-1.5 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                      <span className="text-[10px] tracking-tight text-center">게임메이트</span>
+                    </Link>
+                  );
+                })()}
+
+                {/* 내전 기록실 링크 */}
+                {session && !isPendingMember && (() => {
+                  const isActive = pathname.startsWith('/valorant');
+                  return (
+                    <Link
+                      href="/valorant"
+                      className={`flex flex-col items-center justify-center w-16 h-16 lg:w-18 lg:h-18 rounded-xl transition-all duration-200 group relative ${
+                        isActive 
+                          ? 'text-primary bg-primary/10 font-semibold' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                      }`}
+                    >
+                      <Trophy className={`w-6 h-6 mb-1.5 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                      <span className="text-[10px] tracking-tight text-center leading-tight">내전 기록실</span>
+                    </Link>
+                  );
+                })()}
+
+                {/* 알림 링크 */}
+                {session && !isPendingMember && (() => {
+                  const isActive = pathname.startsWith('/notifications');
+                  return (
+                    <Link
+                      href="/notifications"
+                      className={`flex flex-col items-center justify-center w-16 h-16 lg:w-18 lg:h-18 rounded-xl transition-all duration-200 group relative ${
+                        isActive 
+                          ? 'text-primary bg-primary/10 font-semibold' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                      }`}
+                    >
+                      <div className="relative">
+                        <Bell className={`w-6 h-6 mb-1.5 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                        {unreadNotificationCount > 0 && (
+                          <span className="absolute -top-1 -right-2 bg-primary text-primary-foreground text-[9px] rounded-full h-4 min-w-4 px-1 flex items-center justify-center font-bold">
+                            {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] tracking-tight">알림</span>
+                    </Link>
+                  );
+                })()}
+
+                {/* 관리자 대시보드 링크 */}
+                {session && !isPendingMember && isAdmin && (() => {
+                  const isActive = pathname.startsWith('/admin/');
+                  return (
+                    <Link
+                      href="/admin/dashboard"
+                      className={`flex flex-col items-center justify-center w-16 h-16 lg:w-18 lg:h-18 rounded-xl transition-all duration-200 group relative ${
+                        isActive 
+                          ? 'text-primary bg-primary/10 font-semibold' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                      }`}
+                    >
+                      <Wrench className={`w-6 h-6 mb-1.5 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                      <span className="text-[10px] tracking-tight text-center leading-tight">관리자</span>
+                    </Link>
+                  );
+                })()}
+              </>
+            )}
+          </nav>
+        </div>
+
+        {/* 하단: 프로필 */}
+        <div className="flex flex-col items-center w-full px-2">
+          {isNavLoading && showSkeleton ? (
+            <div className="h-9 w-9 bg-muted animate-pulse rounded-full" />
+          ) : isNavLoading ? (
+            <div className="h-9 w-9" />
+          ) : session ? (
+            <Link 
+              href={profile?.userId ? `/profile/${profile.userId}` : "/profile"} 
+              className="group relative flex rounded-full focus:outline-none transition-transform duration-200 hover:scale-105"
+            >
+              <span className="sr-only">프로필 페이지로 이동</span>
+              <div className={`relative p-0.5 rounded-full ${
+                pathname.startsWith('/profile')
+                  ? 'ring-2 ring-primary ring-offset-2 ring-offset-transparent'
+                  : 'hover:ring-2 hover:ring-muted-foreground/30 hover:ring-offset-2 hover:ring-offset-transparent'
+              }`}>
+                <ProfileAvatar
+                  name={profile?.name}
+                  image={profile?.image}
+                  size="md"
+                  unoptimized={profile?.image?.includes('127.0.0.1') || profile?.image?.includes('kakaocdn.net')}
+                />
+                {pathname.startsWith('/profile') && (
+                  <div className="absolute inset-0 rounded-full border border-primary animate-pulse" />
+                )}
+              </div>
+            </Link>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="flex flex-col items-center justify-center w-16 h-16 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all duration-200 group"
+            >
+              <LogIn className="w-6 h-6 mb-1 transition-transform group-hover:scale-110" />
+              <span className="text-[10px] font-medium">로그인</span>
+            </Link>
+          )}
+        </div>
+      </header>
+
+      {/* 모바일 상단 헤더 (md 미만에서만 표시, 기존 헤더 레이아웃 유지) */}
+      <header className="header-container md:hidden">
         <div className="flex justify-center page-content-padding">
           <div className="w-full max-w-4xl flex items-center justify-between h-16">
             {/* 로고 영역 - 좌측 */}
             <div className="flex items-center">
-              {/* 데스크톱 로고 */}
-              <div className="hidden md:flex items-center">
-                <Link href="/" className="flex items-center group">
-                  <svg 
-                    version="1.2" 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    viewBox="0 0 250 250" 
-                    width="32" 
-                    height="32"
-                    className="header-logo transition-colors duration-200"
-                  >
-                    <title>Ultimate</title>
-                    <g id="Layer 1">
-                      <path id="모양 3" fillRule="evenodd" className="fill-current" d="m125.3 178.4l17.7-15.4v-67.8l96.4-51.5 5.2-40.6-137 72.5v87.3z"/>
-                      <path id="모양 1" fillRule="evenodd" className="fill-current" d="m6 3l4.9 40.6 76.8 40.9v-38z"/>
-                      <path id="모양 2" fillRule="evenodd" className="fill-current" d="m14.3 70.7l4.9 40.5 33 17.6v55.7l73.2 61.8 72.9-61.4-0.2-56 32.8-17.5 5.3-40.7-73.5 39.1 0.1 60.4-37.5 31.7-37.4-31.4v-60.6z"/>
-                    </g>
-                  </svg>
-                </Link>
-              </div>
-              
               {/* 모바일 로고 */}
-              <div className="flex md:hidden items-center">
+              <div className="flex items-center">
                 <Link href="/" className="flex items-center group">
                   <svg 
                     version="1.2" 
@@ -211,45 +371,9 @@ export function Header() {
                   </svg>
                 </Link>
               </div>
-
-              {/* 데스크톱 네비게이션 - 고정 최소 너비로 시프트 방지 */}
-              <nav className="hidden md:ml-6 md:flex md:items-center md:space-x-6 lg:space-x-8">
-                <NavLink href="/" pathname={pathname}>홈</NavLink>
-                {/* 항상 동일한 공간 확보 (스켈레톤/링크/placeholder 전환 시 레이아웃 시프트 방지) */}
-                <div className="flex items-center space-x-6 lg:space-x-8 min-w-[240px]">
-                  {isNavLoading && showSkeleton ? (
-                    <>
-                      <div className="h-4 w-[72px] bg-muted animate-pulse rounded shrink-0" aria-hidden />
-                      <div className="h-4 w-10 bg-muted animate-pulse rounded shrink-0" aria-hidden />
-                      <div className="h-4 w-[100px] bg-muted animate-pulse rounded shrink-0" aria-hidden />
-                    </>
-                  ) : isNavLoading ? (
-                    /* 빠른 로딩 시: 스켈레톤 대신 투명 placeholder (깜빡임 방지) */
-                    <>
-                      <span className="text-sm font-medium opacity-0 pointer-events-none select-none" aria-hidden>게임메이트</span>
-                      <span className="text-sm font-medium opacity-0 pointer-events-none select-none" aria-hidden>알림</span>
-                    </>
-                  ) : session && !isPendingMember ? (
-                    <>
-                      <NavLink href="/game-mate" pathname={pathname}>게임메이트</NavLink>
-                      <NavLink href="/notifications" pathname={pathname} showBadge={true} badgeCount={unreadNotificationCount}>알림</NavLink>
-                      {isAdmin && (
-                        <NavLink href="/admin/dashboard" pathname={pathname}>
-                          관리자 대시보드
-                        </NavLink>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-sm font-medium opacity-0 pointer-events-none select-none" aria-hidden>게임메이트</span>
-                      <span className="text-sm font-medium opacity-0 pointer-events-none select-none" aria-hidden>알림</span>
-                    </>
-                  )}
-                </div>
-              </nav>
             </div>
 
-            {/* 페이지 제목 - 모바일에서만 표시 */}
+            {/* 페이지 제목 */}
             <div className="flex-1 flex items-center justify-center sm:hidden">
               {getPageTitle() && (
                 <h1 className="text-lg font-semibold text-header-foreground">
@@ -262,55 +386,49 @@ export function Header() {
             <div className="flex items-center">
               {isNavLoading && showSkeleton ? (
                 <div className="flex items-center">
-                  {/* 프로필 스켈레톤 - 250ms 이상 로딩 시에만 표시 */}
                   <div className="h-8 w-8 bg-muted animate-pulse rounded-full" aria-hidden />
                 </div>
               ) : isNavLoading ? (
-                /* 빠른 로딩 시: 스켈레톤 대신 투명 placeholder (깜빡임 방지) */
                 <div className="h-8 w-8 shrink-0" aria-hidden />
               ) : session ? (
-                    <div className="flex items-center space-x-2">
-                      {/* 프로필 사진 */}
-                      <Link href={profile?.userId ? `/profile/${profile.userId}` : "/profile"} className="group relative flex rounded-full focus:outline-none">
-                        <span className="sr-only">프로필 페이지로 이동</span>
-                        <div className={`relative transition-all duration-200 ${
+                <div className="flex items-center space-x-2">
+                  <Link href={profile?.userId ? `/profile/${profile.userId}` : "/profile"} className="group relative flex rounded-full focus:outline-none">
+                    <span className="sr-only">프로필 페이지로 이동</span>
+                    <div className={`relative transition-all duration-200 ${
+                      pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit'
+                        ? 'ring-2 ring-primary ring-offset-2 ring-offset-transparent rounded-full'
+                        : ''
+                    }`}>
+                      <ProfileAvatar
+                        name={profile?.name}
+                        image={profile?.image}
+                        size="md"
+                        className={`transition-all duration-200 group-hover:scale-110 ${
                           pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit'
-                            ? 'ring-2 ring-primary ring-offset-2 ring-offset-transparent rounded-full'
+                            ? 'shadow-lg shadow-primary/50'
                             : ''
-                        }`}>
-                          <ProfileAvatar
-                            name={profile?.name}
-                            image={profile?.image}
-                            size="md"
-                            className={`transition-all duration-200 group-hover:scale-110 ${
-                              pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit'
-                                ? 'shadow-lg shadow-primary/50'
-                                : ''
-                            }`}
-                            unoptimized={profile?.image?.includes('127.0.0.1') || profile?.image?.includes('kakaocdn.net')}
-                          />
-                          {/* 사이버 블루 원 효과 - 활성 상태일 때만 표시 */}
-                          {(pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit') && (
-                            <div className="absolute inset-0 rounded-full border border-primary animate-pulse"></div>
-                          )}
-                        </div>
-                      </Link>
-
+                        }`}
+                        unoptimized={profile?.image?.includes('127.0.0.1') || profile?.image?.includes('kakaocdn.net')}
+                      />
+                      {(pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit') && (
+                        <div className="absolute inset-0 rounded-full border border-primary animate-pulse"></div>
+                      )}
                     </div>
-                  ) : (
-                    <Link
-                      href="/auth/login"
-                      className="inline-flex items-center px-3 py-2 md:px-4 border border-transparent text-sm font-medium rounded-md shadow-sm text-cyber-black bg-cyber-blue hover:bg-cyber-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-blue focus:ring-offset-cyber-black transition-colors"
-                    >
-                      로그인
-                    </Link>
-                  )}
+                  </Link>
+                </div>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="inline-flex items-center px-3 py-2 md:px-4 border border-transparent text-sm font-medium rounded-md shadow-sm text-neutral-950 bg-cyber-blue hover:bg-cyber-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-blue focus:ring-offset-background transition-colors"
+                >
+                  로그인
+                </Link>
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      {/* 모바일 네비게이션바 */}
       <MobileNavigation session={session} isPendingMember={isPendingMember} />
     </>
   );

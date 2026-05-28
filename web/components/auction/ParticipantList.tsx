@@ -44,7 +44,7 @@ export function ParticipantList({ participants, currentParticipantId, isTierMode
             }`}
           >
             <div className="flex items-center gap-3">
-              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${p.id === currentParticipantId ? 'bg-primary animate-pulse' : p.status === 'SOLD' ? 'bg-zinc-500' : 'bg-transparent'}`}></span>
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${p.id === currentParticipantId ? 'bg-primary animate-pulse' : p.status === 'SOLD' ? 'bg-muted-foreground' : 'bg-transparent'}`}></span>
               <span className={`font-bold truncate max-w-[100px] ${p.id === currentParticipantId ? 'text-primary' : ''}`}>{p.name}</span>
             </div>
             <div className="flex gap-2 items-center flex-shrink-0">
@@ -53,14 +53,14 @@ export function ParticipantList({ participants, currentParticipantId, isTierMode
                   p.tier === 1 ? 'bg-yellow-500/10 text-yellow-600' :
                   p.tier === 2 ? 'bg-slate-400/10 text-slate-600' :
                   p.tier === 3 ? 'bg-amber-700/10 text-amber-600' :
-                  'bg-zinc-500/10 text-zinc-500'
+                  'bg-muted/60 text-muted-foreground'
                 }`}>T{p.tier}</span>
               )}
               {p.gameRank && <span className="opacity-70 text-[10px] truncate max-w-[60px] ml-1">{p.gameRank}</span>}
               <span className={`w-16 text-center px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider ml-1 ${
                 p.status === 'SOLD' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 
                 p.status === 'BIDDING' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse' : 
-                'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+                'bg-muted text-muted-foreground'
               }`}>
                 {p.status}
               </span>

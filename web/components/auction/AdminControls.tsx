@@ -61,20 +61,20 @@ export function AdminControls({ config, participants, bidsCount }: AdminControls
 
   return (
     <div className="w-full mt-1 mb-2 animate-in slide-in-from-top-4">
-      <div className="w-full bg-zinc-900 border border-zinc-700 p-4 rounded-xl shadow-2xl flex flex-col gap-3 text-white">
+      <div className="w-full bg-card border border-border p-4 rounded-xl shadow-2xl flex flex-col gap-3 text-foreground">
         
         {/* 상단 줄: 헤더 / 순서 변경 / 초기화 */}
         <div className="flex flex-wrap items-center justify-between gap-3 w-full">
           <div className="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span className="font-black text-sm tracking-wide text-zinc-300 whitespace-nowrap">관리자 제어 패널</span>
+            <span className="font-black text-sm tracking-wide text-muted-foreground whitespace-nowrap">관리자 제어 패널</span>
           </div>
 
           <div className="flex items-center gap-3">
             <select
               value={nextParticipantId}
               onChange={(e) => setNextParticipantId(e.target.value)}
-              className="bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-primary outline-none min-w-[160px]"
+              className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none min-w-[160px]"
             >
               <option value="">다음 등단 매물 선택</option>
               {waitingParticipants.map(p => (
@@ -84,18 +84,18 @@ export function AdminControls({ config, participants, bidsCount }: AdminControls
             <button
               onClick={handleAdvance}
               disabled={isLoading || !nextParticipantId}
-              className="px-4 py-2 text-sm font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 transition-colors whitespace-nowrap flex items-center gap-2"
+              className="px-4 py-2 text-sm font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 transition-colors whitespace-nowrap flex items-center gap-2 text-white"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               순서 변경
             </button>
             
-            <div className="w-px h-6 bg-zinc-700 mx-1 hidden sm:block"></div>
+            <div className="w-px h-6 bg-border mx-1 hidden sm:block"></div>
             
             <button
               onClick={() => handleAction(() => resetAuction(config.id), '정말로 경매 전체 기록을 싹 초기화하시겠습니까? 돌이킬 수 없습니다!')}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-bold rounded-lg bg-red-600 hover:bg-red-500 transition-colors whitespace-nowrap flex items-center gap-2"
+              className="px-4 py-2 text-sm font-bold rounded-lg bg-red-600 hover:bg-red-500 transition-colors whitespace-nowrap flex items-center gap-2 text-white"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               완전 초기화
@@ -103,14 +103,14 @@ export function AdminControls({ config, participants, bidsCount }: AdminControls
           </div>
         </div>
 
-        <div className="h-px w-full bg-zinc-700/50 my-1"></div>
+        <div className="h-px w-full bg-border/50 my-1"></div>
 
         {/* 하단 줄: 일시정지, 낙찰, 되돌리기 */}
         <div className="flex flex-wrap items-center justify-start gap-3 w-full">
           <button
             onClick={() => handleAction(() => toggleAuctionPause(config.id, !config.isPaused))}
             disabled={isLoading}
-            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors border whitespace-nowrap flex items-center gap-2 ${config.isPaused ? 'bg-yellow-500 hover:bg-yellow-600 text-black border-yellow-600 animate-pulse' : 'bg-zinc-700 hover:bg-zinc-600 border-zinc-600'}`}
+            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors border whitespace-nowrap flex items-center gap-2 ${config.isPaused ? 'bg-yellow-500 hover:bg-yellow-600 text-black border-yellow-600 animate-pulse' : 'bg-secondary hover:bg-secondary/80 border-border text-foreground'}`}
           >
             {config.isPaused ? (
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -138,7 +138,7 @@ export function AdminControls({ config, participants, bidsCount }: AdminControls
               }
             }}
             disabled={isLoading || !config.currentParticipantId}
-            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap flex items-center gap-2 ${!config.currentParticipantId ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed' : bidsCount > 0 ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-zinc-700 hover:bg-zinc-600 text-white'}`}
+            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap flex items-center gap-2 ${!config.currentParticipantId ? 'bg-muted text-muted-foreground cursor-not-allowed border-transparent' : bidsCount > 0 ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-600' : 'bg-secondary hover:bg-secondary/80 text-foreground border-border'}`}
           >
             {bidsCount > 0 ? (
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -153,7 +153,7 @@ export function AdminControls({ config, participants, bidsCount }: AdminControls
           <button
             onClick={() => handleAction(() => undoLastAction(config.id), '가장 최근 낙찰/유찰을 무효로 하고 매물을 다시 진행 상태로 되돌리겠습니까? (포인트 롤백 포함)')}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-bold rounded-lg bg-orange-600 hover:bg-orange-500 transition-colors whitespace-nowrap flex items-center gap-2"
+            className="px-4 py-2 text-sm font-bold rounded-lg bg-orange-600 hover:bg-orange-500 transition-colors whitespace-nowrap flex items-center gap-2 text-white border-orange-600"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
             직전 경매 되돌리기

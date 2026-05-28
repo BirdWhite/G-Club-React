@@ -116,12 +116,12 @@ export function AuctionBoard({
 
   return (
     <ErrorBoundary>
-      <div className="w-full h-full flex flex-col bg-zinc-950 text-white p-4 gap-4 overflow-hidden font-sans">
+      <div className="w-full h-full flex flex-col bg-background text-foreground p-4 gap-4 overflow-hidden font-sans">
         
         {/* ====================================================================== */}
         {/* [Global Header] 거대한 중앙 타이머 및 경매 진행률                       */}
         {/* ====================================================================== */}
-        <header className="shrink-0 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl relative overflow-hidden">
+        <header className="shrink-0 bg-header-background/80 backdrop-blur-md border border-border rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl relative overflow-hidden">
           {/* Background glowing grid */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.03)_0%,transparent_50%)] pointer-events-none" />
 
@@ -131,7 +131,7 @@ export function AuctionBoard({
               <Trophy className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-black tracking-tight leading-none text-white truncate max-w-[200px]">
+              <h1 className="text-lg font-black tracking-tight leading-none text-foreground truncate max-w-[200px]">
                 {config.name}
               </h1>
               <div className="flex items-center gap-2 mt-1.5">
@@ -152,11 +152,11 @@ export function AuctionBoard({
             </div>
             {/* Linear Progress Bar */}
             <div className="w-full mt-3">
-              <div className="flex justify-between items-center text-[10px] text-zinc-400 font-bold mb-1 tracking-wide">
+              <div className="flex justify-between items-center text-[10px] text-muted-foreground font-bold mb-1 tracking-wide">
                 <span>경매 완료 매물: {completedParticipants} / {totalParticipants}</span>
                 <span className="text-primary font-black">{progressPercentage.toFixed(1)}% 완료</span>
               </div>
-              <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden border border-zinc-700/30">
+              <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden border border-border/30">
                 <div 
                   className="bg-gradient-to-r from-primary via-indigo-500 to-emerald-500 h-full rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${progressPercentage}%` }}
@@ -167,9 +167,9 @@ export function AuctionBoard({
 
           {/* Right Role Indicator */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="px-4 py-2 rounded-xl bg-zinc-950 border border-zinc-800/80 text-right">
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Access Role</div>
-              <div className="text-sm font-black text-white mt-1 flex items-center gap-1.5">
+            <div className="px-4 py-2 rounded-xl bg-card border border-border/80 text-right">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Access Role</div>
+              <div className="text-sm font-black text-foreground mt-1 flex items-center gap-1.5">
                 <Shield className="w-4 h-4 text-primary" />
                 <span>
                   {activeRole === 'ADMIN' ? '시스템 관리자' : activeRole === 'CAPTAIN' ? '팀장 (입찰자)' : '실시간 시청자'}
@@ -187,13 +187,13 @@ export function AuctionBoard({
           {/* 1. Left Column (팀 현황 보드, 전체 매물 리스트) */}
           <section className="col-span-12 xl:col-span-3 flex flex-col gap-4 min-h-0">
             {/* 팀 현황 보드 */}
-            <div className="flex-[4] min-h-[180px] bg-zinc-900/40 border border-zinc-900 rounded-2xl p-4 flex flex-col overflow-hidden shadow-lg">
+            <div className="flex-[4] min-h-[180px] bg-card/40 border border-border rounded-2xl p-4 flex flex-col overflow-hidden shadow-lg">
               <div className="overflow-y-auto flex-1 custom-scrollbar pr-1">
                 <TeamSlotGrid teams={teams} maxTeamSize={config.maxTeamSize} isTierMode={config.isTierMode} />
               </div>
             </div>
             {/* 전체 매물 리스트 */}
-            <div className="flex-[6] min-h-[220px] bg-zinc-900/40 border border-zinc-900 rounded-2xl p-4 flex flex-col overflow-hidden shadow-lg">
+            <div className="flex-[6] min-h-[220px] bg-card/40 border border-border rounded-2xl p-4 flex flex-col overflow-hidden shadow-lg">
               <ParticipantList 
                 participants={participants} 
                 currentParticipantId={currentParticipant?.id} 
@@ -206,9 +206,9 @@ export function AuctionBoard({
           {/* 2. Center Column (현재 매물 상세 정보, 최고 입찰 정보, 조작 패널) */}
           <section className="col-span-12 xl:col-span-6 flex flex-col gap-4 min-h-0">
             {/* 현재 매물 상세 정보 */}
-            <div className="flex-1 min-h-0 bg-zinc-900/30 border border-zinc-900 rounded-2xl p-4 flex flex-col overflow-hidden shadow-lg">
-              <div className="flex items-center justify-between shrink-0 mb-3 border-b border-zinc-800 pb-2">
-                <h3 className="text-sm font-extrabold text-zinc-400 flex items-center gap-2">
+            <div className="flex-1 min-h-0 bg-card/30 border border-border rounded-2xl p-4 flex flex-col overflow-hidden shadow-lg">
+              <div className="flex items-center justify-between shrink-0 mb-3 border-b border-border pb-2">
+                <h3 className="text-sm font-extrabold text-muted-foreground flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-yellow-400" />
                   진행 중인 경매 매물 정보
                 </h3>
@@ -229,7 +229,7 @@ export function AuctionBoard({
                     isTierMode={config.isTierMode}
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-zinc-500 py-12 border-2 border-dashed border-zinc-800/80 rounded-xl">
+                  <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground py-12 border-2 border-dashed border-border/80 rounded-xl">
                     <Trophy className="w-12 h-12 stroke-[1.2] opacity-40 mb-3" />
                     <p className="font-semibold text-sm">진행 중인 경매가 없습니다.</p>
                   </div>
@@ -247,7 +247,7 @@ export function AuctionBoard({
               
               {/* [ADMIN] 관리자 전용 제어 패널 */}
               {activeRole === 'ADMIN' && (
-                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl overflow-hidden p-2">
+                <div className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden p-2">
                   <AdminControls 
                     config={config} 
                     participants={participants} 
@@ -258,7 +258,7 @@ export function AuctionBoard({
 
               {/* [CAPTAIN] 팀장 전용 입찰 조작 패널 */}
               {activeRole === 'CAPTAIN' && team && (
-                <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl space-y-4 relative overflow-hidden">
+                <div className="bg-card border border-border p-5 rounded-2xl shadow-xl space-y-4 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
                   
                   <div className="flex flex-wrap justify-between items-center gap-3">
@@ -267,19 +267,19 @@ export function AuctionBoard({
                         {team.leaderName[0]}
                       </div>
                       <div>
-                        <h4 className="font-black text-sm text-white">{team.leaderName} 팀장 패널</h4>
-                        <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
+                        <h4 className="font-black text-sm text-foreground">{team.leaderName} 팀장 패널</h4>
+                        <p className="text-[10px] text-muted-foreground font-bold mt-0.5">
                           남은 인원 수: <span className="text-primary font-black">{remainingSlots}명</span>
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-3 bg-zinc-950/80 px-3.5 py-1.5 rounded-xl border border-zinc-800/80">
-                      <span className="text-xs font-bold text-zinc-400">보유 포인트:</span>
+                    <div className="flex items-center gap-3 bg-background/80 px-3.5 py-1.5 rounded-xl border border-border/80">
+                      <span className="text-xs font-bold text-muted-foreground">보유 포인트:</span>
                       <span className="text-sm font-black text-primary">{team.currentPoints.toLocaleString()}P</span>
                     </div>
 
-                    <div className="text-xs font-bold text-zinc-400">
+                    <div className="text-xs font-bold text-muted-foreground">
                       입찰 상한액: <span className="text-rose-500 font-black">{maxAllowedBid.toLocaleString()} P</span>
                     </div>
                   </div>
@@ -290,7 +290,7 @@ export function AuctionBoard({
                       <input
                         type="number"
                         placeholder={`${minRequiredBid} P`}
-                        className="flex-1 bg-zinc-950 border-2 border-zinc-800 rounded-xl px-4 py-2 font-black text-xl text-center text-white placeholder:text-zinc-600 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
+                        className="flex-1 bg-background border-2 border-border rounded-xl px-4 py-2 font-black text-xl text-center text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
                         value={customBidAmount === '' ? '' : customBidAmount}
                         onChange={(e) => {
                           setCustomBidAmount(Number(e.target.value) || '');
@@ -315,13 +315,13 @@ export function AuctionBoard({
 
                     {/* Quick bid buttons */}
                     <div className="flex gap-2 justify-stretch items-center">
-                      <span className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest mr-2 shrink-0">Quick Bid</span>
+                      <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest mr-2 shrink-0">Quick Bid</span>
                       {[10, 50, 100].map(inc => (
                         <button
                           key={inc}
                           onClick={() => handleQuickIncrement(inc)}
                           disabled={!canBid || isBidding}
-                          className="flex-1 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-white font-extrabold text-xs py-1.5 px-3 rounded-lg border border-zinc-700/50 cursor-pointer transition-colors"
+                          className="flex-1 bg-secondary hover:bg-secondary/80 disabled:opacity-50 text-foreground font-extrabold text-xs py-1.5 px-3 rounded-lg border border-border/50 cursor-pointer transition-colors"
                         >
                           +{inc}P
                         </button>
@@ -356,7 +356,7 @@ export function AuctionBoard({
           </section>
 
           {/* 3. Right Column (실시간 입찰 로그 타임라인) */}
-          <section className="col-span-12 xl:col-span-3 flex flex-col gap-4 min-h-0 bg-zinc-900/40 border border-zinc-900 rounded-2xl p-4 shadow-lg overflow-hidden">
+          <section className="col-span-12 xl:col-span-3 flex flex-col gap-4 min-h-0 bg-card/40 border border-border rounded-2xl p-4 shadow-lg overflow-hidden">
             <BidLog logs={bidLogs} />
           </section>
 

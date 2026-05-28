@@ -13,8 +13,6 @@ export function HeroSection() {
   return (
     <section className="h-full flex flex-col justify-start items-center page-content-padding py-8">
       <div className="w-full max-w-4xl space-y-6">
-        <AuctionBanner />
-        
         {/* PC: 1행 - 공지사항 + 일정 나란히 / 모바일: 세로 배치 */}
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
           <div className="w-full min-w-0">
@@ -46,6 +44,8 @@ export function HeroSection() {
             <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
+
+        <AuctionBanner />
       </div>
     </section>
   );

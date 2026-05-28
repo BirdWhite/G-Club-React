@@ -21,7 +21,7 @@ export function ParticipantCard({ name, tier, gameRank, prefCharacters, bio, isT
                 ${tier === 1 ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-500' :
                   tier === 2 ? 'bg-slate-400/20 text-slate-600 dark:text-slate-400' :
                   tier === 3 ? 'bg-amber-700/20 text-amber-800 dark:text-amber-600' :
-                  'bg-zinc-500/20 text-zinc-600 dark:text-zinc-400'
+                  'bg-muted text-muted-foreground'
                 }`}
               >
                 T{tier} 티어
