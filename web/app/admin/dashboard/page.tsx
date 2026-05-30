@@ -5,15 +5,12 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { isAdmin } from '@/lib/database/auth';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { MobileAdminDashboard } from '@/components/mobile/MobileAdminDashboard';
-import { DesktopAdminDashboard } from '@/components/desktop/DesktopAdminDashboard';
+import { AdminDashboard as DashboardComponent } from '@/components/admin/AdminDashboard';
 
 export default function AdminDashboard() {
   const { profile, isLoading } = useProfile();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isMobile = useMediaQuery('(max-width: 767px)');
   
   // URL의 쿼리 파라미터에서 탭 상태 가져오기
   const getInitialTab = () => {
@@ -58,12 +55,6 @@ export default function AdminDashboard() {
   }
 
   return (
-    <>
-      {isMobile ? (
-        <MobileAdminDashboard initialTab={tab} onTabChange={handleTabChange} />
-      ) : (
-        <DesktopAdminDashboard initialTab={tab} onTabChange={handleTabChange} />
-      )}
-    </>
+    <DashboardComponent initialTab={tab} onTabChange={handleTabChange} />
   );
 }

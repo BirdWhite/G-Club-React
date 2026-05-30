@@ -1,12 +1,10 @@
 'use client';
 
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useProfileCheck } from '@/hooks/useProfileCheck';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useRouter } from 'next/navigation';
-import { MobileHomePage } from '@/components/mobile/MobileHomePage';
-import { DesktopHomePage } from '@/components/desktop/DesktopHomePage';
+import { HeroSection } from '@/components/common/HeroSection';
 
 // 홈 스켈레톤 (로딩이 250ms 이상일 때만 표시) - HeroSection 구조와 동일
 function HomeSkeleton() {
@@ -87,19 +85,6 @@ export default function Home() {
   const router = useRouter();
   const { isLoading } = useProfileCheck();
   const { profile } = useProfile();
-  const isMobile = useMediaQuery('(max-width: 767px)');
-
-  // 시작하기 버튼 클릭 이벤트 핸들러 - useCallback으로 메모이제이션
-  const handleStartClick = useCallback(() => {
-    // 시작하기 버튼 클릭 로직
-    console.log('시작하기 클릭됨');
-  }, []);
-
-  // 더 알아보기 버튼 클릭 이벤트 핸들러 - useCallback으로 메모이제이션
-  const handleLearnMoreClick = useCallback(() => {
-    // 더 알아보기 버튼 클릭 로직
-    console.log('더 알아보기 클릭됨');
-  }, []);
 
   const [showSkeleton, setShowSkeleton] = useState(false);
   const loadingResolvedRef = useRef(false);
@@ -142,14 +127,10 @@ export default function Home() {
     );
   }
 
-  // 메인 페이지 렌더링
+  // 메인 페이지 렌더링 (RWD 통합 레이아웃)
   return (
-    <>
-      {isMobile ? (
-        <MobileHomePage onStartClick={handleStartClick} onLearnMoreClick={handleLearnMoreClick} />
-      ) : (
-        <DesktopHomePage onStartClick={handleStartClick} onLearnMoreClick={handleLearnMoreClick} />
-      )}
-    </>
+    <div className="h-full bg-background pb-[calc(4rem+max(1rem,env(safe-area-inset-bottom)))] md:pb-0">
+      <HeroSection />
+    </div>
   );
 }

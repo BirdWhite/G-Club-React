@@ -16,7 +16,7 @@ type RouteContext = {
 // 모집글 상세 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<RouteContext['params']> }
+  { params }: { params: RouteContext['params'] }
 ) {
   try {
     const user = await getCurrentUser();
@@ -189,7 +189,7 @@ export async function GET(
 // 모집글 수정
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<RouteContext['params']> }
+  { params }: { params: RouteContext['params'] }
 ) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -438,7 +438,7 @@ export async function PATCH(
 // 모집글 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<RouteContext['params']> }
+  { params }: { params: RouteContext['params'] }
 ) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();

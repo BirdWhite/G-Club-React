@@ -10,7 +10,7 @@ type RouteContext = {
     }>
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<RouteContext['params']> }) {
+export async function PATCH(request: NextRequest, { params }: { params: RouteContext['params'] }) {
   try {
     const { userId: targetUserProfileId } = await params; // URL 파라미터는 UserProfile의 ID (CUID) 입니다.
 

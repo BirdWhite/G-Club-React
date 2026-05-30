@@ -13,7 +13,7 @@ type RouteContext = {
 // 참여 신청
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<RouteContext['params']> }
+  { params }: { params: RouteContext['params'] }
 ) {
   const user = await getCurrentUser();
   if (!user) {
@@ -173,7 +173,7 @@ export async function POST(
 // 참여 취소
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<RouteContext['params']> }
+  { params }: { params: RouteContext['params'] }
 ) {
   const user = await getCurrentUser();
   if (!user) {

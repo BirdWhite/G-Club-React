@@ -169,7 +169,7 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
   
 
   return (
-    <>
+    <div className="max-w-4xl mx-auto px-8 sm:px-10 lg:px-12 py-8 pb-[calc(4rem+max(1rem,env(safe-area-inset-bottom)))] md:pb-8">
       <GamePostHeader
         post={currentPost}
         isOwner={isOwner || false}
@@ -263,7 +263,7 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
       <div className="mt-8">
         <CommentSection gamePostId={currentPost.id} />
       </div>
-    </>
+    </div>
   );
 }
  

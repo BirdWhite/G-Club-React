@@ -3,9 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useEffect, useState, use } from 'react';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { MobileProfileMenu } from '@/components/mobile/MobileProfileMenu';
-import { DesktopProfilePage } from '@/components/desktop/DesktopProfilePage';
+import { UserProfileView } from '@/components/profile/UserProfileView';
 import type { FullUserProfile } from '@/lib/user';
 
 interface ProfilePageProps {
@@ -19,7 +17,6 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const { profile: currentUserProfile, isLoading: currentUserLoading, error: currentUserError } = useProfile();
   const [targetProfile, setTargetProfile] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const isMobile = useMediaQuery('(max-width: 767px)');
 
   const { userId } = use(params);
   const isOwnProfile = currentUserProfile?.userId === userId;
@@ -97,20 +94,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     );
   }
 
-  // 모바일에서는 MobileProfileMenu 컴포넌트 사용 (자신의 프로필일 때만)
-  if (isOwnProfile) {
-    return (
-      <>
-        {isMobile ? (
-          <MobileProfileMenu profile={targetProfile as FullUserProfile} />
-        ) : (
-          <DesktopProfilePage targetProfile={targetProfile as FullUserProfile} isOwnProfile={isOwnProfile} />
-        )}
-      </>
-    );
-  }
-
+  // 통합된 UserProfileView 컴포넌트 호출 (RWD 대응 완료)
   return (
-    <DesktopProfilePage targetProfile={targetProfile as FullUserProfile} isOwnProfile={isOwnProfile} />
+    <UserProfileView targetProfile={targetProfile as FullUserProfile} isOwnProfile={isOwnProfile} />
   );
 }

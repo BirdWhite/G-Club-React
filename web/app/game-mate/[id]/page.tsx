@@ -6,8 +6,6 @@ import { getCurrentUser } from '@/lib/database/supabase';
 import { ExtendedUser } from '@/lib/database/supabase/auth';
 import { GamePost, GameParticipant } from '@/types/models';
 import { GamePostDetailClient } from '@/components/game-mate/GamePostDetailClient';
-import { MobileGamePostDetailClient } from '@/components/game-mate/mobile/MobileGamePostDetailClient';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DeletedGamePostMessage } from '@/components/game-mate/DeletedGamePostMessage';
 import toast from 'react-hot-toast';
@@ -21,7 +19,6 @@ export default function GamePostDetailPage({ params }: { params: Promise<{ id: s
   const [user, setUser] = useState<ExtendedUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDeleted, setIsDeleted] = useState(false);
-  const isMobile = useMediaQuery('(max-width: 767px)');
   const autoJoinAttempted = useRef(false);
 
   useEffect(() => {
@@ -134,16 +131,6 @@ export default function GamePostDetailPage({ params }: { params: Promise<{ id: s
   };
 
   return (
-    <>
-      {isMobile ? (
-        <MobileGamePostDetailClient initialPost={initialPostState} userId={userId} />
-      ) : (
-        <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
-          <div className="w-full max-w-4xl">
-          <GamePostDetailClient initialPost={initialPostState} userId={userId} />
-          </div>
-        </div>
-      )}
-    </>
+    <GamePostDetailClient initialPost={initialPostState} userId={userId} />
   );
 }

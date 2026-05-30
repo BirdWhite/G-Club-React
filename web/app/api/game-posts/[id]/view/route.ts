@@ -10,7 +10,7 @@ type RouteContext = {
 // 조회수 증가 API
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<RouteContext['params']> }
+  { params }: { params: RouteContext['params'] }
 ) {
   try {
     const { id } = await params;

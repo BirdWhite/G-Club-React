@@ -14,7 +14,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { placeBid } from '@/app/auction/actions';
 import { toast } from 'react-hot-toast';
 import { AuctionConfigData, AuctionTeamData, AuctionParticipantData, AuctionBidData } from '@/lib/auction/types';
-import { Sparkles, Trophy, Users, Shield, Plus, Minus } from 'lucide-react';
+import { Sparkles, Trophy, Shield } from 'lucide-react';
 
 interface AuctionBoardProps {
   auctionId: string;

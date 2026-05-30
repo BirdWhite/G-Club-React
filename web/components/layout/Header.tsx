@@ -7,7 +7,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import type { Session } from '@supabase/supabase-js';
 import { MobileNavigation } from '@/components/layout/MobileNavigation';
-import { NavLink } from '@/components/layout/NavLink';
 import { ProfileAvatar } from '@/components/common/ProfileAvatar';
 import { useNotificationSubscription } from '@/hooks/useRealtimeSubscription';
 import { Home, Gamepad2, Bell, LogIn, Trophy, Wrench } from 'lucide-react';

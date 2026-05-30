@@ -49,7 +49,7 @@ export function GamePostHeader({
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => window.history.back()}
-          className="flex items-center gap-1 pl-0 pr-4 py-2 text-sm font-medium text-foreground bg-transparent hover:underline focus:outline-none"
+          className="flex items-center gap-1 pl-0 pr-4 py-2 text-sm font-medium text-foreground bg-transparent hover:underline focus:outline-none cursor-pointer"
         >
           <ChevronLeft className="h-5 w-5" />
           목록

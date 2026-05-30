@@ -1,13 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { GamePostCard } from '../GamePostCard';
-import { GameFilter } from '../GameFilter';
+import { GamePostCard } from './GamePostCard';
+import { GameFilter } from './GameFilter';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { GamePost } from '@/types/models';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Plus } from 'lucide-react';
 
-interface DesktopGamePostListProps {
+interface GamePostListProps {
   userId?: string;
   posts: GamePost[];
   loading?: boolean;
@@ -21,17 +21,15 @@ interface DesktopGamePostListProps {
 
 type StatusFilterType = 'all' | 'recruiting' | 'open' | 'full' | 'completed_expired';
 
-export function DesktopGamePostList({ 
+export function GamePostList({ 
   userId, 
   posts, 
   loading = false,
   urlState, 
   onGameChange, 
   onStatusChange 
-}: DesktopGamePostListProps) {
+}: GamePostListProps) {
   const router = useRouter();
-  
-  const filteredPosts = posts;
 
   const renderPosts = () => {
     if (loading) {
@@ -42,7 +40,7 @@ export function DesktopGamePostList({
       );
     }
 
-    if (filteredPosts.length === 0) {
+    if (posts.length === 0) {
       return (
         <div className="text-center py-12">
           <svg className="mx-auto h-12 w-12 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -55,8 +53,8 @@ export function DesktopGamePostList({
     }
 
     return (
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {filteredPosts.map((post: GamePost) => (
+      <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {posts.map((post: GamePost) => (
           <GamePostCard 
             key={post.id}
             post={post}
@@ -68,8 +66,9 @@ export function DesktopGamePostList({
   };
 
   return (
-    <div>
-      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center mb-6">
+    <div className="relative">
+      {/* 필터 영역 - 모바일에서는 sticky 헤더로 고정, 데스크톱에서는 inline 배치 */}
+      <div className="sticky md:relative top-0 z-10 bg-background/95 backdrop-blur-sm md:backdrop-blur-none md:bg-transparent border-b md:border-b-0 border-border py-4 md:py-0 mb-6 flex flex-col md:flex-row gap-4 items-stretch md:items-center">
         <div className="flex-1">
           <GameFilter
             selectedGame={urlState.gameId}
@@ -78,7 +77,9 @@ export function DesktopGamePostList({
             onStatusChange={onStatusChange}
           />
         </div>
-        <div className="lg:flex-shrink-0 flex items-center">
+        
+        {/* 데스크톱 전용 모집글 작성 버튼 */}
+        <div className="hidden md:flex lg:flex-shrink-0 items-center">
           <button
             type="button"
             onClick={() => router.push('/game-mate/new')}
@@ -90,7 +91,22 @@ export function DesktopGamePostList({
         </div>
       </div>
 
-      {renderPosts()}
+      {/* 포스트 리스트 */}
+      <div className="pt-2 md:pt-0">
+        {renderPosts()}
+      </div>
+
+      {/* 📱 모바일 전용 플로팅 작성 버튼 (하단 네비바 위에 띄움) */}
+      <button
+        onClick={() => router.push('/game-mate/new')}
+        className="fixed md:hidden bottom-24 right-6 w-14 h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-2xl transition-all duration-200 flex items-center justify-center z-50 transform hover:scale-105"
+        style={{
+          boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.4), 0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+        }}
+        aria-label="새 모집글 작성"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
     </div>
   );
 }

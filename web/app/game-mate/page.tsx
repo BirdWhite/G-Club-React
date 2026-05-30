@@ -3,17 +3,14 @@
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useGamePostListSubscription } from '@/hooks/useRealtimeSubscription';
 import { useUrlState } from '@/hooks/useUrlState';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { MobileGamePostList } from '@/components/game-mate/mobile/MobileGamePostList';
-import { DesktopGamePostList } from '@/components/game-mate/desktop/DesktopGamePostList';
+import { GamePostList } from '@/components/game-mate/GamePostList';
 
 export default function GameMatePage() {
   const { profile, isLoading } = useProfile();
   const router = useRouter();
-  const isMobile = useMediaQuery('(max-width: 767px)');
 
   // URL 상태 관리 - 최상위에서 한 번만 관리
   const [urlState, updateUrlState] = useUrlState({
@@ -85,49 +82,13 @@ export default function GameMatePage() {
   };
 
   return (
-    <>
-      {isMobile ? (
-        <div className="h-full bg-background overflow-y-auto scrollbar-visible relative mobile-overscroll">
-          {/* 모바일용 콘텐츠 */}
-          <main className="page-content-padding py-8">
-            <MobileGamePostList {...commonProps} />
-          </main>
-          
-          {/* 플로팅 액션 버튼 - 하단 네비게이션바 위에 위치 */}
-          <button
-            onClick={() => router.push('/game-mate/new')}
-            className="fixed bottom-24 right-6 w-14 h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-2xl hover:shadow-3xl transition-all duration-200 flex items-center justify-center z-50 transform hover:scale-105"
-            style={{
-              boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.4), 0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-            }}
-            aria-label="새 모집글 작성"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
+    <div className="h-full bg-background overflow-y-auto scrollbar-visible mobile-overscroll pb-[calc(4rem+max(1rem,env(safe-area-inset-bottom)))] md:pb-8">
+      {/* RWD 통합 게임메이트 리스트 */}
+      <main className="flex flex-col items-center page-content-padding py-8">
+        <div className="w-full max-w-4xl">
+          <GamePostList {...commonProps} />
         </div>
-      ) : (
-        <div className="h-full bg-background overflow-y-auto scrollbar-visible">
-          {/* 데스크톱용 콘텐츠 */}
-          <main className="flex flex-col items-center page-content-padding py-8">
-          <div className="w-full max-w-4xl">
-            <DesktopGamePostList {...commonProps} />
-          </div>
-          </main>
-        </div>
-      )}
-    </>
+      </main>
+    </div>
   );
 }
