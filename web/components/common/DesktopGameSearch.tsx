@@ -10,6 +10,7 @@ interface DesktopGameSearchProps {
   showAllOption?: boolean;
   className?: string;
   disabled?: boolean;
+  variant?: 'default' | 'outline' | 'ghost';
 }
 
 export function DesktopGameSearch({
@@ -19,6 +20,7 @@ export function DesktopGameSearch({
   showAllOption = false,
   className = '',
   disabled = false,
+  variant = 'default',
 }: DesktopGameSearchProps) {
   return (
     <GameSearchUI
@@ -29,7 +31,7 @@ export function DesktopGameSearch({
       className={className}
       disabled={disabled}
       size="md"
-      variant="default"
+      variant={variant}
       showSearchIcon={true}
       showGameIcon={true}
       maxHeight="240px"

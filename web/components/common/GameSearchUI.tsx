@@ -52,9 +52,9 @@ export function GameSearchUI({
     selectGame,
     getSelectedGameName,
     getSelectedGameIcon,
-  } = useGameSearch({ 
-    initialValue: value, 
-    showAllOption 
+  } = useGameSearch({
+    initialValue: value,
+    showAllOption
   });
 
   // 외부 클릭 시 드롭다운 닫기
@@ -128,7 +128,7 @@ export function GameSearchUI({
     if (!list) return;
 
     const items = list.querySelectorAll('[role="option"]');
-    const currentIndex = Array.from(items).findIndex(item => 
+    const currentIndex = Array.from(items).findIndex(item =>
       item.getAttribute('aria-selected') === 'true'
     );
 
@@ -216,11 +216,11 @@ export function GameSearchUI({
             {displayName}
           </span>
         </div>
-        <ChevronDown 
+        <ChevronDown
           className={cn(
             'h-4 w-4 flex-shrink-0 opacity-50 transition-transform',
             isOpen && 'rotate-180'
-          )} 
+          )}
         />
       </button>
 

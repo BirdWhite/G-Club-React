@@ -5,6 +5,7 @@ import { NotificationPreview } from '@/components/common/NotificationPreview';
 import { CalendarPreview } from '@/components/common/CalendarPreview';
 import { GamePostPreview } from '@/components/common/GamePostPreview';
 import { AuctionBanner } from '@/components/auction/AuctionBanner';
+import { ClubDashboard } from '@/components/common/ClubDashboard';
 import Link from 'next/link';
 import { Trophy, ChevronRight } from 'lucide-react';
 
@@ -13,6 +14,8 @@ export function HeroSection() {
   return (
     <section className="h-full flex flex-col justify-start items-center page-content-padding py-8">
       <div className="w-full max-w-4xl space-y-6">
+        <ClubDashboard />
+
         {/* PC: 1행 - 공지사항 + 일정 나란히 / 모바일: 세로 배치 */}
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
           <div className="w-full min-w-0">

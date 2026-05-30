@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/database/supabase';
+import { createServerClient, getCurrentUser } from '@/lib/database/supabase';
+import { isAdmin_Server } from '@/lib/database/auth/serverAuth';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,8 +9,7 @@ import sharp from 'sharp';
 // 이미지 업로드 처리 API
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json({ error: '인증되지 않은 요청입니다.' }, { status: 401 });
@@ -63,20 +63,13 @@ export async function POST(request: NextRequest) {
     // 'gameIcon' 타입일 경우 Supabase 스토리지에 업로드
     if (uploadType === 'gameIcon') {
       // 관리자 권한 확인
-      const { data: userProfile } = await supabase
-        .from('UserProfile')
-        .select(`
-          role:Role(name)
-        `)
-        .eq('userId', user.id)
-        .single();
-
-      if (!userProfile?.role || !['ADMIN', 'SUPER_ADMIN'].includes((userProfile.role as unknown as { name: string }).name)) {
+      if (!isAdmin_Server(user.role)) {
         return NextResponse.json({ 
           error: '게임 아이콘 업로드는 관리자만 가능합니다.' 
         }, { status: 403 });
       }
 
+      const supabase = await createServerClient();
       const { error } = await supabase.storage
         .from('game-icons')
         .upload(fileName, finalBuffer, {

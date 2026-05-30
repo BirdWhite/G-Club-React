@@ -130,124 +130,120 @@ export default function NoticeDetailPage() {
   }
 
   return (
-    <div className="bg-background">
-      <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-8">
-        <div className="w-full max-w-4xl">
-        {/* 목록 · 제목 · 작성자 (게임메이트와 동일한 3줄 구조) */}
-        <div className="pb-4">
-          {/* 첫 번째 줄: 목록(왼쪽) | 수정·삭제(오른쪽) */}
-          <div className="flex items-center justify-between mb-6">
-            <Link
-              href="/notices"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              목록
-            </Link>
-            {canEditOrDelete() && (
-              <div className="flex items-center gap-2 ml-auto">
-                <Link
-                  href={`/notices/${noticeId}/edit`}
-                  className="px-4 py-2 text-sm font-medium text-foreground bg-transparent hover:underline focus:outline-none transition-colors duration-200"
-                >
-                  수정
-                </Link>
-                <button
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="px-4 py-2 text-sm font-medium text-destructive bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
-                >
-                  {isDeleting ? '삭제 중...' : '삭제'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* 두 번째 줄: 제목 + 배지 */}
-          <div className="flex items-center gap-3 mb-2 min-w-0">
-            <h1 className="text-3xl font-bold text-foreground truncate">
-              {notice.title}
-            </h1>
-            {notice.isPinned && (
-              <span className="px-3 py-1 bg-primary text-primary-foreground text-sm rounded-full flex-shrink-0">
-                <Pin className="w-3 h-3 inline mr-1" />
-                고정
-              </span>
-            )}
-            {!notice.isPublished && (
-              <span className="px-3 py-1 bg-yellow-500/20 text-yellow-600 text-sm rounded-full flex-shrink-0">
-                임시저장
-              </span>
-            )}
-          </div>
-
-          {/* 세 번째 줄: 작성자(왼쪽) | 시간·조회수(오른쪽) */}
-          <div className="flex items-center justify-between text-sm text-muted-foreground gap-4">
-            <div className="flex items-center gap-2 min-w-0">
-              <ProfileAvatar 
-                name={notice.author.name}
-                image={notice.author.image}
-                size="sm"
-              />
-              <span>{notice.author.name}</span>
-              {notice.lastModifiedBy && notice.lastModifiedBy.userId !== notice.authorId && (
-                <span className="text-xs text-muted-foreground shrink-0">
-                  (수정: {notice.lastModifiedBy.name})
-                </span>
-              )}
+    <div className="max-w-4xl mx-auto page-content-padding py-8 space-y-8">
+      {/* 목록 · 제목 · 작성자 (게임메이트와 동일한 3줄 구조) */}
+      <div className="pb-4">
+        {/* 첫 번째 줄: 목록(왼쪽) | 수정·삭제(오른쪽) */}
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            href="/notices"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            목록
+          </Link>
+          {canEditOrDelete() && (
+            <div className="flex items-center gap-2 ml-auto">
+              <Link
+                href={`/notices/${noticeId}/edit`}
+                className="px-4 py-2 text-sm font-medium text-foreground bg-transparent hover:underline focus:outline-none transition-colors duration-200"
+              >
+                수정
+              </Link>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-destructive bg-transparent hover:underline focus:outline-none disabled:opacity-50 transition-colors duration-200"
+              >
+                {isDeleting ? '삭제 중...' : '삭제'}
+              </button>
             </div>
-            <div className="flex items-center gap-4 shrink-0">
-              {(() => {
-                const created = new Date(notice.createdAt).getTime();
-                const updated = new Date(notice.updatedAt).getTime();
-                const wasModified = updated - created > 1000;
-                return (
-                  <div className="flex items-center gap-4">
-                    {wasModified ? (
-                      <span className="text-sm">
-                        (수정됨) {formatAbsoluteTime(notice.updatedAt)}
-                      </span>
-                    ) : (
-                      <DateTimeDisplay 
-                        date={notice.publishedAt || notice.createdAt}
-                        className="text-sm"
-                        variant="absolute"
-                      />
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Eye className="w-4 h-4 text-muted-foreground" />
-                      <span>{notice.viewCount}</span>
-                    </div>
+          )}
+        </div>
+
+        {/* 두 번째 줄: 제목 + 배지 */}
+        <div className="flex items-center gap-3 mb-2 min-w-0">
+          <h1 className="text-3xl font-bold text-foreground truncate">
+            {notice.title}
+          </h1>
+          {notice.isPinned && (
+            <span className="px-3 py-1 bg-primary text-primary-foreground text-sm rounded-full flex-shrink-0">
+              <Pin className="w-3 h-3 inline mr-1" />
+              고정
+            </span>
+          )}
+          {!notice.isPublished && (
+            <span className="px-3 py-1 bg-yellow-500/20 text-yellow-600 text-sm rounded-full flex-shrink-0">
+              임시저장
+            </span>
+          )}
+        </div>
+
+        {/* 세 번째 줄: 작성자(왼쪽) | 시간·조회수(오른쪽) */}
+        <div className="flex items-center justify-between text-sm text-muted-foreground gap-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <ProfileAvatar 
+              name={notice.author.name}
+              image={notice.author.image}
+              size="sm"
+            />
+            <span>{notice.author.name}</span>
+            {notice.lastModifiedBy && notice.lastModifiedBy.userId !== notice.authorId && (
+              <span className="text-xs text-muted-foreground shrink-0">
+                (수정: {notice.lastModifiedBy.name})
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-4 shrink-0">
+            {(() => {
+              const created = new Date(notice.createdAt).getTime();
+              const updated = new Date(notice.updatedAt).getTime();
+              const wasModified = updated - created > 1000;
+              return (
+                <div className="flex items-center gap-4">
+                  {wasModified ? (
+                    <span className="text-sm">
+                      (수정됨) {formatAbsoluteTime(notice.updatedAt)}
+                    </span>
+                  ) : (
+                    <DateTimeDisplay 
+                      date={notice.publishedAt || notice.createdAt}
+                      className="text-sm"
+                      variant="absolute"
+                    />
+                  )}
+                  <div className="flex items-center gap-1">
+                    <Eye className="w-4 h-4 text-muted-foreground" />
+                    <span>{notice.viewCount}</span>
                   </div>
-                );
-              })()}
-            </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
+      </div>
 
-        {/* 공지사항 내용 (게임메이트 GamePostContent와 동일한 패딩) */}
-        <div className="bg-card border border-border overflow-hidden rounded-lg px-4 py-5 sm:p-6">
-          <RichTextViewer content={notice.content} />
-        </div>
+      {/* 공지사항 내용 카드 */}
+      <div className="bg-card border border-border rounded-xl px-6 py-6 sm:px-8 sm:py-8">
+        <RichTextViewer content={notice.content} />
+      </div>
 
-        {/* 요약 (있는 경우) */}
-        {notice.summary && (
-          <div className="mt-8 p-6 bg-muted rounded-2xl border border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-3">요약</h3>
-            <p className="text-muted-foreground leading-relaxed">
-              {notice.summary}
-            </p>
-          </div>
-        )}
+      {/* 요약 (있는 경우) */}
+      {notice.summary && (
+        <div className="p-6 bg-muted rounded-2xl border border-border">
+          <h3 className="text-lg font-semibold text-foreground mb-3">요약</h3>
+          <p className="text-muted-foreground leading-relaxed">
+            {notice.summary}
+          </p>
+        </div>
+      )}
 
-        {/* 댓글 섹션 */}
-        <div className="mt-8">
-          <NoticeCommentSection 
-            noticeId={noticeId} 
-            allowComments={notice.allowComments} 
-          />
-        </div>
-        </div>
+      {/* 댓글 섹션 */}
+      <div>
+        <NoticeCommentSection 
+          noticeId={noticeId} 
+          allowComments={notice.allowComments} 
+        />
       </div>
     </div>
   );

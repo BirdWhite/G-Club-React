@@ -72,10 +72,10 @@ export function TimePicker({
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             role="combobox"
             aria-expanded={isOpen}
-            className="w-full justify-between bg-input border-border hover:bg-accent"
+            className="h-11 w-full justify-between bg-input hover:bg-input/80 text-foreground transition-colors disabled:opacity-30 disabled:hover:bg-input rounded-lg"
             disabled={disabled}
           >
             <div className="flex items-center gap-2">
@@ -86,22 +86,22 @@ export function TimePicker({
             </div>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-4" align="start">
+        <PopoverContent className="w-auto p-4 rounded-lg" align="start">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium">시간</label>
                 <Select value={currentHour.toString()} onValueChange={handleHourChange}>
-                  <SelectTrigger className="w-20 bg-input border-border">
+                  <SelectTrigger className="w-20 bg-input border-transparent hover:bg-input/80 transition-colors rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
-                                     <SelectContent className="max-h-80">
-                     {[23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((hour) => (
-                       <SelectItem key={hour} value={hour.toString()}>
-                         {hour.toString().padStart(2, '0')}
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
+                  <SelectContent className="max-h-80 rounded-lg">
+                    {[23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((hour) => (
+                      <SelectItem key={hour} value={hour.toString()}>
+                        {hour.toString().padStart(2, '0')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               
@@ -110,10 +110,10 @@ export function TimePicker({
               <div className="space-y-2">
                 <label className="text-sm font-medium">분</label>
                 <Select value={currentMinute.toString()} onValueChange={handleMinuteChange}>
-                  <SelectTrigger className="w-20 bg-input border-border">
+                  <SelectTrigger className="w-20 bg-input border-transparent hover:bg-input/80 transition-colors rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-lg">
                     <SelectItem value="0">00</SelectItem>
                     <SelectItem value="30">30</SelectItem>
                   </SelectContent>

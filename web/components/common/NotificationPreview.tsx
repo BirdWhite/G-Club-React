@@ -157,11 +157,11 @@ export function NotificationPreview() {
               key={notification.id}
               href={notification.actionUrl || '/notifications'}
               onClick={(e) => handleNotificationClick(e, notification)}
-              className={`block p-4 min-h-[5.5rem] rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all group cursor-pointer ${
+              className={`block p-4 min-h-[5.5rem] rounded-lg border border-border/50 hover:border-primary transition-all duration-200 ease-in-out group cursor-pointer ${
                 notification.isRead ? 'bg-card' : 'bg-card border-l-4 border-l-primary'
               }`}
             >
-              <h3 className={`font-medium line-clamp-1 mb-2 group-hover:text-primary transition-colors ${
+              <h3 className={`font-medium line-clamp-1 mb-2 transition-all duration-200 ease-in-out ${
                 notification.isRead ? 'text-muted-foreground' : 'text-foreground'
               }`}>
                 {notification.title}

@@ -318,118 +318,116 @@ export function MobileGamePostForm({ initialData }: MobileGamePostFormProps) {
               </div>
 
               {/* 모이면 바로 출발 체크박스 */}
-              <FormField
-                control={form.control}
-                name="isImmediate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border rounded-md bg-card">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="font-semibold text-foreground">
-                        모이면 바로 출발
+              {/* 모이면 바로 출발 & 시간설정 */}
+              <div className="flex items-center gap-4 py-2 border-b border-border">
+                <FormField
+                  control={form.control}
+                  name="isImmediate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-2 space-y-0 py-1.5 select-none flex-shrink-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="font-semibold text-foreground text-sm cursor-pointer whitespace-nowrap">
+                        바로 출발
                       </FormLabel>
-                      <div className="text-sm text-muted-foreground">
-                        시작 시간을 지정하지 않고 인원이 모두 모이면 바로 출발합니다.
-                      </div>
-                    </div>
-                  </FormItem>
+                    </FormItem>
+                  )}
+                />
+
+                {!form.watch('isImmediate') && (
+                  <div className="flex-1 flex gap-3 items-center">
+                    {/* 왼쪽: 날짜 선택 */}
+                    <FormField
+                      control={form.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormControl>
+                            <button
+                              type="button"
+                              onClick={() => setShowDatePicker(true)}
+                              className="flex items-center justify-start gap-1.5 w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
+                            >
+                              <CalendarIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="truncate text-left">
+                                {field.value ? (
+                                  (() => {
+                                    const today = new Date();
+                                    const tomorrow = new Date(today);
+                                    tomorrow.setDate(today.getDate() + 1);
+                                    const dayAfterTomorrow = new Date(today);
+                                    dayAfterTomorrow.setDate(today.getDate() + 2);
+
+                                    const selectedDate = new Date(field.value);
+                                    selectedDate.setHours(0, 0, 0, 0);
+                                    today.setHours(0, 0, 0, 0);
+                                    tomorrow.setHours(0, 0, 0, 0);
+                                    dayAfterTomorrow.setHours(0, 0, 0, 0);
+
+                                    if (selectedDate.getTime() === today.getTime()) {
+                                      return '오늘';
+                                    } else if (selectedDate.getTime() === tomorrow.getTime()) {
+                                      return '내일';
+                                    } else if (selectedDate.getTime() === dayAfterTomorrow.getTime()) {
+                                      return '모레';
+                                    } else {
+                                      return format(field.value, "M월 d일 (E)", { locale: ko });
+                                    }
+                                  })()
+                                ) : (
+                                  "날짜 선택"
+                                )}
+                              </span>
+                            </button>
+                          </FormControl>
+                          <FormMessage />
+
+                          <MobileDatePickerModal
+                            isOpen={showDatePicker}
+                            value={field.value}
+                            onClose={() => setShowDatePicker(false)}
+                            onSelect={field.onChange}
+                          />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* 오른쪽: 시간 선택 */}
+                    <FormField
+                      control={form.control}
+                      name="startTime"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormControl>
+                            <button
+                              type="button"
+                              onClick={() => setShowTimePicker(true)}
+                              className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
+                            >
+                              <span className="truncate text-left">
+                                {field.value || "시간 선택"}
+                              </span>
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          </FormControl>
+                          <FormMessage />
+
+                          <MobileTimePickerModal
+                            isOpen={showTimePicker}
+                            value={field.value}
+                            onClose={() => setShowTimePicker(false)}
+                            onSelect={field.onChange}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 )}
-              />
-
-              {!form.watch('isImmediate') && (
-                <div className="flex gap-4">
-                  {/* 왼쪽: 날짜 선택 */}
-                  <FormField
-                    control={form.control}
-                    name="startDate"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormControl>
-                          <button
-                            type="button"
-                            onClick={() => setShowDatePicker(true)}
-                            className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
-                          >
-                            <span className="truncate">
-                              {field.value ? (
-                                (() => {
-                                  const today = new Date();
-                                  const tomorrow = new Date(today);
-                                  tomorrow.setDate(today.getDate() + 1);
-                                  const dayAfterTomorrow = new Date(today);
-                                  dayAfterTomorrow.setDate(today.getDate() + 2);
-
-                                  const selectedDate = new Date(field.value);
-                                  selectedDate.setHours(0, 0, 0, 0);
-                                  today.setHours(0, 0, 0, 0);
-                                  tomorrow.setHours(0, 0, 0, 0);
-                                  dayAfterTomorrow.setHours(0, 0, 0, 0);
-
-                                  if (selectedDate.getTime() === today.getTime()) {
-                                    return '오늘';
-                                  } else if (selectedDate.getTime() === tomorrow.getTime()) {
-                                    return '내일';
-                                  } else if (selectedDate.getTime() === dayAfterTomorrow.getTime()) {
-                                    return '모레';
-                                  } else {
-                                    return format(field.value, "M월 d일 (E)", { locale: ko });
-                                  }
-                                })()
-                              ) : (
-                                "날짜 선택"
-                              )}
-                            </span>
-                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </FormControl>
-                        <FormMessage />
-
-                        <MobileDatePickerModal
-                          isOpen={showDatePicker}
-                          value={field.value}
-                          onClose={() => setShowDatePicker(false)}
-                          onSelect={field.onChange}
-                        />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* 오른쪽: 시간 선택 */}
-                  <FormField
-                    control={form.control}
-                    name="startTime"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormControl>
-                          <button
-                            type="button"
-                            onClick={() => setShowTimePicker(true)}
-                            className="flex items-center justify-between w-full py-3 px-0 text-base font-medium text-foreground border-b border-border bg-transparent focus:outline-none focus:border-primary transition-colors"
-                          >
-                            <span className="truncate">
-                              {field.value || "시간 선택"}
-                            </span>
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </FormControl>
-                        <FormMessage />
-
-                        <MobileTimePickerModal
-                          isOpen={showTimePicker}
-                          value={field.value}
-                          onClose={() => setShowTimePicker(false)}
-                          onSelect={field.onChange}
-                        />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
+              </div>
 
               <FormField
                 control={form.control}

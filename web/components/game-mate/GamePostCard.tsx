@@ -48,11 +48,11 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
     : '...';
 
   return (
-    <div className="group bg-card overflow-hidden shadow rounded-lg transition-all duration-300 flex flex-col h-full relative hover:shadow-lg hover:-translate-y-1 border border-border">
+    <div className="group bg-card overflow-hidden rounded-lg transition-all duration-200 ease-in-out flex flex-col h-full relative border border-border hover:border-primary">
       <Link href={`/game-mate/${post.id}`} className="flex-1 flex flex-col p-4">
         {/* 상단: 상태(왼쪽) | 참여/작성자 아이콘(오른쪽) */}
         <div className="flex items-center justify-between mb-3 text-xs">
-          <span className={`px-2 py-1 rounded-full font-semibold transition-colors duration-300 ${currentStatus.className}`}>
+          <span className={`px-2 py-1 rounded-full font-semibold transition-all duration-200 ease-in-out ${currentStatus.className}`}>
             {currentStatus.text}
           </span>
           <div className="flex items-center">
@@ -71,7 +71,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
         {/* 글제목·시간(왼쪽) + 게임 아이콘(오른쪽) */}
         <div className="flex items-center justify-between min-w-0 mb-4">
           <div className="flex flex-col flex-1 min-w-0 mr-2 text-left">
-            <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-300 truncate">
+            <h3 className="text-xl font-bold text-foreground transition-all duration-200 ease-in-out truncate">
               {post.title}
             </h3>
             <div className={`flex items-center text-xs mt-1 ${post.status === 'COMPLETED' || post.status === 'EXPIRED' ? 'text-muted-foreground' : 'text-primary'}`}>
@@ -100,7 +100,7 @@ const GamePostCard = ({ post, currentUserId }: GamePostCardProps) => {
           <div className="relative w-full bg-card-foreground/10 rounded-full h-6 overflow-hidden">
             {/* 진행바 배경 */}
             <div
-              className={`h-full transition-all duration-300 ease-out ${post.status === 'COMPLETED' || post.status === 'EXPIRED'
+              className={`h-full transition-all duration-200 ease-in-out ${post.status === 'COMPLETED' || post.status === 'EXPIRED'
                   ? 'bg-card-foreground/30'
                   : (post._count?.participants || 0) >= post.maxParticipants
                     ? 'bg-chart-3/70'

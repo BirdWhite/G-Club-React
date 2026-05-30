@@ -123,7 +123,7 @@ export function ParticipantList({
         return (
           <div 
             key={participant.id} 
-            className={`group relative flex items-center p-3 border border-border rounded-lg shadow-lg transition-all duration-200 ${
+            className={`group relative flex items-center p-3 border border-border rounded-lg transition-all duration-200 ${
               isLeftEarly ? 'bg-card opacity-70' : 'bg-card'
             }`}
           >

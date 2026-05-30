@@ -402,11 +402,7 @@ export function Header() {
                         name={profile?.name}
                         image={profile?.image}
                         size="md"
-                        className={`transition-all duration-200 group-hover:scale-110 ${
-                          pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit'
-                            ? 'shadow-lg shadow-primary/50'
-                            : ''
-                        }`}
+                        className="transition-all duration-200 group-hover:scale-110"
                         unoptimized={profile?.image?.includes('127.0.0.1') || profile?.image?.includes('kakaocdn.net')}
                       />
                       {(pathname === (profile?.userId ? `/profile/${profile.userId}` : "/profile") || pathname === '/profile/edit') && (
@@ -418,7 +414,7 @@ export function Header() {
               ) : (
                 <Link
                   href="/auth/login"
-                  className="inline-flex items-center px-3 py-2 md:px-4 border border-transparent text-sm font-medium rounded-md shadow-sm text-neutral-950 bg-cyber-blue hover:bg-cyber-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-blue focus:ring-offset-background transition-colors"
+                  className="inline-flex items-center px-3 py-2 md:px-4 border border-transparent text-sm font-medium rounded-md text-neutral-950 bg-cyber-blue hover:bg-cyber-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyber-blue focus:ring-offset-background transition-all duration-200 ease-in-out"
                 >
                   로그인
                 </Link>

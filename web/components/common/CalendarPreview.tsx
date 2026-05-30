@@ -121,11 +121,11 @@ export function CalendarPreview() {
               <Link
                 key={event.id}
                 href={`/calendar/${event.id}`}
-                className="flex min-h-[5.5rem] rounded-lg bg-card border border-border/50 hover:border-border hover:bg-muted/30 transition-all group overflow-hidden p-4"
+                className="flex min-h-[5.5rem] rounded-lg bg-card border border-border/50 hover:border-primary transition-all duration-200 ease-in-out group overflow-hidden p-4"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                    <h3 className="font-medium text-foreground transition-all duration-200 ease-in-out line-clamp-1">
                       {event.title}
                     </h3>
                     {config && (

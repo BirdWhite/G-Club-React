@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { GamePost } from '@/types/models';
 import toast from 'react-hot-toast';
 import { useGamePostDetailSubscription } from '@/hooks/useRealtimeSubscription';
-import { ChevronDown, ChevronRight, Users, Clock } from 'lucide-react';
+import { Users, Clock } from 'lucide-react';
 
 import { GamePostHeader } from '@/components/game-mate/GamePostHeader';
 import { GamePostContent } from '@/components/game-mate/GamePostContent';
@@ -23,8 +23,6 @@ interface GamePostDetailClientProps {
 export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClientProps) {
   const router = useRouter();
   const { post, loading: isSubmitting, refresh } = useGamePostDetailSubscription(initialPost.id, initialPost);
-  const [isParticipantListExpanded, setIsParticipantListExpanded] = useState(false);
-  const [isWaitingListExpanded, setIsWaitingListExpanded] = useState(false);
   
   // 조회수 증가 (페이지 로드 시 한 번만)
   const viewCountIncremented = useRef(false);
@@ -167,9 +165,9 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
   const isParticipating = currentPost.isParticipating; // Use server-provided value
   const isWaiting = currentPost.isWaiting; // Use server-provided value
   
-
   return (
-    <div className="max-w-4xl mx-auto px-8 sm:px-10 lg:px-12 py-8 pb-[calc(4rem+max(1rem,env(safe-area-inset-bottom)))] md:pb-8">
+    <div className="max-w-4xl mx-auto page-content-padding py-8 pb-[calc(4rem+max(1rem,env(safe-area-inset-bottom)))] md:pb-8 space-y-8">
+      {/* 헤더 (카드 외부): 목록 버튼, 제목, 작성자, 시간 */}
       <GamePostHeader
         post={currentPost}
         isOwner={isOwner || false}
@@ -179,88 +177,66 @@ export function GamePostDetailClient({ initialPost, userId }: GamePostDetailClie
         loading={isSubmitting}
       />
 
-      <div className="mt-2">
+      {/* 본문 카드: 글 내용만 */}
+      <div className="bg-card border border-border rounded-xl px-6 py-6 sm:px-8 sm:py-8">
         <GamePostContent post={currentPost} />
       </div>
 
-      <div className="mt-8">
-        <div
-          className="flex items-center mb-4 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors w-fit"
-          onClick={() => setIsParticipantListExpanded(!isParticipantListExpanded)}
-        >
-          <Users className="h-5 w-5 text-foreground mr-2" />
-          <span className="text-xl font-bold text-foreground mr-3">
-            참여 {currentPost.participants?.filter(p => p.status === 'ACTIVE').length || 0}/{currentPost.maxParticipants}
+      {/* 참여자 목록 */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-foreground" />
+          <span className="text-xl font-bold text-foreground">
+            참여 {currentPost.participants?.filter(p => p.status === 'ACTIVE').length || 0}/{currentPost.maxParticipants}명
           </span>
-          <div className="ml-1">
-            {isParticipantListExpanded ? (
-              <ChevronDown className="h-5 w-5 text-gray-500" />
-            ) : (
-              <ChevronRight className="h-5 w-5 text-gray-500" />
-            )}
-          </div>
         </div>
-        {isParticipantListExpanded && (
-          <ParticipantList
-            participants={currentPost.participants}
-            authorId={currentPost.author.userId}
-            gamePostId={currentPost.id}
-            gameStatus={currentPost.status}
-            isOwner={isOwner}
-            onParticipantUpdate={refresh}
-          />
-        )}
+        <ParticipantList
+          participants={currentPost.participants}
+          authorId={currentPost.author.userId}
+          gamePostId={currentPost.id}
+          gameStatus={currentPost.status}
+          isOwner={isOwner}
+          onParticipantUpdate={refresh}
+        />
       </div>
 
+      {/* 예비 참여자 목록 */}
       {currentPost.waitingList && currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING').length > 0 && (
-         <div className="mt-8">
-            <div 
-              className="flex items-center mb-4 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors w-fit"
-              onClick={() => setIsWaitingListExpanded(!isWaitingListExpanded)}
-            >
-              <Clock className="h-5 w-5 text-foreground mr-2" />
-              <h3 className="text-xl font-bold text-cyber-gray mr-3">
-                예비 {currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING').length}
+         <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-foreground" />
+              <h3 className="text-xl font-bold text-foreground">
+                예비 {currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING').length}명
               </h3>
-              <div className="ml-3">
-                {isWaitingListExpanded ? (
-                  <ChevronDown className="h-5 w-5 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-5 w-5 text-gray-500" />
-                )}
-              </div>
             </div>
-            {isWaitingListExpanded && (
-              <WaitingList waitingList={currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING')} />
-            )}
+            <WaitingList waitingList={currentPost.waitingList.filter(w => w.status === 'WAITING' || w.status === 'INVITED' || w.status === 'TIME_WAITING')} />
          </div>
       )}
 
+      {/* 액션 버튼 영역 */}
       {userId && (
-        <div className="mt-8">
-          <ActionButtons
-            postStatus={currentPost.status}
-            isFull={currentPost.isFull || false}
-            isParticipating={isParticipating || false}
-            isWaiting={isWaiting || false}
-            isOwner={isOwner || false}
-            gamePostId={currentPost.id}
-            gameStartTime={currentPost.startTime}
-            waitingList={currentPost.waitingList || []}
-            onParticipate={handleParticipate}
-            onCancelParticipation={handleCancelParticipation}
-            onLeaveEarly={handleLeaveEarly}
-            onWait={handleWait}
-            onToggleStatus={handleToggleStatus}
-            onCloseRecruitment={handleCloseRecruitment}
-            onWaitingListUpdate={refresh}
-            loading={isSubmitting}
-          />
-        </div>
+        <ActionButtons
+          postStatus={currentPost.status}
+          isFull={currentPost.isFull || false}
+          isParticipating={isParticipating || false}
+          isWaiting={isWaiting || false}
+          isOwner={isOwner || false}
+          gamePostId={currentPost.id}
+          gameStartTime={currentPost.startTime}
+          waitingList={currentPost.waitingList || []}
+          onParticipate={handleParticipate}
+          onCancelParticipation={handleCancelParticipation}
+          onLeaveEarly={handleLeaveEarly}
+          onWait={handleWait}
+          onToggleStatus={handleToggleStatus}
+          onCloseRecruitment={handleCloseRecruitment}
+          onWaitingListUpdate={refresh}
+          loading={isSubmitting}
+        />
       )}
 
       {/* 댓글 섹션 */}
-      <div className="mt-8">
+      <div>
         <CommentSection gamePostId={currentPost.id} />
       </div>
     </div>

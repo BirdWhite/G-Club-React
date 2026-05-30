@@ -25,15 +25,15 @@ export function GamePostHeader({
   canDelete = false,
   loading 
 }: GamePostHeaderProps) {
-  // 상태 정보 정의 (사이버펑크 테마에 맞게 수정)
+  // 상태 정보 정의 (소프트 미니멀 파스텔 테마로 정렬)
   const statusInfo = {
-    OPEN: { text: '모집 중', className: 'bg-cyber-green/20 text-cyber-green border border-cyber-green/30' },
-    IN_PROGRESS: { text: '게임 중', className: 'bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/30' },
-    COMPLETED: { text: '종료', className: 'bg-cyber-gray/20 text-cyber-gray border border-cyber-gray/30' },
-    EXPIRED: { text: '만료', className: 'bg-cyber-gray/20 text-cyber-gray border border-cyber-gray/30' },
+    OPEN: { text: '모집 중', className: 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' },
+    IN_PROGRESS: { text: '게임 중', className: 'bg-violet-500/10 text-violet-500 border border-violet-500/20' },
+    COMPLETED: { text: '종료', className: 'bg-muted text-muted-foreground border border-border' },
+    EXPIRED: { text: '만료', className: 'bg-muted text-muted-foreground border border-border' },
   };
   
-  const fullStatus = { text: '가득 참', className: 'bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30' };
+  const fullStatus = { text: '가득 참', className: 'bg-amber-500/10 text-amber-500 border border-amber-500/20' };
   
   // OPEN 상태일 때만 가득 찬 경우 표시
   const currentStatus = (post.isFull && post.status === 'OPEN') ? fullStatus : (statusInfo[post.status] || statusInfo.COMPLETED);
@@ -80,7 +80,7 @@ export function GamePostHeader({
       {/* 두 번째 줄: 제목+상태뱃지(왼쪽) | 게임 아이콘(오른쪽) */}
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-3xl font-bold text-cyber-gray truncate">{post.title || '제목 없음'}</h1>
+          <h1 className="text-3xl font-bold text-foreground truncate">{post.title || '제목 없음'}</h1>
           <span className={`px-3 py-1 rounded-full font-semibold text-sm flex-shrink-0 ${currentStatus.className}`}>
             {currentStatus.text}
           </span>

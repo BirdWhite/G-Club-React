@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +15,7 @@ import { Slider } from '@/components/ui/slider';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { TimePicker } from '@/components/ui/time-picker';
@@ -209,7 +210,7 @@ export function GamePostForm({ initialData }: GamePostFormProps) {
               <FormControl>
                 <Input
                   placeholder="파티원을 구하는 목적을 명확하게 보여주세요. (최대 50자)"
-                  className="bg-input border-border focus:bg-input"
+                  className="h-11 bg-input border-transparent focus:bg-input rounded-lg"
                   maxLength={50}
                   {...field}
                 />
@@ -219,18 +220,84 @@ export function GamePostForm({ initialData }: GamePostFormProps) {
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <FormField
+          control={form.control}
+          name="content"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>내용</FormLabel>
+              <FormControl>
+                <textarea
+                  {...field}
+                  placeholder="비워두면 제목과 동일한 내용으로 작성됩니다. (예: 함께 즐길 파티원을 모집합니다!)"
+                  className="w-full min-h-[120px] px-3 py-2 border border-transparent rounded-lg bg-input text-foreground placeholder:text-muted-foreground hover:bg-input/80 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-vertical transition-colors text-base md:text-sm"
+                  maxLength={2000}
+                />
+              </FormControl>
+              <div className="text-xs text-muted-foreground text-right">
+                {field.value?.length || 0}/2000
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
           <FormField
             control={form.control}
-            name="gameId"
+            name="startDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel className={cn(form.watch('isImmediate') && "opacity-30")}>시작 날짜</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="ghost"
+                        disabled={form.watch('isImmediate')}
+                        className="h-11 w-full justify-start bg-input hover:bg-input/80 text-foreground transition-colors disabled:opacity-30 disabled:hover:bg-input rounded-lg font-normal"
+                      >
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="h-4 w-4 opacity-50 flex-shrink-0" />
+                          {field.value ? (
+                            format(field.value, "PPP", { locale: ko })
+                          ) : (
+                            <span>날짜를 선택하세요</span>
+                          )}
+                        </div>
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                      }
+                      initialFocus
+                      locale={ko}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="startTime"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>게임</FormLabel>
+                <FormLabel className={cn(form.watch('isImmediate') && "opacity-30")}>시작 시간</FormLabel>
                 <FormControl>
-                  <DesktopGameSearch
+                  <TimePicker
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="게임을 선택하세요"
+                    placeholder="시간을 선택하세요"
+                    disabled={form.watch('isImmediate')}
                   />
                 </FormControl>
                 <FormMessage />
@@ -240,35 +307,60 @@ export function GamePostForm({ initialData }: GamePostFormProps) {
 
           <FormField
             control={form.control}
+            name="isImmediate"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <label className="flex flex-row items-center space-x-3 h-11 px-4 border border-border rounded-lg bg-card hover:bg-card/80 transition-colors cursor-pointer select-none">
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <span className="text-sm text-foreground">
+                      모이면 바로 출발
+                    </span>
+                  </label>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <FormField
+            control={form.control}
             name="maxParticipants"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>최대 인원</FormLabel>
                 <FormControl>
-                  <div className="space-y-4">
-                    <Input
-                      type="number"
-                      value={field.value || ''}
-                      onChange={e => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          field.onChange(0);
-                        } else {
-                          const numValue = Number(value);
-                          if (!isNaN(numValue)) {
-                            field.onChange(numValue);
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50 pointer-events-none" />
+                      <Input
+                        type="number"
+                        value={field.value || ''}
+                        onChange={e => {
+                          const value = e.target.value;
+                          if (value === '') {
+                            field.onChange(0);
+                          } else {
+                            const numValue = Number(value);
+                            if (!isNaN(numValue)) {
+                              field.onChange(numValue);
+                            }
                           }
-                        }
-                      }}
-                      min="2"
-                      max="100"
-                      className="bg-input border-border focus:bg-input"
-                    />
+                        }}
+                        min="2"
+                        max="100"
+                        className="w-24 h-11 pl-10 bg-input border-transparent focus:bg-input rounded-lg"
+                      />
+                    </div>
 
                     {/* 슬라이더 */}
-                    <div className="space-y-2">
+                    <div className="flex-1 space-y-2">
                       <Slider
-                        value={[[2, 4, 5, 8, 10].indexOf(field.value)]}
+                        value={[Math.max(0, [2, 4, 5, 8, 10].indexOf(field.value))]}
                         onValueChange={([newValue]) => {
                           const values = [2, 4, 5, 8, 10];
                           const selectedValue = values[newValue];
@@ -279,7 +371,7 @@ export function GamePostForm({ initialData }: GamePostFormProps) {
                         step={1}
                         className="w-full"
                       />
-                      <div className="flex justify-between text-xs text-muted-foreground">
+                      <div className="flex justify-between text-xs text-muted-foreground px-1">
                         <span>2</span>
                         <span>4</span>
                         <span>5</span>
@@ -293,114 +385,27 @@ export function GamePostForm({ initialData }: GamePostFormProps) {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="gameId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>게임</FormLabel>
+                <FormControl>
+                  <DesktopGameSearch
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="게임을 선택하세요"
+                    variant="ghost"
+                    className="h-11 bg-input border-transparent hover:bg-input/80 text-foreground transition-colors rounded-lg"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-
-        <FormField
-          control={form.control}
-          name="isImmediate"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border rounded-md">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>
-                  모이면 바로 출발
-                </FormLabel>
-                <div className="text-sm text-muted-foreground">
-                  시작 시간을 지정하지 않고 인원이 모두 모이면 바로 출발합니다.
-                </div>
-              </div>
-            </FormItem>
-          )}
-        />
-
-        {!form.watch('isImmediate') && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <FormField
-              control={form.control}
-              name="startDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>시작 날짜</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className="w-full pl-3 text-left font-normal bg-input border-border hover:bg-accent"
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: ko })
-                          ) : (
-                            <span>날짜를 선택하세요</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date(new Date().setHours(0, 0, 0, 0))
-                        }
-                        initialFocus
-                        locale={ko}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="startTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>시작 시간</FormLabel>
-                  <FormControl>
-                    <TimePicker
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="시간을 선택하세요"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        )}
-
-        <FormField
-          control={form.control}
-          name="content"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>내용</FormLabel>
-              <FormControl>
-                <textarea
-                  {...field}
-                  placeholder="비워두면 제목과 동일한 내용으로 작성됩니다. (예: 함께 즐길 파티원을 모집합니다!)"
-                  className="w-full min-h-[120px] px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-vertical"
-                  maxLength={2000}
-                />
-              </FormControl>
-              <div className="text-xs text-muted-foreground text-right">
-                {field.value?.length || 0}/2000
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <FormField
           control={form.control}
@@ -421,10 +426,10 @@ export function GamePostForm({ initialData }: GamePostFormProps) {
         />
 
         <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={() => router.push('/game-mate')}>
+          <Button type="button" variant="outline" className="rounded-lg" onClick={() => router.push('/game-mate')}>
             목록
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" className="rounded-lg" disabled={isSubmitting}>
             {isSubmitting ? '저장 중...' : (isEditMode ? '수정하기' : '작성하기')}
           </Button>
         </div>

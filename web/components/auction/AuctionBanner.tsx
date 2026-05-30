@@ -27,12 +27,12 @@ export function AuctionBanner() {
             <span className="relative inline-flex rounded-full h-4 w-4 bg-white" />
           </div>
           <div>
-            <h3 className="text-white font-black text-xl tracking-tight shadow-sm">{activeAuction.name}</h3>
+            <h3 className="text-white font-black text-xl tracking-tight">{activeAuction.name}</h3>
             <p className="text-white/80 font-bold text-sm tracking-wide">지금 바로 입장하여 실시간 경매를 관전하세요!</p>
           </div>
         </div>
         
-        <span className="shrink-0 bg-white/20 text-white border border-white/50 px-5 py-2 rounded-full font-black text-sm tracking-widest uppercase backdrop-blur-sm group-hover:bg-white group-hover:text-red-600 transition-colors">
+        <span className="shrink-0 bg-white/10 text-white border border-white/40 px-5 py-2 rounded-full font-black text-sm tracking-widest uppercase group-hover:bg-white group-hover:text-red-600 transition-all duration-200 ease-in-out">
           입장하기 &rarr;
         </span>
       </div>

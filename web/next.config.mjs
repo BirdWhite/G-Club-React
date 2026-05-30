@@ -76,6 +76,18 @@ const nextConfig = {
         port: '8000',
         pathname: '/storage/v1/object/public/**',
       },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '54321',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '54321',
+        pathname: '/storage/v1/object/public/**',
+      },
       // 카카오 프로필 이미지 (k.kakaocdn.net, img1.kakaocdn.net 등)
       {
         protocol: 'https',

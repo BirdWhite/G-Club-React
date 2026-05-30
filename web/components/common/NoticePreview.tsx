@@ -67,7 +67,7 @@ export function NoticePreview() {
               <Link
                 key={notice.id}
                 href={`/notices/${notice.id}`}
-                className="flex min-h-[5.5rem] rounded-lg bg-card border border-border/50 hover:border-border hover:bg-muted/30 transition-all group overflow-hidden"
+                className="flex min-h-[5.5rem] rounded-lg bg-card border border-border/50 hover:border-primary transition-all duration-200 ease-in-out group overflow-hidden"
               >
                 {thumbnailUrl && (
                   <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-video self-stretch">
@@ -89,7 +89,7 @@ export function NoticePreview() {
                           고정
                         </span>
                       )}
-                      <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                      <h3 className="font-medium text-foreground transition-all duration-200 ease-in-out line-clamp-1">
                         {notice.title}
                       </h3>
                     </div>

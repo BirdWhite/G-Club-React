@@ -50,13 +50,8 @@ export default function EditGamePostPage() {
 
   if (error || !post) {
     return (
-      <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-12">
-        <div className="w-full max-w-4xl">
-        <div className="bg-card border border-border shadow-lg rounded-lg p-8 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">오류 발생</h1>
-          <p className="text-muted-foreground">{error || '게시글을 찾을 수 없습니다.'}</p>
-        </div>
-        </div>
+      <div className="max-w-4xl mx-auto page-content-padding py-12">
+        <p className="text-muted-foreground">{error || '게시글을 찾을 수 없습니다.'}</p>
       </div>
     );
   }
@@ -66,16 +61,11 @@ export default function EditGamePostPage() {
   }
 
   return (
-    <div className="flex flex-col items-center px-8 sm:px-10 lg:px-12 py-12">
-        <div className="w-full max-w-4xl">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-extrabold text-foreground">모집글 수정하기</h1>
-        <p className="mt-2 text-sm text-muted-foreground">게시글 내용을 수정하고 다시 파티원을 모집해보세요.</p>
+    <div className="max-w-4xl mx-auto page-content-padding py-12 space-y-8">
+      <div className="text-left">
+        <h1 className="text-3xl font-extrabold text-foreground">게임 메이트 글 수정</h1>
       </div>
-      <div className="bg-card border border-border shadow-lg rounded-lg p-6 sm:p-8">
-        <GamePostForm initialData={post} />
-      </div>
-        </div>
-      </div>
+      <GamePostForm initialData={post} />
+    </div>
   );
 }

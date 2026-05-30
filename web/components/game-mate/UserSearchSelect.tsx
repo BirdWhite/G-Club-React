@@ -98,7 +98,7 @@ export function UserSearchSelect({
           onFocus={() => searchResults.length > 0 && setShowResults(true)}
           onBlur={handleBlur}
           placeholder={placeholder}
-          className="pl-10 bg-input border-border focus:bg-input"
+          className="pl-10 h-11 bg-input border-transparent hover:bg-input/80 focus:bg-input transition-colors"
           disabled={disabled}
         />
         {isSearching && (
