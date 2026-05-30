@@ -339,28 +339,28 @@ html {
 
 
 @theme {
-  --color-cyber-blue: #38BDF8;   /* 일렉트릭 블루: 포인트, 버튼 */
-  --color-cyber-purple: #C252E1; /* 매지컬 퍼플: 액센트, 강조 */
-  --color-cyber-orange: #F97316; /* 네온 오렌지: 알림, 강조 */
-  --color-cyber-gray: #E5E7EB;   /* 실버 그레이: 카드, 서브 배경 */
-  --color-cyber-darkgray: #6B7280;
-  --color-cyber-green: #34D399;
-  --color-cyber-yellow: #FDE047;
-  --color-cyber-pink: #F472B6;
-  --color-cyber-red: #EF4444;
+  --color-cyber-blue: var(--cyber-blue);   /* 일렉트릭 블루: 포인트, 버튼 */
+  --color-cyber-purple: var(--cyber-purple); /* 매지컬 퍼플: 액센트, 강조 */
+  --color-cyber-orange: var(--cyber-orange); /* 네온 오렌지: 알림, 강조 */
+  --color-cyber-gray: var(--cyber-gray);   /* 실버 그레이: 카드, 서브 배경 */
+  --color-cyber-darkgray: var(--cyber-darkgray);
+  --color-cyber-green: var(--cyber-green);
+  --color-cyber-yellow: var(--cyber-yellow);
+  --color-cyber-pink: var(--cyber-pink);
+  --color-cyber-red: var(--cyber-red);
 
-  --color-cyber-red-hover:       oklch(0.58 0.2078 25.33);
+  --color-cyber-red-hover: var(--cyber-red-hover);
 
   /* 관리자 대시보드 팔레트 (밝음 → 어두움) */
-  --color-admin-50: #E8F5BD;   /* 페이지 배경 */
-  --color-admin-100: #C7EABB;  /* 카드 배경 */
-  --color-admin-200: #A2CB8B;  /* 테두리, 구분선 */
-  --color-admin-500: #84B179;   /* 버튼, 링크, CTA */
-  --color-admin-background: #E8F5BD;
+  --color-admin-50: var(--admin-50);   /* 페이지 배경 */
+  --color-admin-100: var(--admin-100);  /* 카드 배경 */
+  --color-admin-200: var(--admin-200);  /* 테두리, 구분선 */
+  --color-admin-500: var(--admin-500);   /* 버튼, 링크, CTA */
+  --color-admin-background: var(--admin-50);
   --color-admin-foreground: var(--color-neutral-950);
-  --color-admin-card: #C7EABB;
-  --color-admin-border: #A2CB8B;
-  --color-admin-primary: #84B179;
+  --color-admin-card: var(--admin-100);
+  --color-admin-border: var(--admin-200);
+  --color-admin-primary: var(--admin-500);
 
   /* Tailwind CSS Utility mappings to CSS variables */
   --radius-sm: calc(var(--radius) - 4px);
@@ -415,6 +415,28 @@ html {
 :root {
   --radius: 0.625rem;
   
+  /* Brand Colors */
+  --cyber-blue: #38BDF8;
+  --cyber-purple: #C252E1;
+  --cyber-orange: #F97316;
+  --cyber-gray: #E5E7EB;
+  --cyber-darkgray: #6B7280;
+  --cyber-green: #34D399;
+  --cyber-yellow: #FDE047;
+  --cyber-pink: #F472B6;
+  --cyber-red: #EF4444;
+  --cyber-red-hover: oklch(0.58 0.2078 25.33);
+
+  /* Admin Colors */
+  --admin-50: #E8F5BD;
+  --admin-100: #C7EABB;
+  --admin-200: #A2CB8B;
+  --admin-500: #84B179;
+
+  /* Hover & Glow */
+  --primary-hover: #0ea5e9;
+  --primary-glow: rgba(56, 189, 248, 0.25);
+  
   /* Light Mode Colors (Slate/Neutral bases for clean light theme) */
   --background: var(--color-neutral-100);
   --foreground: var(--color-neutral-900);
@@ -425,7 +447,7 @@ html {
   --card-elevated: var(--color-neutral-200);
   --popover: var(--color-neutral-50);
   --popover-foreground: var(--color-neutral-900);
-  --primary: var(--color-cyber-blue);
+  --primary: var(--cyber-blue);
   --primary-foreground: var(--color-neutral-950);
   --secondary: var(--color-neutral-100);
   --secondary-foreground: var(--color-neutral-900);
@@ -433,24 +455,24 @@ html {
   --muted-foreground: var(--color-neutral-500);
   --accent: var(--color-neutral-200);
   --accent-foreground: var(--color-neutral-900);
-  --destructive: var(--color-cyber-red);
+  --destructive: var(--cyber-red);
   --border: var(--color-neutral-200);
   --input: var(--color-neutral-200);
-  --ring: var(--color-cyber-blue);
-  --chart-1: var(--color-cyber-blue);
-  --chart-2: var(--color-cyber-purple);
-  --chart-3: var(--color-cyber-green);
-  --chart-4: var(--color-cyber-orange);
-  --chart-5: var(--color-cyber-pink);
+  --ring: var(--cyber-blue);
+  --chart-1: var(--cyber-blue);
+  --chart-2: var(--cyber-purple);
+  --chart-3: var(--cyber-green);
+  --chart-4: var(--cyber-orange);
+  --chart-5: var(--cyber-pink);
   
   --sidebar: var(--color-neutral-50);
   --sidebar-foreground: var(--color-neutral-800);
-  --sidebar-primary: var(--color-cyber-blue);
+  --sidebar-primary: var(--cyber-blue);
   --sidebar-primary-foreground: var(--color-neutral-950);
   --sidebar-accent: var(--color-neutral-100);
   --sidebar-accent-foreground: var(--color-neutral-800);
   --sidebar-border: var(--color-neutral-200);
-  --sidebar-ring: var(--color-cyber-blue);
+  --sidebar-ring: var(--cyber-blue);
 
   --scrollbar-track: var(--color-neutral-100);
   --scrollbar-thumb: var(--color-neutral-300);
@@ -458,8 +480,8 @@ html {
 
   --header-background: var(--color-neutral-50);
   --header-foreground: var(--color-neutral-900);
-  --danger: var(--color-cyber-red);
-  --danger-hover: var(--color-cyber-red-hover);
+  --danger: var(--cyber-red);
+  --danger-hover: var(--cyber-red-hover);
 }
 
 /* 수동 다크모드 클래스 활성화 대응 */
@@ -475,7 +497,7 @@ html {
   --card-elevated: var(--color-neutral-700);
   --popover: var(--color-neutral-700);
   --popover-foreground: var(--color-neutral-50);
-  --primary: var(--color-cyber-blue);
+  --primary: var(--cyber-blue);
   --primary-foreground: var(--color-neutral-900);
   --secondary: var(--color-neutral-800);
   --secondary-foreground: var(--color-neutral-50);
@@ -483,15 +505,15 @@ html {
   --muted-foreground: var(--color-neutral-50);
   --accent: var(--color-neutral-700);
   --accent-foreground: var(--color-neutral-50);
-  --destructive: var(--color-cyber-red);
+  --destructive: var(--cyber-red);
   --border: var(--color-neutral-800);
   --input: var(--color-neutral-700);
-  --ring: var(--color-cyber-blue);
-  --chart-1: var(--color-cyber-blue);
-  --chart-2: var(--color-cyber-purple);
-  --chart-3: var(--color-cyber-green);
-  --chart-4: var(--color-cyber-orange);
-  --chart-5: var(--color-cyber-pink);
+  --ring: var(--cyber-blue);
+  --chart-1: var(--cyber-blue);
+  --chart-2: var(--cyber-purple);
+  --chart-3: var(--cyber-green);
+  --chart-4: var(--cyber-orange);
+  --chart-5: var(--cyber-pink);
   
   --sidebar: var(--color-neutral-900);
   --sidebar-foreground: var(--color-cyber-gray);
@@ -522,6 +544,7 @@ html {
 @layer base {
   * {
     box-sizing: border-box;
+    @apply border-border outline-ring/50;
   }
   
   html {
@@ -534,14 +557,11 @@ html {
     height: 100vh;
     margin: 0;
     padding: 0;
-    background-color: var(--background);
-    color: var(--foreground);
     font-family: 'Paperlogy-8ExtraBold', Arial, Helvetica, sans-serif;
     overflow-x: hidden;
     overflow-y: auto;  /* body에서만 스크롤, 헤더 아래에 스크롤바 표시 */
+    @apply bg-background text-foreground;
   }
-  
-  
   
   /* 메인 콘텐츠 영역 */
   main {
@@ -586,7 +606,6 @@ html {
   .header-container {
     background-color: var(--header-background);
     border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(8px);
     position: sticky;
     top: 0;
     z-index: 50;
@@ -635,7 +654,7 @@ html {
 
   .nav-link-mobile:hover {
     background-color: var(--muted);
-    color: var(--color-cyber-blue);
+    color: var(--primary);
   }
 
   /* 카드 스타일 */
@@ -669,24 +688,14 @@ html {
     font-weight: 600;
     padding: 0.5rem 1rem;
     border-radius: 0.375rem;
-    transition: all 0.2s;
+    box-shadow: 0 0 8px var(--primary-glow);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .btn-primary:hover {
-    background-color: #0ea5e9;
+    background-color: var(--primary-hover);
+    box-shadow: 0 0 14px var(--primary-glow);
   }
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-
-  }
-  body {
-    @apply bg-background text-foreground;
-
-  }
-
 }
 
   /* 다크 모드 스크롤바 스타일 */
@@ -855,13 +864,13 @@ html {
   
   [data-radix-slider-track] {
     height: 12px !important;
-    background-color: #e5e7eb !important;
+    background-color: var(--muted) !important;
     border-radius: 6px !important;
   }
   
   [data-radix-slider-range] {
     height: 12px !important;
-    background-color: #3b82f6 !important;
+    background-color: var(--primary) !important;
     border-radius: 6px !important;
   }
   
@@ -869,13 +878,13 @@ html {
     width: 28px !important;
     height: 28px !important;
     border-width: 4px !important;
-    border-color: #ffffff !important;
-    background-color: #3b82f6 !important;
+    border-color: var(--card) !important;
+    background-color: var(--primary) !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
   }
   
   [data-radix-slider-thumb]:focus {
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2) !important;
+    box-shadow: 0 0 0 4px var(--primary-glow) !important;
   }
 }
 
